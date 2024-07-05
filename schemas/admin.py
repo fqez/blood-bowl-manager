@@ -1,6 +1,6 @@
-from pydantic import BaseModel
 from fastapi.security import HTTPBasicCredentials
-from pydantic import EmailStr
+from pydantic import BaseModel, EmailStr
+
 
 class AdminSignIn(HTTPBasicCredentials):
     class Config:
