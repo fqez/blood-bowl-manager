@@ -1,9 +1,9 @@
-from fastapi import Body, APIRouter, HTTPException
+from fastapi import APIRouter, Body, HTTPException
 from passlib.context import CryptContext
 
 from auth.jwt_handler import sign_jwt
 from database.database import add_admin
-from models.admin import Admin
+from models.user.admin import Admin
 from schemas.admin import AdminData, AdminSignIn
 
 router = APIRouter()

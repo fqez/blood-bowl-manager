@@ -73,6 +73,7 @@ def remove_first_parenthesis_word(data):
 
 def transform_object(obj):
     return {
+        "id": f"perk-{'-'.join(obj['name'].lower().split(' '))}",
         "name": {"en": obj["name"], "es": obj["name_es"]},
         "family": obj["family"],
         "description": {"en": obj["description"], "es": obj["description_es"]},
@@ -106,6 +107,9 @@ for item2 in data2:
             dataa.append(transform_object(item1))
             break
 
+
+with open("perks.json", "w", encoding="utf-8") as file:
+    json.dump(dataa, file, ensure_ascii=False, indent=4)
 
 # Step 2 and 3: Group items by the 'family' field
 grouped_by_family = {}

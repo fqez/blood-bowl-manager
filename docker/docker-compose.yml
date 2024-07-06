@@ -8,6 +8,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: root
+      MONGO_INITDB_DATABASE: blood-manager
     ports:
       - "27017:27017"
     volumes:
@@ -28,4 +29,4 @@ services:
       - "8888:8081"
 
 volumes:
-    mongo-data:
+  mongo-data:

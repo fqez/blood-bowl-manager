@@ -9,6 +9,7 @@ class Perk(Document):
     name: Optional[dict] = None
     description: Optional[dict] = None
     family: str
+    modifier: Optional[str] = None
 
     class Config:
         json_schema_extra = {
