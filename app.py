@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from config.config import initiate_database
 from routes.admin import router as AdminRouter
+from routes.character import router as CharacterRouter
 from routes.perk import router as PerkRouter
 from routes.student import router as StudentRouter
 from routes.team import router as TeamRouter
@@ -42,5 +43,11 @@ app.include_router(
     TeamRouter,
     tags=["teams"],
     prefix="/teams",
+    # dependencies=[Depends(token_listener)],
+)
+app.include_router(
+    CharacterRouter,
+    tags=["characters"],
+    prefix="/characters",
     # dependencies=[Depends(token_listener)],
 )

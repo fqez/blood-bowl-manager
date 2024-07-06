@@ -3,8 +3,8 @@ from fastapi import APIRouter, Body
 from database.database import (  # update_character_data,
     add_character,
     add_team,
+    retrieve_roster,
     retrieve_team,
-    retrieve_teams,
     update_team_data,
 )
 from models.team.team import Team
@@ -14,14 +14,18 @@ router = APIRouter()
 
 
 # GET /teams
-@router.get("/", response_description="Teams retrieved", response_model=Response)
-async def get_teams():
-    teams = await retrieve_teams()
+@router.get(
+    "/{team_id}",
+    response_description="Characters of Team: {team_id} retrieved",
+    response_model=Response,
+)
+async def get_characters(team_id: str):
+    roster = await retrieve_roster(team_id)
     return {
         "status_code": 200,
         "response_type": "success",
         "description": "Student data retrieved successfully",
-        "data": teams,
+        "data": roster,
     }
 
 
@@ -69,22 +73,22 @@ async def add_team_data(team: CreateTeam = Body(...)):
     }
 
 
-# @router.delete("/{id}", response_description="Student data deleted from the database")
-# async def delete_team_data(id: str):
-#     deleted_student = await delete_student(id)
-#     if deleted_student:
-#         return {
-#             "status_code": 200,
-#             "response_type": "success",
-#             "description": "Student with ID: {} removed".format(id),
-#             "data": deleted_student,
-#         }
-#     return {
-#         "status_code": 404,
-#         "response_type": "error",
-#         "description": "Student with id {0} doesn't exist".format(id),
-#         "data": False,
-#     }
+@router.delete("/{id}", response_description="Student data deleted from the database")
+async def delete_team_data(id: str):
+    deleted_student = await delete_student(id)
+    if deleted_student:
+        return {
+            "status_code": 200,
+            "response_type": "success",
+            "description": "Student with ID: {} removed".format(id),
+            "data": deleted_student,
+        }
+    return {
+        "status_code": 404,
+        "response_type": "error",
+        "description": "Student with id {0} doesn't exist".format(id),
+        "data": False,
+    }
 
 
 @router.put("/{id}", response_model=Response)

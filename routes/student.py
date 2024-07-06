@@ -1,5 +1,6 @@
-from database.database import *
 from fastapi import APIRouter, Body
+
+from database.database import *
 from models.student import Student
 from schemas.student import Response, UpdateStudentModel
 

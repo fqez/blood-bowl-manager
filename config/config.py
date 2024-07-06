@@ -25,3 +25,11 @@ async def initiate_database():
     await init_beanie(
         database=client.get_default_database(), document_models=models.__all__
     )
+    # Load JSON data from file
+
+    # with open("config/base_teams.json") as f:
+    #     data = json.load(f)
+
+    # # Insert data into collection
+    # collection = client.get_default_database().get_collection("base_teams")
+    # await collection.insert_many(data)

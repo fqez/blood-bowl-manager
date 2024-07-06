@@ -301,18 +301,18 @@ db['perks'].insertMany(
                 "es": "Un jugador con esta habilidad puede elegir saltar sobre cualquier casilla adyacente a una casilla libre u ocupada por un jugador en pie o tumbado, siguiendo las reglas de brincar. Reduce en 1 el modificador para Brincar o Saltar hasta un mínimo de -1. Un jugador con la Habilidad Pogo Saltarín no puede aprender Saltar."
             }
         },
-        {
-            "id": "perk-cannoneer",
-            "name": {
-                "en": "Cannoneer",
-                "es": "Cañonero"
-            },
-            "family": "Passing",
-            "description": {
-                "en": "When this player performs a Long Pass action or a Long Bomb Pass action, you may apply an additional +1 modifier to the Passing Ability test.",
-                "es": "Cuando este jugador realiza un Pase Largo o Bomba Larga puede añadir +1 a la tirada de Pase."
-            }
-        },
+        // {
+        //     "id": "perk-cannoneer",
+        //     "name": {
+        //         "en": "Cannoneer",
+        //         "es": "Cañonero"
+        //     },
+        //     "family": "Passing",
+        //     "description": {
+        //         "en": "When this player performs a Long Pass action or a Long Bomb Pass action, you may apply an additional +1 modifier to the Passing Ability test.",
+        //         "es": "Cuando este jugador realiza un Pase Largo o Bomba Larga puede añadir +1 a la tirada de Pase."
+        //     }
+        // },
         {
             "id": "perk-leader",
             "name": {

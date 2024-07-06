@@ -5,7 +5,7 @@ from pymongo import ASCENDING, IndexModel
 
 
 class Perk(Document):
-    _id: str
+    id: str
     name: Optional[dict] = None
     description: Optional[dict] = None
     family: str

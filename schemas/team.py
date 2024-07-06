@@ -36,7 +36,13 @@ class TeamProjection(BaseModel):
 
 
 class UpdateTeam(BaseModel):
-    roster: Optional[list[Character]]
+    name: Optional[str] = None
+    rerolls: Optional[int] = None
+    cheerleaders: Optional[int] = None
+    assistant_coaches: Optional[int] = None
+    apothecary: Optional[bool] = None
+    fan_factor: Optional[int] = None
+    treasury: Optional[int] = None
 
     class Config:
         json_schema_extra = {
@@ -133,7 +139,7 @@ class UpdateTeam(BaseModel):
             }
         }
 
-    class Settings:
+    class Collection:
         name = "teams"
 
 
@@ -141,7 +147,7 @@ class Response(BaseModel):
     status_code: int
     response_type: str
     description: str
-    data: Optional[Any]
+    data: Optional[Any] = None
 
     class Config:
         json_schema_extra = {

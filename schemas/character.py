@@ -2,6 +2,20 @@ from typing import Any, Optional
 
 from pydantic import BaseModel
 
+from models.team.perk import Perk
+
+
+class CharacterProjection(BaseModel):
+    id: str
+    team_id: str
+    name: str
+    number: str
+    character_type: str
+    status: str
+    value: str
+    stats: dict
+    perks: list[Perk]
+
 
 class UpdateCharacter(BaseModel):
     name: Optional[str]
