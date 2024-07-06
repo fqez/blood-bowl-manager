@@ -3,15 +3,22 @@ from typing import List, Union
 from beanie import PydanticObjectId
 
 from models.admin import Admin
+from models.perk import Perk
 from models.student import Student
 
 admin_collection = Admin
 student_collection = Student
+perk_collection = Perk
 
 
 async def add_admin(new_admin: Admin) -> Admin:
     admin = await new_admin.create()
     return admin
+
+
+async def retrieve_perks() -> List[Perk]:
+    perks = await perk_collection.all().to_list()
+    return perks
 
 
 async def retrieve_students() -> List[Student]:

@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
 
+from fastapi import Depends, FastAPI
+
 from auth.jwt_bearer import JWTBearer
 from config.config import initiate_database
-from fastapi import Depends, FastAPI
 from routes.admin import router as AdminRouter
+from routes.perk import router as PerkRouter
 from routes.student import router as StudentRouter
 
 token_listener = JWTBearer()
@@ -28,5 +30,11 @@ app.include_router(
     StudentRouter,
     tags=["Students"],
     prefix="/student",
+    dependencies=[Depends(token_listener)],
+)
+app.include_router(
+    PerkRouter,
+    tags=["perks"],
+    prefix="/perks",
     dependencies=[Depends(token_listener)],
 )
