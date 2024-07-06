@@ -1,7 +1,5 @@
-from typing import Optional, Any
-
 from beanie import Document
-from pydantic import BaseModel, EmailStr
+from pydantic import EmailStr
 
 
 class Student(Document):
