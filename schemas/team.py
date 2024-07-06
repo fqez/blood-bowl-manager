@@ -1,8 +1,38 @@
+import uuid
 from typing import Any, Optional
 
 from pydantic import BaseModel
 
 from models.team.character import Character
+
+
+class CreateTeam(BaseModel):
+    id: str = uuid.uuid4().hex
+    name: str
+    base_team_id: str
+    roster: list[Character]
+    reroll_cost: str
+    rerolls: int = 0
+    cheerleaders: int = 0
+    assistant_coaches: int = 0
+    apothecary: bool = False
+    fan_factor: int = 0
+    treasury: int = 1_000_000
+    wallpaper: Optional[str]
+    icon: Optional[str]
+
+
+class TeamProjection(BaseModel):
+    id: str
+    name: str
+    roster: list[Character]
+    reroll_cost: str
+    rerolls: int
+    cheerleaders: int
+    assistant_coaches: int
+    apothecary: bool
+    fan_factor: int
+    treasury: int
 
 
 class UpdateTeam(BaseModel):

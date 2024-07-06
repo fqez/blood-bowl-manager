@@ -1,32 +1,19 @@
-from typing import Optional
+from typing import Any, Optional
 
-from beanie import Document
+from pydantic import BaseModel
 
 
-class Team(Document):
-    id: str
-    name: str
-    base_team_id: str
-    roster: list[str]
-    reroll_cost: str
-    rerolls: int = 0
-    cheerleaders: int = 0
-    assistant_coaches: int = 0
-    apothecary: bool = False
-    fan_factor: int = 0
-    treasury: int = 1_000_000
-    wallpaper: Optional[str]
-    icon: Optional[str]
+class UpdateCharacter(BaseModel):
+    name: Optional[str]
 
     class Config:
         json_schema_extra = {
             "example": {
                 "id": "user-shambling-n",
                 "name": "Shambling Undead",
-                "roster": [
+                "squad": [
                     {
                         "name": "Skeleton Lineman",
-                        "number": "10",
                         "character_type": "skeleton-lineman",
                         "base_team_id": "shambling-undead",
                         "value": "40,000",
@@ -69,7 +56,9 @@ class Team(Document):
                             "PA": "4+",
                             "AV": "8+",
                         },
-                        "perks": ["perk-dodge"],
+                        "perks": [
+                            "perk-dodge",
+                        ],
                         "image": "shambling/ghoul.png",
                         "tag_image": "shambling/ghoul_tag.png",
                     },
@@ -114,3 +103,20 @@ class Team(Document):
 
     class Settings:
         name = "teams"
+
+
+class Response(BaseModel):
+    status_code: int
+    response_type: str
+    description: str
+    data: Optional[Any]
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "status_code": 200,
+                "response_type": "success",
+                "description": "Operation successful",
+                "data": "Sample data",
+            }
+        }

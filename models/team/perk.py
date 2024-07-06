@@ -21,7 +21,7 @@ class Perk(Document):
         }
 
     class Settings:
-        name = "perk"
+        name = "perks"
         indexes = [
             IndexModel([("family", ASCENDING)], name="perk_family_index"),
             IndexModel([("name", ASCENDING)], name="perk_name_index"),

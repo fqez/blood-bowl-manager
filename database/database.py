@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List
 
 from beanie import PydanticObjectId
 
@@ -7,11 +7,13 @@ from models.team.character import Character
 from models.team.perk import Perk
 from models.team.team import Team
 from models.user.admin import Admin
+from schemas.team import TeamProjection
 
 admin_collection = Admin
 student_collection = Student
 perk_collection = Perk
 team_collection = Team
+character_collection = Character
 
 
 async def add_admin(new_admin: Admin) -> Admin:
@@ -24,31 +26,51 @@ async def retrieve_perks() -> List[Perk]:
     return perks
 
 
-async def retrieve_teams() -> List[Team]:
-    teams = await team_collection.all().to_list()
-    return teams
+# Ensure other necessary imports are present
+
+
+async def retrieve_teams() -> List[TeamProjection]:
+    teams = await team_collection.find().to_list()
+    projected_teams = []
+    for team in teams:
+        roster = []
+        for id in team.roster:
+            character = await character_collection.get(id)
+            roster.append(character.model_dump())
+        team_dict = team.model_dump()
+
+        team_dict["roster"] = roster
+        projected_team = TeamProjection(**team_dict)
+        projected_teams.append(projected_team)
+    return projected_teams
 
 
 async def retrieve_team(id: str) -> Team:
     team = await team_collection.get(id)
+
     if team:
         return team
-
-
-async def update_character_data(
-    team: Team, character: Character, data: dict
-) -> Union[bool, Team]:
-    des_body = {k: v for k, v in data.items() if v is not None}
-    update_query = {"$set": {field: value for field, value in des_body.items()}}
-    if team:
-        await team.update(update_query)
-        return team
-    return False
 
 
 async def add_team(new_team: Team) -> Team:
     team = await new_team.create()
     return team
+
+
+async def add_character(new_character: Character) -> Character:
+    character = await new_character.create()
+    return character
+
+
+# async def update_character_data(
+#     team: Team, character: Character, data: dict
+# ) -> Union[bool, Team]:
+#     des_body = {k: v for k, v in data.items() if v is not None and k != "id"}
+#     update_query = {"$set": {field: value for field, value in des_body.items()}}
+#     if character:
+#         await character.update(update_query)
+#         return character
+#     return False
 
 
 async def retrieve_students() -> List[Student]:
@@ -74,11 +96,11 @@ async def delete_student(id: PydanticObjectId) -> bool:
         return True
 
 
-async def update_student_data(id: PydanticObjectId, data: dict) -> Union[bool, Student]:
-    des_body = {k: v for k, v in data.items() if v is not None}
-    update_query = {"$set": {field: value for field, value in des_body.items()}}
-    student = await student_collection.get(id)
-    if student:
-        await student.update(update_query)
-        return student
-    return False
+# async def update_student_data(id: PydanticObjectId, data: dict) -> Union[bool, Student]:
+#     des_body = {k: v for k, v in data.items() if v is not None}
+#     update_query = {"$set": {field: value for field, value in des_body.items()}}
+#     student = await student_collection.get(id)
+#     if student:
+#         await student.update(update_query)
+#         return student
+#     return False

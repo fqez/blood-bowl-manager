@@ -1,26 +1,24 @@
+from typing import List
+
 from fastapi import APIRouter, Body
 
-from database.database import (
+from database.database import (  # update_character_data,
+    add_character,
     add_team,
-    retrieve_team,
     retrieve_teams,
-    update_character_data,
 )
 from models.team.team import Team
-from schemas.team import Response, UpdateTeam
+from schemas.team import CreateTeam, Response, TeamProjection
 
 router = APIRouter()
 
 
-@router.get("/", response_description="Teams retrieved", response_model=Response)
+@router.get(
+    "/", response_description="Teams retrieved", response_model=List[TeamProjection]
+)
 async def get_teams():
     teams = await retrieve_teams()
-    return {
-        "status_code": 200,
-        "response_type": "success",
-        "description": "Students data retrieved successfully",
-        "data": teams,
-    }
+    return teams
 
 
 # @router.get(
@@ -47,8 +45,15 @@ async def get_teams():
     response_description="Student data added into the database",
     response_model=Response,
 )
-async def add_team_data(team: Team = Body(...)):
-    new_team = await add_team(team)
+async def add_team_data(team: CreateTeam = Body(...)):
+    roster_ids = []
+    for character in team.roster:
+        character.team_id = team.id
+        roster_ids.append(character.id)
+        await add_character(character)
+    team.roster = roster_ids
+
+    new_team = await add_team(Team(**team.dict()))
     return {
         "status_code": 200,
         "response_type": "success",
@@ -75,20 +80,20 @@ async def add_team_data(team: Team = Body(...)):
 #     }
 
 
-@router.put("/{team_id}/character/{character_id}", response_model=Response)
-async def update_team(
-    team_id: str,
-    character_id: str,
-    req: UpdateTeam = Body(...),
-):
-    team = await retrieve_team(team_id)
-    if team:
-        for character in team.roster:
-            if character.id == character_id:
-                await update_character_data(team, character, req.dict())
-                return {
-                    "status_code": 200,
-                    "response_type": "success",
-                    "description": "Team updated successfully",
-                    "data": team,
-                }
+# @router.put("/{team_id}/character/{character_id}", response_model=Response)
+# async def update_team(
+#     team_id: str,
+#     character_id: str,
+#     req: UpdateCharacter = Body(...),
+# ):
+#     team = await retrieve_team(team_id)
+#     if team:
+#         for character in team.roster:
+#             if character.id == character_id:
+#                 await update_character_data(team, character, req.dict())
+#                 return {
+#                     "status_code": 200,
+#                     "response_type": "success",
+#                     "description": "Team updated successfully",
+#                     "data": team,
+# }

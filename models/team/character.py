@@ -3,7 +3,8 @@ import uuid
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel
+from beanie import Document
+from pydantic import Field
 
 from models.team.stats import Stats
 
@@ -14,8 +15,9 @@ class Status(Enum):
     DEAD = "Dead"
 
 
-class Character(BaseModel):
-    id: str = uuid.uuid4().hex
+class Character(Document):
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex, init=False)
+    team_id: str
     name: str
     number: Optional[str] = str(random.randint(0, 99)).zfill(2)
     character_type: str
@@ -26,5 +28,11 @@ class Character(BaseModel):
     image: Optional[str] = None
     image_tag: Optional[str] = None
 
-    def update_stats(self, bonus_stats: Stats):
-        self.stats.update_bonus_stats(bonus_stats)
+    class Config:
+        pass
+
+    class Settings:
+        name = "characters"
+        # indexes = [
+        #     IndexModel([("team_id", ASCENDING)], name="team_id_index"),
+        # ]
