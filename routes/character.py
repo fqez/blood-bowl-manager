@@ -1,108 +1,99 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Depends
 
-from database.database import (  # update_character_data,
-    add_character,
-    add_team,
-    retrieve_roster,
-    retrieve_team,
-    update_team_data,
-)
-from models.team.team import Team
-from schemas.team import CreateTeam, Response, UpdateTeam
+from database.database_dependencies import get_character_database, get_team_database
+from database.mongo_database import MongoDatabase
+from exceptions.exceptions import PlayerNotFoundException, TeamNotFoundException
+from models.team.character import Character
+from schemas.character import CreateCharacter, UpdateCharacter
+from schemas.team import Response
+from services import character_operations
 
 router = APIRouter()
 
 
-# GET /teams
+# DONE
+# GET /characters/team/{team_id}
 @router.get(
-    "/{team_id}",
-    response_description="Characters of Team: {team_id} retrieved",
+    "/team/{team_id}",
     response_model=Response,
 )
-async def get_characters(team_id: str):
-    roster = await retrieve_roster(team_id)
-    return {
-        "status_code": 200,
-        "response_type": "success",
-        "description": "Student data retrieved successfully",
-        "data": roster,
-    }
-
-
-# GET /teams/{id}
-@router.get(
-    "/{id}",
-    response_description="Student data retrieved",
-    response_model=Response,
-)
-async def get_team_data(id: str):
-    team = await retrieve_team(id)
-    if team:
+async def get_characters(
+    team_id: str, db: MongoDatabase = Depends(get_character_database)
+):
+    roster = await character_operations.retrieve_roster(team_id, db)
+    if roster:
         return {
             "status_code": 200,
             "response_type": "success",
             "description": "Student data retrieved successfully",
-            "data": team,
+            "data": roster,
         }
-    return {
-        "status_code": 404,
-        "response_type": "error",
-        "description": "Student doesn't exist",
-    }
+    raise TeamNotFoundException(team_id)
 
 
-# POST /teams
-@router.post(
-    "/",
-    response_description="Team data added into the database",
+# DONE
+# GET /characters/{character_id}
+@router.get(
+    "/{id}",
     response_model=Response,
 )
-async def add_team_data(team: CreateTeam = Body(...)):
-    roster = []
-    for character in team.roster:
-        character.team_id = team.id
-        roster.append(character.id)
-        await add_character(character)
-    team.roster = roster
-    new_team = await add_team(Team(**team.model_dump()))
-    return {
-        "status_code": 200,
-        "response_type": "success",
-        "description": "Student created successfully",
-        "data": new_team,
-    }
-
-
-@router.delete("/{id}", response_description="Student data deleted from the database")
-async def delete_team_data(id: str):
-    deleted_student = await delete_student(id)
-    if deleted_student:
+async def get_character(id: str, db: MongoDatabase = Depends(get_character_database)):
+    character = await character_operations.retrieve_player(id, db)
+    if character:
         return {
             "status_code": 200,
             "response_type": "success",
-            "description": "Student with ID: {} removed".format(id),
-            "data": deleted_student,
+            "description": "Student data retrieved successfully",
+            "data": character,
+        }
+    raise PlayerNotFoundException(id)
+
+
+# DONE
+# POST /characters
+@router.post(
+    "/",
+    response_model=Response,
+)
+async def create_character(
+    char_db: MongoDatabase = Depends(get_character_database),
+    team_db: MongoDatabase = Depends(get_team_database),
+    character: CreateCharacter = Body(...),
+):
+    new_character = await character_operations.add_character(
+        Character(**character.model_dump()), char_db, team_db
+    )
+    if new_character:
+        return {
+            "status_code": 201,
+            "response_type": "success",
+            "description": "Student data created successfully",
+            "data": new_character,
         }
     return {
-        "status_code": 404,
+        "status_code": 400,
         "response_type": "error",
-        "description": "Student with id {0} doesn't exist".format(id),
+        "description": "An error occurred. Student data not created",
         "data": False,
     }
 
 
+# DONE
 @router.put("/{id}", response_model=Response)
-async def update_team(
+async def update_character(
     id: str,
-    req: UpdateTeam = Body(...),
+    req: UpdateCharacter = Body(...),
+    db: MongoDatabase = Depends(get_character_database),
 ):
-    updated_team = await update_team_data(id, req.model_dump())
-    if updated_team:
+    updated_character = await character_operations.update_character_data(
+        id, req.model_dump(), db
+    )
+    if updated_character:
         return {
             "status_code": 200,
             "response_type": "success",
             "description": "Student with ID: {} updated".format(id),
-            "data": updated_team,
+            "data": updated_character,
         }
     return {
         "status_code": 404,

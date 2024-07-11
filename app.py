@@ -2,14 +2,15 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from auth.jwt_bearer import JWTBearer
 from config.config import initiate_database
+from exceptions import exception_handlers
 from routes.admin import router as AdminRouter
 from routes.character import router as CharacterRouter
 from routes.perk import router as PerkRouter
-from routes.student import router as StudentRouter
 from routes.team import router as TeamRouter
 
-# token_listener = JWTBearer()
+token_listener = JWTBearer()
 
 
 @asynccontextmanager
@@ -19,6 +20,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+exception_handlers.add_exception_handlers(app)
 
 
 @app.get("/", tags=["Root"])
@@ -27,12 +29,6 @@ async def read_root():
 
 
 app.include_router(AdminRouter, tags=["Administrator"], prefix="/admin")
-app.include_router(
-    StudentRouter,
-    tags=["Students"],
-    prefix="/student",
-    # dependencies=[Depends(token_listener)],
-)
 app.include_router(
     PerkRouter,
     tags=["perks"],

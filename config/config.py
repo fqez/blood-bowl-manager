@@ -3,6 +3,7 @@ from typing import Optional
 from beanie import init_beanie
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic_settings import BaseSettings
+from pymongo.errors import ConnectionFailure
 
 import models as models
 
@@ -21,10 +22,15 @@ class Settings(BaseSettings):
 
 
 async def initiate_database():
-    client = AsyncIOMotorClient(Settings().DATABASE_URL)
-    await init_beanie(
-        database=client.get_default_database(), document_models=models.__all__
-    )
+    try:
+        client = AsyncIOMotorClient(Settings().DATABASE_URL)
+        await client.admin.command("ping")  # Check the connection
+        await init_beanie(
+            database=client.get_default_database(), document_models=models.__all__
+        )
+    except ConnectionFailure:
+        print("Database connection failed. Please check your connection settings.")
+
     # Load JSON data from file
 
     # with open("config/base_teams.json") as f:

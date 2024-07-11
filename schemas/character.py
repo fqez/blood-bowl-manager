@@ -2,7 +2,20 @@ from typing import Any, Optional
 
 from pydantic import BaseModel
 
+from models.team.character import Status
 from models.team.perk import Perk
+from models.team.stats import Stats
+
+
+class CreateCharacter(BaseModel):
+    team_id: str
+    name: str
+    number: str
+    character_type: str
+    status: Status = Status.HEALTHY
+    value: str
+    stats: Stats
+    perks: list[str]
 
 
 class CharacterProjection(BaseModel):
@@ -18,7 +31,13 @@ class CharacterProjection(BaseModel):
 
 
 class UpdateCharacter(BaseModel):
-    name: Optional[str]
+    name: Optional[str] = None
+    number: Optional[str] = None
+    character_type: Optional[str] = None
+    status: Optional[str] = None
+    value: Optional[str] = None
+    stats: Optional[dict] = None
+    perks: Optional[list[str]] = None
 
     class Config:
         json_schema_extra = {
