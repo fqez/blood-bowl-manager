@@ -1,22 +1,25 @@
 from typing import Optional
 
 from beanie import Document
+from pydantic import Field
 
 
 class Team(Document):
+    """Team document model for Blood Bowl teams."""
+
     id: str
     name: str
     base_team_id: str
-    roster: list[str]
-    reroll_cost: str
-    rerolls: int = 0
-    cheerleaders: int = 0
-    assistant_coaches: int = 0
+    roster: list[str] = Field(default_factory=list, description="List of character IDs")
+    reroll_cost: int = Field(..., gt=0, description="Cost per reroll in gold")
+    rerolls: int = Field(default=0, ge=0)
+    cheerleaders: int = Field(default=0, ge=0)
+    assistant_coaches: int = Field(default=0, ge=0)
     apothecary: bool = False
-    fan_factor: int = 0
-    treasury: int = 1_000_000
-    wallpaper: Optional[str]
-    icon: Optional[str]
+    fan_factor: int = Field(default=0, ge=0)
+    treasury: int = Field(default=1_000_000, ge=0)
+    wallpaper: Optional[str] = None
+    icon: Optional[str] = None
 
     class Config:
         json_schema_extra = {

@@ -1,32 +1,70 @@
 import uuid
-from typing import Any, Optional
+from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 from models.team.character import Character
 
+# Blood Bowl constants
+MIN_ROSTER_SIZE = 11
+MAX_ROSTER_SIZE = 16
+MAX_REROLLS = 8
+MAX_FAN_FACTOR = 9
+MIN_TREASURY = 0
+
 
 class CreateTeam(BaseModel):
-    id: str = uuid.uuid4().hex
-    name: str
-    base_team_id: str
-    roster: list[Character]
-    reroll_cost: str
-    rerolls: int = 0
-    cheerleaders: int = 0
-    assistant_coaches: int = 0
-    apothecary: bool = False
-    fan_factor: int = 0
-    treasury: int = 1_000_000
-    wallpaper: Optional[str]
-    icon: Optional[str]
+    """Schema for creating a new team."""
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex)
+    name: str = Field(..., min_length=1, max_length=50, description="Team name")
+    base_team_id: str = Field(..., description="Base team type identifier")
+    roster: list[Character] = Field(
+        ...,
+        min_length=MIN_ROSTER_SIZE,
+        max_length=MAX_ROSTER_SIZE,
+        description=f"Team roster ({MIN_ROSTER_SIZE}-{MAX_ROSTER_SIZE} players)",
+    )
+    reroll_cost: int = Field(..., gt=0, description="Cost per reroll in gold")
+    rerolls: int = Field(
+        default=0, ge=0, le=MAX_REROLLS, description="Number of rerolls"
+    )
+    cheerleaders: int = Field(
+        default=0, ge=0, le=12, description="Number of cheerleaders"
+    )
+    assistant_coaches: int = Field(
+        default=0, ge=0, le=6, description="Number of assistant coaches"
+    )
+    apothecary: bool = Field(
+        default=False, description="Whether team has an apothecary"
+    )
+    fan_factor: int = Field(
+        default=0, ge=0, le=MAX_FAN_FACTOR, description="Fan factor rating"
+    )
+    treasury: int = Field(
+        default=1_000_000, ge=MIN_TREASURY, description="Team treasury in gold"
+    )
+    wallpaper: Optional[str] = Field(
+        default=None, description="Team wallpaper image path"
+    )
+    icon: Optional[str] = Field(default=None, description="Team icon image path")
+
+    @field_validator("name")
+    @classmethod
+    def name_must_not_be_empty(cls, v: str) -> str:
+        """Validate team name is not just whitespace."""
+        if not v.strip():
+            raise ValueError("Team name cannot be empty or whitespace")
+        return v.strip()
 
 
 class TeamProjection(BaseModel):
+    """Schema for team data returned to clients."""
+
     id: str
     name: str
     roster: list[Character]
-    reroll_cost: str
+    reroll_cost: int
     rerolls: int
     cheerleaders: int
     assistant_coaches: int
@@ -36,13 +74,15 @@ class TeamProjection(BaseModel):
 
 
 class UpdateTeam(BaseModel):
-    name: Optional[str] = None
-    rerolls: Optional[int] = None
-    cheerleaders: Optional[int] = None
-    assistant_coaches: Optional[int] = None
+    """Schema for updating team data."""
+
+    name: Optional[str] = Field(default=None, min_length=1, max_length=50)
+    rerolls: Optional[int] = Field(default=None, ge=0, le=MAX_REROLLS)
+    cheerleaders: Optional[int] = Field(default=None, ge=0, le=12)
+    assistant_coaches: Optional[int] = Field(default=None, ge=0, le=6)
     apothecary: Optional[bool] = None
-    fan_factor: Optional[int] = None
-    treasury: Optional[int] = None
+    fan_factor: Optional[int] = Field(default=None, ge=0, le=MAX_FAN_FACTOR)
+    treasury: Optional[int] = Field(default=None, ge=MIN_TREASURY)
 
     class Config:
         json_schema_extra = {
@@ -143,18 +183,4 @@ class UpdateTeam(BaseModel):
         name = "teams"
 
 
-class Response(BaseModel):
-    status_code: int
-    response_type: str
-    description: str
-    data: Optional[Any] = None
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "status_code": 200,
-                "response_type": "success",
-                "description": "Operation successful",
-                "data": "Sample data",
-            }
-        }
+# Response class moved to schemas/responses.py as APIResponse

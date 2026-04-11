@@ -1,191 +1,371 @@
-[
-    {
-        "_id": "shambling-undead",
-        "name": "Shambling Undead",
-        "reroll_value": "70.000",
-        "characters": [
-            {
-                "name": "Skeleton Lineman",
-                "type": "skeleton-lineman",
-                "max": 12,
-                "value": "40,000",
-                "stats": {
-                    "MA": "5",
-                    "ST": "3",
-                    "AG": "4+",
-                    "PA": "6+",
-                    "AV": "8+"
-                },
-                "perks": [
-                    "perk-regeneration",
-                    "perk-thick-skull"
-                ],
-                "image": "shambling/skeleton.png",
-                "tag_image": "shambling/skeleton_tag.png"
-            },
-            {
-                "name": "Zombie Lineman",
-                "type": "zombie-lineman",
-                "max": 12,
-                "value": "40,000",
-                "stats": {
-                    "MA": "4",
-                    "ST": "3",
-                    "AG": "4+",
-                    "PA": "-",
-                    "AV": "9+"
-                },
-                "perks": [
-                    "perk-regeneration"
-                ],
-                "image": "shambling/zombie.png",
-                "tag_image": "shambling/zombie_tag.png"
-            },
-            {
-                "name": "Ghoul Runner",
-                "type": "ghoul-runner",
-                "max": 4,
-                "value": "75,000",
-                "stats": {
-                    "MA": "7",
-                    "ST": "3",
-                    "AG": "3+",
-                    "PA": "4+",
-                    "AV": "8+"
-                },
-                "perks": [
-                    "perk-dodge"
-                ],
-                "image": "shambling/ghoul.png",
-                "tag_image": "shambling/ghoul_tag.png"
-            },
-            {
-                "name": "Wight Blitzer",
-                "type": "wight-blitzer",
-                "max": 2,
-                "value": "90,000",
-                "stats": {
-                    "MA": "6",
-                    "ST": "3",
-                    "AG": "3+",
-                    "PA": "4+",
-                    "AV": "9+"
-                },
-                "perks": [
-                    "perk-regeneration",
-                    "perk-block"
-                ],
-                "image": "shambling/wight.png",
-                "tag_image": "shambling/wight_tag.png"
-            },
-            {
-                "name": "Mummy",
-                "type": "mummy",
-                "max": 2,
-                "value": "125,000",
-                "stats": {
-                    "MA": "3",
-                    "ST": "5",
-                    "AG": "5+",
-                    "PA": "-",
-                    "AV": "10+"
-                },
-                "perks": [
-                    "perk-regeneration",
-                    "perk-mighty-blow:+1"
-                ],
-                "image": "shambling/mummy.png",
-                "tag_image": "shambling/mummy_tag.png"
-            }
-        ],
-        "wallpaper": "shambling/wallpaper.png",
-        "icon": "shambling/icon.png"
-    },
-    {
-        "_id": "lizardmen",
-        "name": "Lizardmen",
-        "reroll_value": "70.000",
-        "characters": [
-            {
-                "name": "Skink Runner Lineman",
-                "type": "skink-runner-lineman",
-                "max": 12,
-                "value": "60,000",
-                "stats": {
-                    "MA": "8",
-                    "ST": "2",
-                    "AG": "3+",
-                    "PA": "4+",
-                    "AV": "8+"
-                },
-                "perks": [
-                    "perk-dodge",
-                    "perk-stunty"
-                ],
-                "image": "lizardmen/lineman.png",
-                "tag_image": "lizardmen/lineman.png"
-            },
-            {
-                "name": "Chameleon Skink",
-                "type": "chameleon-skink",
-                "max": 2,
-                "value": "70,000",
-                "stats": {
-                    "MA": "7",
-                    "ST": "2",
-                    "AG": "3+",
-                    "PA": "3+",
-                    "AV": "8+"
-                },
-                "perks": [
-                    "perk-dodge",
-                    "perk-stunty",
-                    "perk-on-the-ball",
-                    "perk-shadowing"
-                ],
-                "image": "lizardmen/chameleon.png",
-                "tag_image": "lizardmen/chameleon_tag.png"
-            },
-            {
-                "name": "Saurus Blocker",
-                "type": "saurus-blocker",
-                "max": 6,
-                "value": "85,000",
-                "stats": {
-                    "MA": "6",
-                    "ST": "4",
-                    "AG": "5+",
-                    "PA": "6+",
-                    "AV": "10+"
-                },
-                "perks": [],
-                "image": "lizardmen/saurusl.png",
-                "tag_image": "lizardmen/saurus_tag.png"
-            },
-            {
-                "name": "Kroxigor",
-                "type": "kroxigor",
-                "max": 1,
-                "value": "140,000",
-                "stats": {
-                    "MA": "6",
-                    "ST": "5",
-                    "AG": "5+",
-                    "PA": "-",
-                    "AV": "10+"
-                },
-                "perks": [
-                    "perk-bone-head",
-                    "perk-loner:4",
-                    "perk-mighty-blow:+1",
-                    "perk-prehensile-tail",
-                    "perk-thick-skull"
-                ],
-                "image": "lizardmen/kroxigor.png",
-                "tag_image": "lizardmen/kroxigor_tag.png"
-            }
-        ],
-        "wallpaper": "lizardmen/wallpaper.png",
-        "icon": "lizardmen/icon.png"
-    }
+﻿[
+  {
+    "_id": "amazon",
+    "name": "Amazon",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Amazon Linewoman", "type": "Lineman", "max": 16, "value": 75000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "3+", "AV": "8+"}, "perks": ["Dodge"], "image": "", "tag_image": ""},
+      {"name": "Piranha Warrior", "type": "Blitzer", "max": 2, "value": 95000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "3+", "AV": "8+"}, "perks": ["Dodge", "Hit and Run"], "image": "", "tag_image": ""},
+      {"name": "Amazon Thrower", "type": "Thrower", "max": 2, "value": 80000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "2+", "AV": "8+"}, "perks": ["Dodge", "Pass"], "image": "", "tag_image": ""},
+      {"name": "Amazon Catcher", "type": "Catcher", "max": 2, "value": 85000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "3+", "AV": "7+"}, "perks": ["Catch", "Dodge"], "image": "", "tag_image": ""},
+      {"name": "Amazon Blitzer", "type": "Blitzer", "max": 4, "value": 90000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "3+", "AV": "8+"}, "perks": ["Block", "Dodge"], "image": "", "tag_image": ""},
+      {"name": "Boa Handler and Snake", "type": "Special", "max": 1, "value": 110000, "stats": {"MA": 6, "ST": 4, "AG": "3+", "PA": "5+", "AV": "8+"}, "perks": ["Dodge", "Grab", "Loner (4+)", "Mighty Blow"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "black_orc",
+    "name": "Black Orc",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Goblin Bruiser Lineman", "type": "Lineman", "max": 12, "value": 45000, "stats": {"MA": 6, "ST": 2, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Right Stuff", "Stunty", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Black Orc Blocker", "type": "Blocker", "max": 6, "value": 95000, "stats": {"MA": 4, "ST": 4, "AG": "4+", "PA": "5+", "AV": "10+"}, "perks": ["Brawler", "Grab"], "image": "", "tag_image": ""},
+      {"name": "Trained Troll", "type": "Big Guy", "max": 1, "value": 115000, "stats": {"MA": 4, "ST": 5, "AG": "5+", "PA": "5+", "AV": "10+"}, "perks": ["Always Hungry", "Loner (4+)", "Mighty Blow", "Projectile Vomit", "Really Stupid", "Regeneration", "Throw Team-mate"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "bretonnian",
+    "name": "Bretonnian",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Peasant Lineman", "type": "Lineman", "max": 16, "value": 40000, "stats": {"MA": 6, "ST": 3, "AG": "4+", "PA": "5+", "AV": "7+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Yeoman", "type": "Blocker", "max": 4, "value": 75000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "5+", "AV": "8+"}, "perks": ["Wrestle"], "image": "", "tag_image": ""},
+      {"name": "Blitzer", "type": "Blitzer", "max": 4, "value": 105000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Block", "Catch", "Dauntless"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "chaos_chosen",
+    "name": "Chaos Chosen",
+    "reroll_value": 50000,
+    "characters": [
+      {"name": "Beastman Runner Lineman", "type": "Lineman", "max": 16, "value": 60000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Horns"], "image": "", "tag_image": ""},
+      {"name": "Chosen Blocker", "type": "Blocker", "max": 4, "value": 100000, "stats": {"MA": 5, "ST": 4, "AG": "4+", "PA": "6+", "AV": "10+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Chaos Ogre", "type": "Big Guy", "max": 1, "value": 140000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "5+", "AV": "10+"}, "perks": ["Bone Head", "Loner (4+)", "Mighty Blow", "Thick Skull", "Throw Team-mate"], "image": "", "tag_image": ""},
+      {"name": "Chaos Troll", "type": "Big Guy", "max": 1, "value": 115000, "stats": {"MA": 4, "ST": 5, "AG": "5+", "PA": "5+", "AV": "10+"}, "perks": ["Always Hungry", "Loner (4+)", "Mighty Blow", "Projectile Vomit", "Really Stupid", "Regeneration", "Throw Team-mate"], "image": "", "tag_image": ""},
+      {"name": "Minotaur", "type": "Big Guy", "max": 1, "value": 150000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Frenzy", "Horns", "Loner (4+)", "Mighty Blow", "Thick Skull", "Unchannelled Fury"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "chaos_dwarf",
+    "name": "Chaos Dwarf",
+    "reroll_value": 70000,
+    "characters": [
+      {"name": "Hobgoblin Lineman", "type": "Lineman", "max": 16, "value": 40000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Chaos Dwarf Blocker", "type": "Blocker", "max": 6, "value": 70000, "stats": {"MA": 4, "ST": 3, "AG": "4+", "PA": "6+", "AV": "10+"}, "perks": ["Block", "Tackle", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Bull Centaur Blitzer", "type": "Blitzer", "max": 2, "value": 130000, "stats": {"MA": 6, "ST": 4, "AG": "4+", "PA": "6+", "AV": "10+"}, "perks": ["Sprint", "Sure Feet", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Enslaved Minotaur", "type": "Big Guy", "max": 1, "value": 150000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Frenzy", "Horns", "Loner (4+)", "Mighty Blow", "Thick Skull", "Unchannelled Fury"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "chaos_renegades",
+    "name": "Chaos Renegades",
+    "reroll_value": 70000,
+    "characters": [
+      {"name": "Renegade Human Lineman", "type": "Lineman", "max": 12, "value": 50000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Renegade Human Thrower", "type": "Thrower", "max": 1, "value": 75000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "2+", "AV": "9+"}, "perks": ["Animosity (All Renegade players)", "Pass", "Safe Pair of Hands"], "image": "", "tag_image": ""},
+      {"name": "Renegade Goblin", "type": "Special", "max": 1, "value": 40000, "stats": {"MA": 6, "ST": 2, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Animosity (All Renegade players)", "Dodge", "Right Stuff", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Renegade Orc", "type": "Blocker", "max": 1, "value": 55000, "stats": {"MA": 5, "ST": 3, "AG": "3+", "PA": "4+", "AV": "10+"}, "perks": ["Animosity (Renegade Human Lineman)"], "image": "", "tag_image": ""},
+      {"name": "Renegade Skaven", "type": "Runner", "max": 1, "value": 50000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Animosity (Renegade Human Lineman)"], "image": "", "tag_image": ""},
+      {"name": "Renegade Dark Elf", "type": "Blitzer", "max": 1, "value": 75000, "stats": {"MA": 6, "ST": 3, "AG": "2+", "PA": "3+", "AV": "9+"}, "perks": ["Animosity (Renegade Human Lineman)"], "image": "", "tag_image": ""},
+      {"name": "Renegade Troll", "type": "Big Guy", "max": 1, "value": 115000, "stats": {"MA": 4, "ST": 5, "AG": "5+", "PA": "5+", "AV": "10+"}, "perks": ["Always Hungry", "Loner (4+)", "Mighty Blow", "Projectile Vomit", "Really Stupid", "Regeneration", "Throw Team-mate"], "image": "", "tag_image": ""},
+      {"name": "Renegade Ogre", "type": "Big Guy", "max": 1, "value": 140000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "5+", "AV": "10+"}, "perks": ["Bone Head", "Loner (4+)", "Mighty Blow", "Thick Skull", "Throw Team-mate"], "image": "", "tag_image": ""},
+      {"name": "Renegade Minotaur", "type": "Big Guy", "max": 1, "value": 150000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Frenzy", "Horns", "Loner (4+)", "Mighty Blow", "Thick Skull", "Unchannelled Fury"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "dark_elf",
+    "name": "Dark Elf",
+    "reroll_value": 50000,
+    "characters": [
+      {"name": "Dark Elf Lineman", "type": "Lineman", "max": 16, "value": 70000, "stats": {"MA": 6, "ST": 3, "AG": "2+", "PA": "3+", "AV": "9+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Dark Elf Runner", "type": "Runner", "max": 2, "value": 80000, "stats": {"MA": 7, "ST": 3, "AG": "2+", "PA": "3+", "AV": "8+"}, "perks": ["Dump-Off"], "image": "", "tag_image": ""},
+      {"name": "Dark Elf Assassin", "type": "Blitzer", "max": 2, "value": 85000, "stats": {"MA": 7, "ST": 3, "AG": "2+", "PA": "4+", "AV": "8+"}, "perks": ["Shadowing", "Stab"], "image": "", "tag_image": ""},
+      {"name": "Dark Elf Blitzer", "type": "Blitzer", "max": 4, "value": 100000, "stats": {"MA": 7, "ST": 3, "AG": "2+", "PA": "3+", "AV": "9+"}, "perks": ["Block"], "image": "", "tag_image": ""},
+      {"name": "Witch Elf", "type": "Blitzer", "max": 2, "value": 110000, "stats": {"MA": 7, "ST": 3, "AG": "2+", "PA": "4+", "AV": "8+"}, "perks": ["Dodge", "Frenzy", "Jump Up"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "dwarf",
+    "name": "Dwarf",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Dwarf Blocker Lineman", "type": "Lineman", "max": 16, "value": 70000, "stats": {"MA": 4, "ST": 3, "AG": "4+", "PA": "5+", "AV": "10+"}, "perks": ["Block", "Tackle", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Dwarf Runner", "type": "Runner", "max": 2, "value": 80000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Sure Hands", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Dwarf Blitzer", "type": "Blitzer", "max": 2, "value": 85000, "stats": {"MA": 5, "ST": 3, "AG": "3+", "PA": "4+", "AV": "10+"}, "perks": ["Block", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Troll Slayer", "type": "Blitzer", "max": 2, "value": 100000, "stats": {"MA": 5, "ST": 3, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Block", "Dauntless", "Frenzy", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Dwarf Deathroller", "type": "Big Guy", "max": 1, "value": 170000, "stats": {"MA": 4, "ST": 7, "AG": "5+", "PA": "6+", "AV": "11+"}, "perks": ["Break Tackle", "Dirty Player", "Juggernaut", "Loner (5+)", "Mighty Blow", "Secret Weapon", "Stand Firm"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "elven_union",
+    "name": "Elven Union",
+    "reroll_value": 50000,
+    "characters": [
+      {"name": "Elven Union Lineman", "type": "Lineman", "max": 16, "value": 60000, "stats": {"MA": 6, "ST": 3, "AG": "2+", "PA": "3+", "AV": "8+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Elven Union Thrower", "type": "Thrower", "max": 2, "value": 75000, "stats": {"MA": 6, "ST": 3, "AG": "2+", "PA": "2+", "AV": "8+"}, "perks": ["Pass"], "image": "", "tag_image": ""},
+      {"name": "Elven Union Catcher", "type": "Catcher", "max": 4, "value": 100000, "stats": {"MA": 8, "ST": 3, "AG": "2+", "PA": "3+", "AV": "8+"}, "perks": ["Catch", "Nerves of Steel"], "image": "", "tag_image": ""},
+      {"name": "Elven Union Blitzer", "type": "Blitzer", "max": 2, "value": 115000, "stats": {"MA": 7, "ST": 3, "AG": "2+", "PA": "3+", "AV": "9+"}, "perks": ["Block", "Sidestep"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "gnome",
+    "name": "Gnome",
+    "reroll_value": 50000,
+    "characters": [
+      {"name": "Gnome Lineman", "type": "Lineman", "max": 16, "value": 40000, "stats": {"MA": 5, "ST": 2, "AG": "3+", "PA": "4+", "AV": "7+"}, "perks": ["Right Stuff", "Stunty", "Wrestle"], "image": "", "tag_image": ""},
+      {"name": "Gnome Illusionist", "type": "Special", "max": 1, "value": 70000, "stats": {"MA": 5, "ST": 2, "AG": "3+", "PA": "3+", "AV": "7+"}, "perks": ["Disturbing Presence", "Fumblerooskie", "Loner (4+)", "Right Stuff", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Gnome Beastmaster", "type": "Special", "max": 1, "value": 85000, "stats": {"MA": 5, "ST": 2, "AG": "3+", "PA": "4+", "AV": "7+"}, "perks": ["Guard", "Loner (4+)", "Right Stuff", "Stunty", "Wrestle"], "image": "", "tag_image": ""},
+      {"name": "Woodland Fox", "type": "Special", "max": 2, "value": 30000, "stats": {"MA": 7, "ST": 1, "AG": "2+", "PA": "-", "AV": "6+"}, "perks": ["Dodge", "No Hands", "Sidestep", "Stunty", "Titchy"], "image": "", "tag_image": ""},
+      {"name": "Altern Forest Treeman", "type": "Big Guy", "max": 1, "value": 120000, "stats": {"MA": 2, "ST": 6, "AG": "5+", "PA": "5+", "AV": "11+"}, "perks": ["Loner (4+)", "Mighty Blow", "Stand Firm", "Strong Arm", "Take Root", "Thick Skull", "Throw Team-mate"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "goblin",
+    "name": "Goblin",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Goblin Lineman", "type": "Lineman", "max": 16, "value": 40000, "stats": {"MA": 6, "ST": 2, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Dodge", "Right Stuff", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Bomma", "type": "Special", "max": 1, "value": 50000, "stats": {"MA": 6, "ST": 2, "AG": "3+", "PA": "3+", "AV": "8+"}, "perks": ["Bombardier", "Dodge", "Secret Weapon", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Doom Diver", "type": "Special", "max": 1, "value": 60000, "stats": {"MA": 6, "ST": 2, "AG": "3+", "PA": "6+", "AV": "8+"}, "perks": ["Right Stuff", "Stunty", "Swoop"], "image": "", "tag_image": ""},
+      {"name": "Looney", "type": "Special", "max": 1, "value": 45000, "stats": {"MA": 6, "ST": 2, "AG": "3+", "PA": "-", "AV": "8+"}, "perks": ["Chainsaw", "Secret Weapon", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Fanatic", "type": "Special", "max": 1, "value": 70000, "stats": {"MA": 3, "ST": 7, "AG": "3+", "PA": "-", "AV": "8+"}, "perks": ["Ball and Chain", "No Hands", "Secret Weapon", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Pogoer", "type": "Special", "max": 1, "value": 75000, "stats": {"MA": 7, "ST": 2, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Dodge", "Pogo", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "'Ooligan", "type": "Special", "max": 1, "value": 65000, "stats": {"MA": 6, "ST": 2, "AG": "3+", "PA": "6+", "AV": "8+"}, "perks": ["Dirty Player", "Disturbing Presence", "Dodge", "Right Stuff", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Trained Troll", "type": "Big Guy", "max": 2, "value": 115000, "stats": {"MA": 4, "ST": 5, "AG": "5+", "PA": "5+", "AV": "10+"}, "perks": ["Always Hungry", "Loner (3+)", "Mighty Blow", "Projectile Vomit", "Really Stupid", "Regeneration", "Throw Team-mate"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "halfling",
+    "name": "Halfling",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Halfling Hopeful Lineman", "type": "Lineman", "max": 16, "value": 30000, "stats": {"MA": 5, "ST": 2, "AG": "3+", "PA": "4+", "AV": "7+"}, "perks": ["Dodge", "Right Stuff", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Halfling Hefty", "type": "Blocker", "max": 2, "value": 50000, "stats": {"MA": 5, "ST": 2, "AG": "3+", "PA": "3+", "AV": "8+"}, "perks": ["Dodge", "Fend", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Halfling Catcher", "type": "Catcher", "max": 4, "value": 55000, "stats": {"MA": 5, "ST": 2, "AG": "3+", "PA": "4+", "AV": "7+"}, "perks": ["Catch", "Dodge", "Right Stuff", "Sprint", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Altern Forest Treeman", "type": "Big Guy", "max": 2, "value": 120000, "stats": {"MA": 2, "ST": 6, "AG": "5+", "PA": "5+", "AV": "11+"}, "perks": ["Loner (4+)", "Mighty Blow", "Stand Firm", "Strong Arm", "Take Root", "Thick Skull", "Throw Team-mate"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "high_elf",
+    "name": "High Elf",
+    "reroll_value": 50000,
+    "characters": [
+      {"name": "High Elf Lineman", "type": "Lineman", "max": 16, "value": 65000, "stats": {"MA": 6, "ST": 3, "AG": "2+", "PA": "3+", "AV": "9+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "High Elf Thrower", "type": "Thrower", "max": 2, "value": 80000, "stats": {"MA": 6, "ST": 3, "AG": "2+", "PA": "2+", "AV": "9+"}, "perks": ["Cloud Burster", "Pass", "Safe Pair of Hands"], "image": "", "tag_image": ""},
+      {"name": "High Elf Catcher", "type": "Catcher", "max": 2, "value": 90000, "stats": {"MA": 8, "ST": 3, "AG": "2+", "PA": "3+", "AV": "8+"}, "perks": ["Catch", "Diving Catch"], "image": "", "tag_image": ""},
+      {"name": "Phoenix Warrior", "type": "Blitzer", "max": 2, "value": 90000, "stats": {"MA": 6, "ST": 3, "AG": "2+", "PA": "4+", "AV": "9+"}, "perks": ["Defensive"], "image": "", "tag_image": ""},
+      {"name": "Dragon Prince", "type": "Blitzer", "max": 2, "value": 110000, "stats": {"MA": 7, "ST": 3, "AG": "2+", "PA": "4+", "AV": "9+"}, "perks": ["Block", "Mighty Blow"], "image": "", "tag_image": ""},
+      {"name": "White Lion", "type": "Blitzer", "max": 2, "value": 110000, "stats": {"MA": 6, "ST": 3, "AG": "2+", "PA": "4+", "AV": "9+"}, "perks": ["Dauntless", "Frenzy", "Mighty Blow"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "human",
+    "name": "Human",
+    "reroll_value": 50000,
+    "characters": [
+      {"name": "Human Lineman", "type": "Lineman", "max": 16, "value": 50000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Human Thrower", "type": "Thrower", "max": 2, "value": 75000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "2+", "AV": "9+"}, "perks": ["Pass", "Sure Hands"], "image": "", "tag_image": ""},
+      {"name": "Human Catcher", "type": "Catcher", "max": 4, "value": 75000, "stats": {"MA": 8, "ST": 2, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Catch", "Dodge"], "image": "", "tag_image": ""},
+      {"name": "Human Blitzer", "type": "Blitzer", "max": 4, "value": 85000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Block"], "image": "", "tag_image": ""},
+      {"name": "Ogre", "type": "Big Guy", "max": 1, "value": 140000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "5+", "AV": "10+"}, "perks": ["Bone Head", "Loner (4+)", "Mighty Blow", "Thick Skull", "Throw Team-mate"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "imperial_nobility",
+    "name": "Imperial Nobility",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Imperial Retainer Lineman", "type": "Lineman", "max": 16, "value": 45000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Fend"], "image": "", "tag_image": ""},
+      {"name": "Imperial Thrower", "type": "Thrower", "max": 2, "value": 75000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "3+", "AV": "9+"}, "perks": ["Pass", "Running Pass"], "image": "", "tag_image": ""},
+      {"name": "Bodyguard", "type": "Blocker", "max": 4, "value": 85000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Mighty Blow", "Stand Firm"], "image": "", "tag_image": ""},
+      {"name": "Noble Blitzer", "type": "Blitzer", "max": 2, "value": 90000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Block", "Catch"], "image": "", "tag_image": ""},
+      {"name": "Ogre", "type": "Big Guy", "max": 1, "value": 140000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "5+", "AV": "10+"}, "perks": ["Bone Head", "Loner (4+)", "Mighty Blow", "Thick Skull", "Throw Team-mate"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "khorne",
+    "name": "Khorne",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Marauder Lineman", "type": "Lineman", "max": 16, "value": 50000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Frenzy"], "image": "", "tag_image": ""},
+      {"name": "Khorngor", "type": "Blitzer", "max": 4, "value": 70000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Frenzy", "Horns"], "image": "", "tag_image": ""},
+      {"name": "Bloodseeker", "type": "Blitzer", "max": 2, "value": 105000, "stats": {"MA": 5, "ST": 4, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Frenzy", "Mighty Blow"], "image": "", "tag_image": ""},
+      {"name": "Bloodspawn", "type": "Big Guy", "max": 1, "value": 160000, "stats": {"MA": 5, "ST": 5, "AG": "5+", "PA": "-", "AV": "9+"}, "perks": ["Claws", "Frenzy", "Loner (4+)", "Mighty Blow", "No Hands", "Unchannelled Fury"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "lizardmen",
+    "name": "Lizardmen",
+    "reroll_value": 70000,
+    "characters": [
+      {"name": "Skink Runner Lineman", "type": "Lineman", "max": 16, "value": 60000, "stats": {"MA": 8, "ST": 2, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Dodge", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Chameleon Skink", "type": "Special", "max": 2, "value": 70000, "stats": {"MA": 7, "ST": 2, "AG": "3+", "PA": "3+", "AV": "8+"}, "perks": ["Dodge", "On the Ball", "Shadowing", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Saurus Blocker", "type": "Blocker", "max": 6, "value": 90000, "stats": {"MA": 6, "ST": 4, "AG": "5+", "PA": "6+", "AV": "10+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Kroxigor", "type": "Big Guy", "max": 1, "value": 140000, "stats": {"MA": 6, "ST": 5, "AG": "5+", "PA": "6+", "AV": "10+"}, "perks": ["Bone Head", "Loner (4+)", "Mighty Blow", "Prehensile Tail", "Thick Skull"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "necromantic_horror",
+    "name": "Necromantic Horror",
+    "reroll_value": 70000,
+    "characters": [
+      {"name": "Zombie Lineman", "type": "Lineman", "max": 16, "value": 40000, "stats": {"MA": 4, "ST": 3, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Regeneration"], "image": "", "tag_image": ""},
+      {"name": "Ghoul Runner", "type": "Runner", "max": 4, "value": 75000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Dodge"], "image": "", "tag_image": ""},
+      {"name": "Wraith", "type": "Blocker", "max": 2, "value": 85000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "-", "AV": "9+"}, "perks": ["Block", "Foul Appearance", "No Hands", "Regeneration", "Sidestep"], "image": "", "tag_image": ""},
+      {"name": "Flesh Golem", "type": "Blocker", "max": 2, "value": 110000, "stats": {"MA": 4, "ST": 4, "AG": "4+", "PA": "6+", "AV": "10+"}, "perks": ["Regeneration", "Stand Firm", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Werewolf", "type": "Blitzer", "max": 2, "value": 120000, "stats": {"MA": 8, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Claws", "Frenzy", "Regeneration"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "norse",
+    "name": "Norse",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Norse Raider Lineman", "type": "Lineman", "max": 16, "value": 50000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Block", "Drunkard"], "image": "", "tag_image": ""},
+      {"name": "Beer Boar", "type": "Special", "max": 2, "value": 20000, "stats": {"MA": 5, "ST": 1, "AG": "3+", "PA": "-", "AV": "6+"}, "perks": ["Dodge", "No Hands", "Pick-me-up", "Stunty", "Titchy"], "image": "", "tag_image": ""},
+      {"name": "Norse Berserker", "type": "Blitzer", "max": 2, "value": 90000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "5+", "AV": "8+"}, "perks": ["Block", "Frenzy", "Jump Up"], "image": "", "tag_image": ""},
+      {"name": "Valkyrie", "type": "Blitzer", "max": 2, "value": 95000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "3+", "AV": "8+"}, "perks": ["Catch", "Dauntless", "Pass", "Strip Ball"], "image": "", "tag_image": ""},
+      {"name": "Ulfwerener", "type": "Blocker", "max": 2, "value": 105000, "stats": {"MA": 6, "ST": 4, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Frenzy"], "image": "", "tag_image": ""},
+      {"name": "Yhetee", "type": "Big Guy", "max": 1, "value": 140000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Claws", "Disturbing Presence", "Frenzy", "Loner (4+)", "Unchannelled Fury"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "nurgle",
+    "name": "Nurgle",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Rotter Lineman", "type": "Lineman", "max": 16, "value": 40000, "stats": {"MA": 5, "ST": 3, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Decay", "Plague Ridden"], "image": "", "tag_image": ""},
+      {"name": "Pestigor", "type": "Blitzer", "max": 4, "value": 70000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Horns", "Plague Ridden", "Regeneration"], "image": "", "tag_image": ""},
+      {"name": "Bloater", "type": "Blocker", "max": 4, "value": 110000, "stats": {"MA": 4, "ST": 4, "AG": "4+", "PA": "6+", "AV": "10+"}, "perks": ["Disturbing Presence", "Foul Appearance", "Plague Ridden", "Regeneration"], "image": "", "tag_image": ""},
+      {"name": "Rotspawn", "type": "Big Guy", "max": 1, "value": 140000, "stats": {"MA": 4, "ST": 5, "AG": "5+", "PA": "6+", "AV": "10+"}, "perks": ["Disturbing Presence", "Foul Appearance", "Loner (4+)", "Mighty Blow", "Plague Ridden", "Really Stupid", "Regeneration", "Tentacles"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "ogre",
+    "name": "Ogre",
+    "reroll_value": 70000,
+    "characters": [
+      {"name": "Gnoblar", "type": "Lineman", "max": 16, "value": 15000, "stats": {"MA": 5, "ST": 1, "AG": "3+", "PA": "4+", "AV": "6+"}, "perks": ["Dodge", "Right Stuff", "Sidestep", "Stunty", "Titchy"], "image": "", "tag_image": ""},
+      {"name": "Ogre Blocker", "type": "Blocker", "max": 5, "value": 140000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "5+", "AV": "10+"}, "perks": ["Bone Head", "Mighty Blow", "Thick Skull", "Throw Team-mate"], "image": "", "tag_image": ""},
+      {"name": "Ogre Runt Punter", "type": "Big Guy", "max": 1, "value": 145000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "4+", "AV": "10+"}, "perks": ["Bone Head", "Kick Team-mate", "Mighty Blow", "Thick Skull"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "old_world_alliance",
+    "name": "Old World Alliance",
+    "reroll_value": 70000,
+    "characters": [
+      {"name": "Human Lineman", "type": "Lineman", "max": 12, "value": 50000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Dwarf Blocker", "type": "Blocker", "max": 2, "value": 70000, "stats": {"MA": 4, "ST": 3, "AG": "4+", "PA": "5+", "AV": "10+"}, "perks": ["Block", "Tackle", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Halfling Hopeful", "type": "Special", "max": 2, "value": 30000, "stats": {"MA": 5, "ST": 2, "AG": "3+", "PA": "4+", "AV": "7+"}, "perks": ["Dodge", "Right Stuff", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Human Thrower", "type": "Thrower", "max": 2, "value": 75000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "2+", "AV": "9+"}, "perks": ["Pass", "Sure Hands"], "image": "", "tag_image": ""},
+      {"name": "Human Catcher", "type": "Catcher", "max": 2, "value": 75000, "stats": {"MA": 8, "ST": 2, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Catch", "Dodge"], "image": "", "tag_image": ""},
+      {"name": "Dwarf Runner", "type": "Runner", "max": 2, "value": 80000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Sure Hands", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Human Blitzer", "type": "Blitzer", "max": 2, "value": 85000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Block"], "image": "", "tag_image": ""},
+      {"name": "Dwarf Blitzer", "type": "Blitzer", "max": 2, "value": 85000, "stats": {"MA": 5, "ST": 3, "AG": "3+", "PA": "4+", "AV": "10+"}, "perks": ["Block", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Dwarf Troll Slayer", "type": "Blitzer", "max": 2, "value": 100000, "stats": {"MA": 5, "ST": 3, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Block", "Dauntless", "Frenzy", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Halfling Catcher", "type": "Catcher", "max": 2, "value": 55000, "stats": {"MA": 5, "ST": 2, "AG": "3+", "PA": "4+", "AV": "7+"}, "perks": ["Catch", "Dodge", "Right Stuff", "Sprint", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Altern Forest Treeman", "type": "Big Guy", "max": 1, "value": 120000, "stats": {"MA": 2, "ST": 6, "AG": "5+", "PA": "5+", "AV": "11+"}, "perks": ["Loner (4+)", "Mighty Blow", "Stand Firm", "Strong Arm", "Take Root", "Thick Skull", "Throw Team-mate"], "image": "", "tag_image": ""},
+      {"name": "Ogre", "type": "Big Guy", "max": 1, "value": 140000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "5+", "AV": "10+"}, "perks": ["Bone Head", "Loner (4+)", "Mighty Blow", "Thick Skull", "Throw Team-mate"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "orc",
+    "name": "Orc",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Orc Lineman", "type": "Lineman", "max": 16, "value": 50000, "stats": {"MA": 5, "ST": 3, "AG": "3+", "PA": "4+", "AV": "10+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Goblin Lineman", "type": "Lineman", "max": 4, "value": 40000, "stats": {"MA": 6, "ST": 2, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Dodge", "Right Stuff", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Orc Thrower", "type": "Thrower", "max": 2, "value": 75000, "stats": {"MA": 5, "ST": 3, "AG": "3+", "PA": "3+", "AV": "9+"}, "perks": ["Pass", "Sure Hands"], "image": "", "tag_image": ""},
+      {"name": "Orc Blitzer", "type": "Blitzer", "max": 4, "value": 85000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "10+"}, "perks": ["Block"], "image": "", "tag_image": ""},
+      {"name": "Big Un Blocker", "type": "Blocker", "max": 4, "value": 95000, "stats": {"MA": 5, "ST": 4, "AG": "4+", "PA": "6+", "AV": "10+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Trained Troll", "type": "Big Guy", "max": 1, "value": 115000, "stats": {"MA": 4, "ST": 5, "AG": "5+", "PA": "5+", "AV": "10+"}, "perks": ["Always Hungry", "Loner (4+)", "Mighty Blow", "Projectile Vomit", "Really Stupid", "Regeneration", "Throw Team-mate"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "shambling_undead",
+    "name": "Shambling Undead",
+    "reroll_value": 70000,
+    "characters": [
+      {"name": "Skeleton Lineman", "type": "Lineman", "max": 16, "value": 40000, "stats": {"MA": 5, "ST": 3, "AG": "4+", "PA": "6+", "AV": "8+"}, "perks": ["Regeneration", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Zombie Lineman", "type": "Lineman", "max": 16, "value": 40000, "stats": {"MA": 4, "ST": 3, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Regeneration"], "image": "", "tag_image": ""},
+      {"name": "Ghoul Runner", "type": "Runner", "max": 4, "value": 75000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Dodge"], "image": "", "tag_image": ""},
+      {"name": "Wight Blitzer", "type": "Blitzer", "max": 2, "value": 95000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Block", "Regeneration"], "image": "", "tag_image": ""},
+      {"name": "Mummy", "type": "Big Guy", "max": 2, "value": 125000, "stats": {"MA": 3, "ST": 5, "AG": "5+", "PA": "6+", "AV": "10+"}, "perks": ["Mighty Blow", "Regeneration"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "skaven",
+    "name": "Skaven",
+    "reroll_value": 50000,
+    "characters": [
+      {"name": "Skaven Clanrat", "type": "Lineman", "max": 16, "value": 50000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Skaven Thrower", "type": "Thrower", "max": 2, "value": 80000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "2+", "AV": "8+"}, "perks": ["Pass", "Sure Hands"], "image": "", "tag_image": ""},
+      {"name": "Gutter Runner", "type": "Runner", "max": 2, "value": 85000, "stats": {"MA": 9, "ST": 2, "AG": "2+", "PA": "4+", "AV": "8+"}, "perks": ["Dodge", "Stab"], "image": "", "tag_image": ""},
+      {"name": "Skaven Blitzer", "type": "Blitzer", "max": 2, "value": 90000, "stats": {"MA": 8, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Block", "Strip Ball"], "image": "", "tag_image": ""},
+      {"name": "Rat Ogre", "type": "Big Guy", "max": 1, "value": 150000, "stats": {"MA": 6, "ST": 5, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Animal Savagery", "Frenzy", "Loner (4+)", "Mighty Blow", "Prehensile Tail"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "snotling",
+    "name": "Snotling",
+    "reroll_value": 70000,
+    "characters": [
+      {"name": "Snotling Lineman", "type": "Lineman", "max": 16, "value": 15000, "stats": {"MA": 5, "ST": 1, "AG": "3+", "PA": "4+", "AV": "6+"}, "perks": ["Dodge", "Insignificant", "Right Stuff", "Sidestep", "Stunty", "Titchy"], "image": "", "tag_image": ""},
+      {"name": "Fun-hoppa", "type": "Special", "max": 2, "value": 20000, "stats": {"MA": 6, "ST": 1, "AG": "3+", "PA": "4+", "AV": "6+"}, "perks": ["Dodge", "Pogo", "Right Stuff", "Sidestep", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Stilty Runna", "type": "Runner", "max": 2, "value": 20000, "stats": {"MA": 6, "ST": 1, "AG": "3+", "PA": "4+", "AV": "6+"}, "perks": ["Dodge", "Right Stuff", "Sidestep", "Sprint", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Fungus Flinga", "type": "Special", "max": 2, "value": 30000, "stats": {"MA": 5, "ST": 1, "AG": "3+", "PA": "4+", "AV": "6+"}, "perks": ["Bombardier", "Dodge", "Right Stuff", "Secret Weapon", "Sidestep", "Stunty", "Titchy"], "image": "", "tag_image": ""},
+      {"name": "Pump Wagon", "type": "Big Guy", "max": 2, "value": 100000, "stats": {"MA": 5, "ST": 5, "AG": "5+", "PA": "6+", "AV": "9+"}, "perks": ["Dirty Player", "Juggernaut", "Mighty Blow", "Really Stupid", "Stand Firm"], "image": "", "tag_image": ""},
+      {"name": "Trained Troll", "type": "Big Guy", "max": 2, "value": 115000, "stats": {"MA": 4, "ST": 5, "AG": "5+", "PA": "5+", "AV": "10+"}, "perks": ["Always Hungry", "Mighty Blow", "Projectile Vomit", "Really Stupid", "Regeneration", "Throw Team-mate"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "tomb_kings",
+    "name": "Tomb Kings",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Skeleton Lineman", "type": "Lineman", "max": 16, "value": 40000, "stats": {"MA": 5, "ST": 3, "AG": "4+", "PA": "6+", "AV": "8+"}, "perks": ["Regeneration", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Tomb Kings Thrower", "type": "Thrower", "max": 2, "value": 65000, "stats": {"MA": 6, "ST": 3, "AG": "4+", "PA": "3+", "AV": "9+"}, "perks": ["Pass", "Regeneration", "Sure Hands", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Tomb Kings Blitzer", "type": "Blitzer", "max": 2, "value": 85000, "stats": {"MA": 6, "ST": 3, "AG": "4+", "PA": "5+", "AV": "9+"}, "perks": ["Block", "Regeneration", "Thick Skull"], "image": "", "tag_image": ""},
+      {"name": "Tomb Guardian", "type": "Big Guy", "max": 4, "value": 115000, "stats": {"MA": 4, "ST": 5, "AG": "5+", "PA": "6+", "AV": "10+"}, "perks": ["Brawler", "Decay", "Regeneration"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "underworld_denizens",
+    "name": "Underworld Denizens",
+    "reroll_value": 70000,
+    "characters": [
+      {"name": "Goblin Lineman", "type": "Lineman", "max": 16, "value": 40000, "stats": {"MA": 6, "ST": 2, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Dodge", "Right Stuff", "Stunty"], "image": "", "tag_image": ""},
+      {"name": "Snotling Lineman", "type": "Lineman", "max": 6, "value": 15000, "stats": {"MA": 5, "ST": 1, "AG": "3+", "PA": "4+", "AV": "6+"}, "perks": ["Dodge", "Insignificant", "Right Stuff", "Sidestep", "Stunty", "Titchy"], "image": "", "tag_image": ""},
+      {"name": "Skaven Clanrat", "type": "Special", "max": 3, "value": 50000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": ["Animosity (Goblin)"], "image": "", "tag_image": ""},
+      {"name": "Skaven Thrower", "type": "Thrower", "max": 1, "value": 80000, "stats": {"MA": 7, "ST": 3, "AG": "3+", "PA": "2+", "AV": "8+"}, "perks": ["Animosity (Goblin)", "Pass", "Sure Hands"], "image": "", "tag_image": ""},
+      {"name": "Gutter Runner", "type": "Runner", "max": 1, "value": 85000, "stats": {"MA": 9, "ST": 2, "AG": "2+", "PA": "4+", "AV": "8+"}, "perks": ["Animosity (Goblin)", "Dodge", "Stab"], "image": "", "tag_image": ""},
+      {"name": "Skaven Blitzer", "type": "Blitzer", "max": 1, "value": 90000, "stats": {"MA": 8, "ST": 3, "AG": "3+", "PA": "4+", "AV": "9+"}, "perks": ["Animosity (Goblin)", "Block", "Strip Ball"], "image": "", "tag_image": ""},
+      {"name": "Troll", "type": "Big Guy", "max": 1, "value": 115000, "stats": {"MA": 4, "ST": 5, "AG": "5+", "PA": "5+", "AV": "10+"}, "perks": ["Always Hungry", "Loner (4+)", "Mighty Blow", "Projectile Vomit", "Really Stupid", "Regeneration", "Throw Team-mate"], "image": "", "tag_image": ""},
+      {"name": "Rat Ogre", "type": "Big Guy", "max": 1, "value": 150000, "stats": {"MA": 6, "ST": 5, "AG": "4+", "PA": "6+", "AV": "9+"}, "perks": ["Animal Savagery", "Frenzy", "Loner (4+)", "Mighty Blow", "Prehensile Tail"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "vampire",
+    "name": "Vampire",
+    "reroll_value": 60000,
+    "characters": [
+      {"name": "Thrall Lineman", "type": "Lineman", "max": 16, "value": 40000, "stats": {"MA": 6, "ST": 3, "AG": "3+", "PA": "4+", "AV": "8+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Vampire Runner", "type": "Runner", "max": 2, "value": 100000, "stats": {"MA": 8, "ST": 3, "AG": "2+", "PA": "3+", "AV": "8+"}, "perks": ["Bloodlust (2+)", "Hypnotic Gaze", "Regeneration"], "image": "", "tag_image": ""},
+      {"name": "Vampire Thrower", "type": "Thrower", "max": 2, "value": 110000, "stats": {"MA": 6, "ST": 4, "AG": "2+", "PA": "2+", "AV": "9+"}, "perks": ["Bloodlust (2+)", "Hypnotic Gaze", "Pass", "Regeneration"], "image": "", "tag_image": ""},
+      {"name": "Vampire Blitzer", "type": "Blitzer", "max": 2, "value": 110000, "stats": {"MA": 6, "ST": 4, "AG": "2+", "PA": "4+", "AV": "9+"}, "perks": ["Bloodlust (3+)", "Hypnotic Gaze", "Juggernaut", "Regeneration"], "image": "", "tag_image": ""},
+      {"name": "Vargheist", "type": "Big Guy", "max": 1, "value": 150000, "stats": {"MA": 5, "ST": 5, "AG": "4+", "PA": "6+", "AV": "10+"}, "perks": ["Bloodlust (3+)", "Claws", "Frenzy", "Loner (4+)", "Regeneration"], "image": "", "tag_image": ""}
+    ]
+  },
+  {
+    "_id": "wood_elf",
+    "name": "Wood Elf",
+    "reroll_value": 50000,
+    "characters": [
+      {"name": "Wood Elf Lineman", "type": "Lineman", "max": 16, "value": 65000, "stats": {"MA": 7, "ST": 3, "AG": "2+", "PA": "4+", "AV": "8+"}, "perks": [], "image": "", "tag_image": ""},
+      {"name": "Wood Elf Thrower", "type": "Thrower", "max": 2, "value": 85000, "stats": {"MA": 7, "ST": 3, "AG": "2+", "PA": "2+", "AV": "8+"}, "perks": ["Pass", "Safe Pair of Hands"], "image": "", "tag_image": ""},
+      {"name": "Wood Elf Catcher", "type": "Catcher", "max": 2, "value": 90000, "stats": {"MA": 8, "ST": 2, "AG": "2+", "PA": "3+", "AV": "8+"}, "perks": ["Catch", "Dodge", "Sprint"], "image": "", "tag_image": ""},
+      {"name": "Wardancer", "type": "Blitzer", "max": 2, "value": 130000, "stats": {"MA": 8, "ST": 3, "AG": "2+", "PA": "3+", "AV": "8+"}, "perks": ["Block", "Dodge", "Leap"], "image": "", "tag_image": ""},
+      {"name": "Loren Forest Treeman", "type": "Big Guy", "max": 1, "value": 120000, "stats": {"MA": 2, "ST": 6, "AG": "5+", "PA": "5+", "AV": "11+"}, "perks": ["Loner (4+)", "Mighty Blow", "Stand Firm", "Strong Arm", "Take Root", "Thick Skull", "Throw Team-mate"], "image": "", "tag_image": ""}
+    ]
+  }
 ]

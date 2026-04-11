@@ -1,38 +1,45 @@
-from fastapi import Request, HTTPException
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
-from .jwt_handler import decode_jwt
-
-
-def verify_jwt(jwtoken: str) -> bool:
-    isTokenValid: bool = False
-
-    payload = decode_jwt(jwtoken)
-    if payload:
-        isTokenValid = True
-    return isTokenValid
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 
 class JWTBearer(HTTPBearer):
     def __init__(self, auto_error: bool = True):
-        super(JWTBearer, self).__init__(auto_error=auto_error)
+        super().__init__(auto_error=auto_error)
 
-    async def __call__(self, request: Request):
-        credentials: HTTPAuthorizationCredentials = await super(
-            JWTBearer, self
-        ).__call__(request)
-        print("Credentials :", credentials)
-        if credentials:
-            if not credentials.scheme == "Bearer":
-                raise HTTPException(
-                    status_code=403, detail="Invalid authentication token"
-                )
+    async def __call__(self, request: Request) -> str:
+        credentials: HTTPAuthorizationCredentials = await super().__call__(request)
+        if not credentials or credentials.scheme != "Bearer":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Invalid authentication scheme",
+            )
+        return credentials.credentials
 
-            if not verify_jwt(credentials.credentials):
-                raise HTTPException(
-                    status_code=403, detail="Invalid token or expired token"
-                )
 
-            return credentials.credentials
-        else:
-            raise HTTPException(status_code=403, detail="Invalid authorization token")
+async def get_current_user(token: str = Depends(JWTBearer())) -> str:
+    """FastAPI dependency: validates JWT and returns user_id (sub claim)."""
+    from auth.token_service import TokenService
+
+    try:
+        payload = TokenService().decode_token(token)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e),
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid token type",
+        )
+
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+
+    return user_id

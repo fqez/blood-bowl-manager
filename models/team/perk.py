@@ -1,11 +1,11 @@
-from typing import Optional
+from typing import Optional, Union
 
-from beanie import Document
+from beanie import Document, PydanticObjectId
 from pymongo import ASCENDING, IndexModel
 
 
 class Perk(Document):
-    id: str
+    id: Union[str, PydanticObjectId]
     name: Optional[dict] = None
     description: Optional[dict] = None
     family: str

@@ -1,0 +1,2272 @@
+[
+    {
+        "_id": "akhorne_the_squirrel",
+        "name": "Akhorne The Squirrel",
+        "cost": 80000,
+        "stats": {
+            "MA": 7,
+            "ST": 1,
+            "AG": "2+",
+            "PA": "-",
+            "AV": "6+"
+        },
+        "type": [
+            "Special",
+            "Squirrel"
+        ],
+        "skills": [
+            "Claws",
+            "Dauntless",
+            "Dodge",
+            "Frenzy",
+            "Jump Up",
+            "Loner (4+)",
+            "No Hands",
+            "Sidestep",
+            "Stunty",
+            "Titchy"
+        ],
+        "special_ability": {
+            "name": "Nuts!",
+            "description": "Once per game, when Akhorne is activated he can ignore the effects of his Stunty as well as any modifiers to his AG for a single Agility Test."
+        },
+        "plays_for": [
+            "amazon",
+            "chaos_chosen",
+            "chaos_renegades",
+            "dark_elf",
+            "elven_union",
+            "gnome",
+            "goblin",
+            "halfling",
+            "high_elf",
+            "human",
+            "imperial_nobility",
+            "khorne",
+            "lizardmen",
+            "necromantic_horror",
+            "norse",
+            "nurgle",
+            "old_world_alliance",
+            "orc",
+            "shambling_undead",
+            "skaven",
+            "snotling",
+            "tomb_kings",
+            "underworld_denizens",
+            "vampire",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "anqi_panqi",
+        "name": "Anqi Panqi",
+        "cost": 180000,
+        "stats": {
+            "MA": 5,
+            "ST": 5,
+            "AG": "4+",
+            "PA": "-",
+            "AV": "10+"
+        },
+        "type": [
+            "Big Guy",
+            "Special"
+        ],
+        "skills": [
+            "Ball and Chain",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Secret Weapon",
+            "Stand Firm"
+        ],
+        "special_ability": {
+            "name": "Go Berserk!",
+            "description": "Once per game, when Anqi Panqi moves he may double his MA."
+        },
+        "plays_for": [
+            "amazon",
+            "lizardmen"
+        ]
+    },
+    {
+        "_id": "barik_farblast",
+        "name": "Barik Farblast",
+        "cost": 90000,
+        "stats": {
+            "MA": 4,
+            "ST": 3,
+            "AG": "4+",
+            "PA": "5+",
+            "AV": "9+"
+        },
+        "type": [
+            "Dwarf",
+            "Special"
+        ],
+        "skills": [
+            "Cannoneer",
+            "Hail Mary Pass",
+            "Loner (4+)",
+            "Thick Skull",
+            "Secret Weapon"
+        ],
+        "special_ability": {
+            "name": "Blast It!",
+            "description": "Once per half, at the start of his activation, Barik may use his cannon. Nominate an empty square in any adjacent square. Roll a D6 for each Standing player (from either team) within 3 squares of the nominated square. On a 4+, the player is hit."
+        },
+        "plays_for": [
+            "dwarf",
+            "ogre",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "bilerot_vomitflesh",
+        "name": "Bilerot Vomitflesh",
+        "cost": 180000,
+        "stats": {
+            "MA": 4,
+            "ST": 4,
+            "AG": "4+",
+            "PA": "6+",
+            "AV": "10+"
+        },
+        "type": [
+            "Bloater",
+            "Blocker"
+        ],
+        "skills": [
+            "Disturbing Presence",
+            "Foul Appearance",
+            "Loner (4+)",
+            "Plague Ridden",
+            "Regeneration"
+        ],
+        "special_ability": {
+            "name": "Explosive Vomit",
+            "description": "Once per game, when an opponent blocks Bilerot, he may use this special ability. The opposing coach must subtract 2 from the result of any block dice."
+        },
+        "plays_for": [
+            "chaos_chosen",
+            "chaos_renegades",
+            "nurgle"
+        ]
+    },
+    {
+        "_id": "boa_konssstriktr",
+        "name": "Boa Kon'ssstriktr",
+        "cost": 220000,
+        "stats": {
+            "MA": 7,
+            "ST": 4,
+            "AG": "3+",
+            "PA": "5+",
+            "AV": "9+"
+        },
+        "type": [
+            "Amazon",
+            "Special"
+        ],
+        "skills": [
+            "Dodge",
+            "Hypnotic Gaze",
+            "Loner (4+)",
+            "Prehensile Tail",
+            "Sidestep"
+        ],
+        "special_ability": {
+            "name": "Slither",
+            "description": "Once per game, Boa Kon'ssstriktr can ignore tackle zones when moving."
+        },
+        "plays_for": [
+            "amazon",
+            "chaos_chosen",
+            "chaos_renegades",
+            "khorne",
+            "lizardmen",
+            "nurgle",
+            "vampire"
+        ]
+    },
+    {
+        "_id": "bomber_dribblesnot",
+        "name": "Bomber Dribblesnot",
+        "cost": 60000,
+        "stats": {
+            "MA": 6,
+            "ST": 2,
+            "AG": "3+",
+            "PA": "3+",
+            "AV": "8+"
+        },
+        "type": [
+            "Goblin",
+            "Special"
+        ],
+        "skills": [
+            "Bombardier",
+            "Disturbing Presence",
+            "Dodge",
+            "Loner (4+)",
+            "Secret Weapon",
+            "Stunty"
+        ],
+        "special_ability": {
+            "name": "Kaboom!",
+            "description": "Bomber can throw bombs using Hail Mary Pass rules."
+        },
+        "plays_for": [
+            "black_orc",
+            "chaos_dwarf",
+            "goblin",
+            "ogre",
+            "orc",
+            "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "captain_karina_von_riesz",
+        "name": "Captain Karina von Riesz",
+        "cost": 190000,
+        "stats": {
+            "MA": 6,
+            "ST": 4,
+            "AG": "2+",
+            "PA": "3+",
+            "AV": "9+"
+        },
+        "type": [
+            "Undead",
+            "Vampire"
+        ],
+        "skills": [
+            "Bloodlust (3+)",
+            "Dodge",
+            "Hypnotic Gaze",
+            "Loner (4+)",
+            "Regeneration"
+        ],
+        "special_ability": {
+            "name": "Crimson Tide",
+            "description": "Once per game, after using Bloodlust successfully, Karina gains an additional ST until the end of the turn."
+        },
+        "plays_for": [
+            "necromantic_horror",
+            "shambling_undead",
+            "tomb_kings",
+            "vampire"
+        ]
+    },
+    {
+        "_id": "cindy_piewhistle",
+        "name": "Cindy Piewhistle",
+        "cost": 60000,
+        "stats": {
+            "MA": 5,
+            "ST": 2,
+            "AG": "3+",
+            "PA": "3+",
+            "AV": "7+"
+        },
+        "type": [
+            "Halfling",
+            "Special"
+        ],
+        "skills": [
+            "Accurate",
+            "Bombardier",
+            "Dodge",
+            "Loner (4+)",
+            "Pass",
+            "Right Stuff",
+            "Stunty"
+        ],
+        "special_ability": {
+            "name": "Pie Slinger",
+            "description": "Cindy throws pies that act as bombs but always scatter one fewer square."
+        },
+        "plays_for": [
+            "gnome",
+            "halfling",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "count_luthor_von_drakenborg",
+        "name": "Count Luthor von Drakenborg",
+        "cost": 190000,
+        "stats": {
+            "MA": 6,
+            "ST": 4,
+            "AG": "2+",
+            "PA": "4+",
+            "AV": "10+"
+        },
+        "type": [
+            "Undead",
+            "Vampire"
+        ],
+        "skills": [
+            "Block",
+            "Bloodlust (2+)",
+            "Hypnotic Gaze",
+            "Loner (4+)",
+            "Regeneration",
+            "Sidestep"
+        ],
+        "special_ability": {
+            "name": "The Lord of the Night",
+            "description": "Once per game, Count Luthor may choose to automatically pass his Bloodlust roll without rolling."
+        },
+        "plays_for": [
+            "necromantic_horror",
+            "shambling_undead",
+            "tomb_kings",
+            "vampire"
+        ]
+    },
+    {
+        "_id": "deeproot_strongbranch",
+        "name": "Deeproot Strongbranch",
+        "cost": 280000,
+        "stats": {
+            "MA": 2,
+            "ST": 7,
+            "AG": "5+",
+            "PA": "5+",
+            "AV": "11+"
+        },
+        "type": [
+            "Big Guy",
+            "Treeman"
+        ],
+        "skills": [
+            "Block",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Stand Firm",
+            "Strong Arm",
+            "Take Root",
+            "Thick Skull",
+            "Throw Team-mate"
+        ],
+        "special_ability": {
+            "name": "Reliable",
+            "description": "Deeproot is not treated as having Really Stupid."
+        },
+        "plays_for": [
+            "gnome",
+            "halfling",
+            "old_world_alliance",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "dribl_and_drull",
+        "name": "Dribl and Drull",
+        "cost": 190000,
+        "stats": {
+            "MA": 6,
+            "ST": 2,
+            "AG": "3+",
+            "PA": "4+",
+            "AV": "8+"
+        },
+        "type": [
+            "Goblin",
+            "Special"
+        ],
+        "skills": [
+            "Dodge",
+            "Loner (4+)",
+            "Right Stuff",
+            "Sidestep",
+            "Stab",
+            "Stunty",
+            "Two Heads"
+        ],
+        "special_ability": {
+            "name": "Tag Team",
+            "description": "Dribl and Drull are two players that count as one star player. They activate together."
+        },
+        "plays_for": [
+            "black_orc",
+            "chaos_dwarf",
+            "goblin",
+            "ogre",
+            "orc",
+            "skaven",
+            "snotling",
+            "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "eldril_sidewinder",
+        "name": "Eldril Sidewinder",
+        "cost": 200000,
+        "stats": {
+            "MA": 8,
+            "ST": 3,
+            "AG": "1+",
+            "PA": "3+",
+            "AV": "8+"
+        },
+        "type": [
+            "Elf",
+            "Catcher"
+        ],
+        "skills": [
+            "Catch",
+            "Diving Catch",
+            "Dodge",
+            "Hypnotic Gaze",
+            "Loner (4+)",
+            "Nerves of Steel",
+            "On the Ball"
+        ],
+        "special_ability": {
+            "name": "Mesmerizing Dance",
+            "description": "Once per game, Eldril may use Hypnotic Gaze on each Standing opponent adjacent to him when he is activated."
+        },
+        "plays_for": [
+            "dark_elf",
+            "elven_union",
+            "high_elf",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "estelle_la_veneaux",
+        "name": "Estelle la Veneaux",
+        "cost": 190000,
+        "stats": {
+            "MA": 8,
+            "ST": 3,
+            "AG": "1+",
+            "PA": "3+",
+            "AV": "8+"
+        },
+        "type": [
+            "Blitzer",
+            "Elf",
+            "Vampire"
+        ],
+        "skills": [
+            "Bloodlust (2+)",
+            "Dodge",
+            "Frenzy",
+            "Hypnotic Gaze",
+            "Jump Up",
+            "Loner (4+)",
+            "Regeneration"
+        ],
+        "special_ability": {
+            "name": "Dazzling Pirouette",
+            "description": "Once per game, when Estelle performs a Blitz or Block action, she may add +1 to any Block dice result."
+        },
+        "plays_for": [
+            "dark_elf",
+            "elven_union",
+            "high_elf",
+            "necromantic_horror",
+            "shambling_undead",
+            "tomb_kings",
+            "vampire",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "fungus_the_loon",
+        "name": "Fungus the Loon",
+        "cost": 80000,
+        "stats": {
+            "MA": 4,
+            "ST": 7,
+            "AG": "3+",
+            "PA": "-",
+            "AV": "8+"
+        },
+        "type": [
+            "Goblin",
+            "Special"
+        ],
+        "skills": [
+            "Ball and Chain",
+            "Loner (4+)",
+            "Mighty Blow",
+            "No Hands",
+            "Secret Weapon",
+            "Stunty"
+        ],
+        "special_ability": {
+            "name": "Whirling Dervish",
+            "description": "Once per game, Fungus may make an additional Move action after completing his Ball and Chain move."
+        },
+        "plays_for": [
+            "black_orc",
+            "chaos_dwarf",
+            "goblin",
+            "ogre",
+            "orc",
+            "snotling",
+            "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "glart_smashrip",
+        "name": "Glart Smashrip",
+        "cost": 195000,
+        "stats": {
+            "MA": 5,
+            "ST": 4,
+            "AG": "4+",
+            "PA": "6+",
+            "AV": "9+"
+        },
+        "type": [
+            "Blitzer",
+            "Skaven"
+        ],
+        "skills": [
+            "Block",
+            "Claws",
+            "Grab",
+            "Juggernaut",
+            "Loner (4+)",
+            "Stand Firm"
+        ],
+        "special_ability": {
+            "name": "Frenzied Rush",
+            "description": "Once per game, Glart may apply the Frenzy skill when performing a Blitz action."
+        },
+        "plays_for": [
+            "chaos_renegades",
+            "skaven",
+            "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "gloriel_summerbloom",
+        "name": "Gloriel Summerbloom",
+        "cost": 150000,
+        "stats": {
+            "MA": 7,
+            "ST": 2,
+            "AG": "2+",
+            "PA": "2+",
+            "AV": "8+"
+        },
+        "type": [
+            "Catcher",
+            "Elf"
+        ],
+        "skills": [
+            "Accurate",
+            "Catch",
+            "Dodge",
+            "Loner (4+)",
+            "Nerves of Steel",
+            "Pass",
+            "Sure Feet"
+        ],
+        "special_ability": {
+            "name": "Shot to Nothing",
+            "description": "Once per game, after Gloriel has made a Pass action, she may move up to 3 squares."
+        },
+        "plays_for": [
+            "elven_union",
+            "high_elf",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "glotl_stop",
+        "name": "Glotl Stop",
+        "cost": 350000,
+        "stats": {
+            "MA": 6,
+            "ST": 5,
+            "AG": "4+",
+            "PA": "4+",
+            "AV": "10+"
+        },
+        "type": [
+            "Big Guy",
+            "Kroxigor"
+        ],
+        "skills": [
+            "Bone Head",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Prehensile Tail",
+            "Thick Skull",
+            "Throw Team-mate"
+        ],
+        "special_ability": {
+            "name": "Two for One",
+            "description": "Glotl Stop carries two Skink players. Once per game, he may throw two Skinks instead of one (scatter separately)."
+        },
+        "plays_for": [
+            "amazon",
+            "lizardmen"
+        ]
+    },
+    {
+        "_id": "grak_and_crumbleberry",
+        "name": "Grak and Crumbleberry",
+        "cost": 250000,
+        "stats": {
+            "MA": 5,
+            "ST": 5,
+            "AG": "4+",
+            "PA": "4+",
+            "AV": "10+"
+        },
+        "type": [
+            "Big Guy",
+            "Ogre"
+        ],
+        "skills": [
+            "Bone Head",
+            "Kick Team-mate",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Thick Skull",
+            "Throw Team-mate"
+        ],
+        "special_ability": {
+            "name": "Dynamic Duo",
+            "description": "Grak can throw Crumbleberry using Throw Team-mate; Crumbleberry has the Right Stuff skill."
+        },
+        "plays_for": [
+            "gnome",
+            "halfling",
+            "human",
+            "imperial_nobility",
+            "ogre",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "grashnak_blackhoof",
+        "name": "Grashnak Blackhoof",
+        "cost": 240000,
+        "stats": {
+            "MA": 6,
+            "ST": 6,
+            "AG": "4+",
+            "PA": "6+",
+            "AV": "9+"
+        },
+        "type": [
+            "Big Guy",
+            "Minotaur"
+        ],
+        "skills": [
+            "Frenzy",
+            "Horns",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Thick Skull",
+            "Unchannelled Fury"
+        ],
+        "special_ability": {
+            "name": "Gored by the Bull",
+            "description": "Once per game, when Grashnak makes a Blitz action, he may add +1 to his ST for that action."
+        },
+        "plays_for": [
+            "chaos_chosen",
+            "chaos_dwarf",
+            "chaos_renegades"
+        ]
+    },
+    {
+        "_id": "gretchen_wachter",
+        "name": "Gretchen Wächter",
+        "cost": 170000,
+        "stats": {
+            "MA": 7,
+            "ST": 3,
+            "AG": "2+",
+            "PA": "5+",
+            "AV": "9+"
+        },
+        "type": [
+            "Blitzer",
+            "Vampire",
+            "Undead"
+        ],
+        "skills": [
+            "Block",
+            "Dodge",
+            "Frenzy",
+            "Jump Up",
+            "Loner (4+)",
+            "Regeneration",
+            "Wrestle"
+        ],
+        "special_ability": {
+            "name": "Incorporeal",
+            "description": "Once per game, Gretchen may move through any Standing players as if they were not there."
+        },
+        "plays_for": [
+            "necromantic_horror",
+            "shambling_undead",
+            "tomb_kings",
+            "vampire"
+        ]
+    },
+    {
+        "_id": "griff_oberwald",
+        "name": "Griff Oberwald",
+        "cost": 320000,
+        "stats": {
+            "MA": 7,
+            "ST": 4,
+            "AG": "2+",
+            "PA": "3+",
+            "AV": "9+"
+        },
+        "type": [
+            "Blitzer",
+            "Human"
+        ],
+        "skills": [
+            "Block",
+            "Dodge",
+            "Fend",
+            "Loner (4+)",
+            "Sprint",
+            "Sure Feet"
+        ],
+        "special_ability": {
+            "name": "Consummate Professional",
+            "description": "Once per game, Griff may re-roll a single dice from a dice pool."
+        },
+        "plays_for": [
+            "bretonnian",
+            "human",
+            "imperial_nobility",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "grim_ironjaw",
+        "name": "Grim Ironjaw",
+        "cost": 200000,
+        "stats": {
+            "MA": 5,
+            "ST": 4,
+            "AG": "3+",
+            "PA": "4+",
+            "AV": "9+"
+        },
+        "type": [
+            "Blitzer",
+            "Dwarf"
+        ],
+        "skills": [
+            "Block",
+            "Dauntless",
+            "Frenzy",
+            "Loner (4+)",
+            "Multiple Block",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Slayer",
+            "description": "Once per game, Grim may add +2 to his ST when blocking a Big Guy."
+        },
+        "plays_for": [
+            "dwarf",
+            "norse",
+            "ogre",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "grombrindal",
+        "name": "Grombrindal",
+        "cost": 220000,
+        "stats": {
+            "MA": 5,
+            "ST": 3,
+            "AG": "3+",
+            "PA": "4+",
+            "AV": "10+"
+        },
+        "type": [
+            "Blocker",
+            "Dwarf"
+        ],
+        "skills": [
+            "Block",
+            "Break Tackle",
+            "Dauntless",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Stand Firm",
+            "Sure Feet",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Wisdom of the White Dwarf",
+            "description": "Once per game, when Grombrindal is activated he may select one team-mate within 2 squares. The selected team-mate gains one of the following Skills until the end of turn: Break Tackle, Dauntless, Mighty Blow, Sure Feet."
+        },
+        "plays_for": [
+            "bretonnian",
+            "dwarf",
+            "gnome",
+            "halfling",
+            "human",
+            "imperial_nobility",
+            "norse",
+            "ogre",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "guffle_pusmaw",
+        "name": "Guffle Pusmaw",
+        "cost": 210000,
+        "stats": {
+            "MA": 4,
+            "ST": 4,
+            "AG": "4+",
+            "PA": "6+",
+            "AV": "10+"
+        },
+        "type": [
+            "Pestigor",
+            "Blocker"
+        ],
+        "skills": [
+            "Disturbing Presence",
+            "Foul Appearance",
+            "Loner (4+)",
+            "Monstrous Mouth",
+            "Nurgle's Rot",
+            "Plague Ridden",
+            "Regeneration"
+        ],
+        "special_ability": {
+            "name": "Putrid Regurgitation",
+            "description": "Once per drive, Guffle may regurgitate the ball to a square adjacent to him."
+        },
+        "plays_for": [
+            "chaos_chosen",
+            "chaos_renegades",
+            "nurgle"
+        ]
+    },
+    {
+        "_id": "hakflem_skuttlespike",
+        "name": "Hakflem Skuttlespike",
+        "cost": 210000,
+        "stats": {
+            "MA": 9,
+            "ST": 3,
+            "AG": "2+",
+            "PA": "4+",
+            "AV": "8+"
+        },
+        "type": [
+            "Runner",
+            "Skaven"
+        ],
+        "skills": [
+            "Dodge",
+            "Extra Arms",
+            "Loner (4+)",
+            "Prehensile Tail",
+            "Two Heads"
+        ],
+        "special_ability": {
+            "name": "Treacherous",
+            "description": "Once per game, when Hakflem is tackled, he may transfer the tackle to an adjacent friendly player instead."
+        },
+        "plays_for": [
+            "chaos_renegades",
+            "skaven",
+            "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "helmut_wulf",
+        "name": "Helmut Wulf",
+        "cost": 140000,
+        "stats": {
+            "MA": 6,
+            "ST": 3,
+            "AG": "3+",
+            "PA": "-",
+            "AV": "9+"
+        },
+        "type": [
+            "Human",
+            "Special"
+        ],
+        "skills": [
+            "Chainsaw",
+            "Loner (4+)",
+            "Pro",
+            "Secret Weapon",
+            "Stand Firm"
+        ],
+        "special_ability": {
+            "name": "Old Pro",
+            "description": "Once per game, Helmut may re-roll his Chainsaw kickback roll."
+        },
+        "plays_for": [
+            "amazon",
+            "bretonnian",
+            "chaos_dwarf",
+            "chaos_renegades",
+            "dark_elf",
+            "dwarf",
+            "elven_union",
+            "high_elf",
+            "human",
+            "imperial_nobility",
+            "khorne",
+            "necromantic_horror",
+            "norse",
+            "old_world_alliance",
+            "shambling_undead",
+            "tomb_kings",
+            "vampire",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "hthark_the_unstoppable",
+        "name": "H'thark the Unstoppable",
+        "cost": 190000,
+        "stats": {
+            "MA": 6,
+            "ST": 5,
+            "AG": "4+",
+            "PA": "5+",
+            "AV": "10+"
+        },
+        "type": [
+            "Blocker",
+            "Bull Centaur"
+        ],
+        "skills": [
+            "Block",
+            "Juggernaut",
+            "Loner (4+)",
+            "Sprint",
+            "Sure Feet",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Unstoppable",
+            "description": "Once per game, H'thark may add +1 MA when making a Blitz action."
+        },
+        "plays_for": [
+            "chaos_dwarf"
+        ]
+    },
+    {
+        "_id": "ivan_deathshroud",
+        "name": "Ivan 'the Animal' Deathshroud",
+        "cost": 180000,
+        "stats": {
+            "MA": 6,
+            "ST": 4,
+            "AG": "3+",
+            "PA": "5+",
+            "AV": "9+"
+        },
+        "type": [
+            "Blocker",
+            "Human",
+            "Undead"
+        ],
+        "skills": [
+            "Block",
+            "Disturbing Presence",
+            "Loner (4+)",
+            "Regeneration",
+            "Stand Firm"
+        ],
+        "special_ability": {
+            "name": "Rise from the Grave",
+            "description": "Once per game, if Ivan is Knocked Out, he may return to the reserves box instead of going to the KO'd box."
+        },
+        "plays_for": [
+            "chaos_chosen",
+            "chaos_renegades",
+            "khorne",
+            "necromantic_horror",
+            "norse",
+            "nurgle",
+            "shambling_undead",
+            "tomb_kings",
+            "vampire"
+        ]
+    },
+    {
+        "_id": "ivar_eriksson",
+        "name": "Ivar Eriksson",
+        "cost": 245000,
+        "stats": {
+            "MA": 6,
+            "ST": 4,
+            "AG": "4+",
+            "PA": "6+",
+            "AV": "9+"
+        },
+        "type": [
+            "Blitzer",
+            "Norse",
+            "Ulfwerener"
+        ],
+        "skills": [
+            "Block",
+            "Frenzy",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Tackle"
+        ],
+        "special_ability": {
+            "name": "Berserker Rage",
+            "description": "Once per game, Ivar may gain +2 ST for a Block or Blitz action."
+        },
+        "plays_for": [
+            "chaos_chosen",
+            "chaos_renegades",
+            "khorne",
+            "norse"
+        ]
+    },
+    {
+        "_id": "jeremiah_kool",
+        "name": "Jeremiah Kool",
+        "cost": 90000,
+        "stats": {
+            "MA": 8,
+            "ST": 2,
+            "AG": "3+",
+            "PA": "3+",
+            "AV": "8+"
+        },
+        "type": [
+            "Catcher",
+            "Human"
+        ],
+        "skills": [
+            "Catch",
+            "Diving Catch",
+            "Loner (4+)",
+            "Safe Pair of Hands",
+            "Sure Feet"
+        ],
+        "special_ability": {
+            "name": "Look Out Kid!",
+            "description": "Once per game, when the Ball scatters, Jeremiah can move 3 squares towards it."
+        },
+        "plays_for": [
+            "bretonnian",
+            "human",
+            "imperial_nobility",
+            "ogre",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "jordell_freshbreeze",
+        "name": "Jordell Freshbreeze",
+        "cost": 230000,
+        "stats": {
+            "MA": 8,
+            "ST": 3,
+            "AG": "1+",
+            "PA": "3+",
+            "AV": "8+"
+        },
+        "type": [
+            "Blitzer",
+            "Elf"
+        ],
+        "skills": [
+            "Block",
+            "Dodge",
+            "Diving Catch",
+            "Leap",
+            "Loner (4+)",
+            "Sidestep"
+        ],
+        "special_ability": {
+            "name": "Effortless Leap",
+            "description": "Once per game, Jordell may automatically pass his Leap roll without rolling."
+        },
+        "plays_for": [
+            "dark_elf",
+            "elven_union",
+            "high_elf",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "josef_bugman",
+        "name": "Josef Bugman",
+        "cost": 100000,
+        "stats": {
+            "MA": 5,
+            "ST": 3,
+            "AG": "3+",
+            "PA": "5+",
+            "AV": "9+"
+        },
+        "type": [
+            "Dwarf",
+            "Special"
+        ],
+        "skills": [
+            "Block",
+            "Dodge",
+            "Loner (4+)",
+            "Tackle",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Liquid Fortification",
+            "description": "Once per half, at the end of any turn, Josef may remove a Stun result from himself or an adjacent team-mate."
+        },
+        "plays_for": [
+            "bretonnian",
+            "dwarf",
+            "halfling",
+            "human",
+            "imperial_nobility",
+            "norse",
+            "ogre",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "karla_von_kill",
+        "name": "Karla von Kill",
+        "cost": 200000,
+        "stats": {
+            "MA": 6,
+            "ST": 4,
+            "AG": "3+",
+            "PA": "4+",
+            "AV": "9+"
+        },
+        "type": [
+            "Amazon",
+            "Blitzer"
+        ],
+        "skills": [
+            "Block",
+            "Dauntless",
+            "Dodge",
+            "Jump Up",
+            "Loner (4+)"
+        ],
+        "special_ability": {
+            "name": "Indomitable",
+            "description": "Once per game, Karla may stand up for free after being Knocked Down."
+        },
+        "plays_for": [
+            "amazon",
+            "bretonnian",
+            "human",
+            "imperial_nobility",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "kiroth_krakeneye",
+        "name": "Kiroth Krakeneye",
+        "cost": 160000,
+        "stats": {
+            "MA": 6,
+            "ST": 3,
+            "AG": "2+",
+            "PA": "4+",
+            "AV": "8+"
+        },
+        "type": [
+            "Blitzer",
+            "Dark Elf"
+        ],
+        "skills": [
+            "Frenzy",
+            "Jump Up",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Tackle"
+        ],
+        "special_ability": {
+            "name": "Cruel Eye",
+            "description": "Once per game, Kiroth may force an opponent to re-roll a successful Dodge roll."
+        },
+        "plays_for": [
+            "chaos_renegades",
+            "dark_elf"
+        ]
+    },
+    {
+        "_id": "kreek_rustgouger",
+        "name": "Kreek Rustgouger",
+        "cost": 170000,
+        "stats": {
+            "MA": 5,
+            "ST": 7,
+            "AG": "5+",
+            "PA": "-",
+            "AV": "10+"
+        },
+        "type": [
+            "Big Guy",
+            "Rat Ogre"
+        ],
+        "skills": [
+            "Animal Savagery",
+            "Ball and Chain",
+            "Frenzy",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Prehensile Tail",
+            "Secret Weapon"
+        ],
+        "special_ability": {
+            "name": "Wrecking Ball",
+            "description": "Once per game, Kreek may deal an Armour Roll with +1 to all adjacent players."
+        },
+        "plays_for": [
+            "chaos_renegades",
+            "skaven",
+            "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "lord_borak",
+        "name": "Lord Borak the Despoiler",
+        "cost": 270000,
+        "stats": {
+            "MA": 5,
+            "ST": 5,
+            "AG": "4+",
+            "PA": "5+",
+            "AV": "10+"
+        },
+        "type": [
+            "Blocker",
+            "Chaos"
+        ],
+        "skills": [
+            "Block",
+            "Dirty Player",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Sneaky Git"
+        ],
+        "special_ability": {
+            "name": "Lord of Chaos",
+            "description": "Once per game, Lord Borak may command an adjacent team-mate to take a free Block action."
+        },
+        "plays_for": [
+            "chaos_chosen",
+            "chaos_dwarf",
+            "chaos_renegades"
+        ]
+    },
+    {
+        "_id": "maple_highgrove",
+        "name": "Maple Highgrove",
+        "cost": 120000,
+        "stats": {
+            "MA": 5,
+            "ST": 2,
+            "AG": "3+",
+            "PA": "3+",
+            "AV": "7+"
+        },
+        "type": [
+            "Halfling",
+            "Thrower"
+        ],
+        "skills": [
+            "Accurate",
+            "Dodge",
+            "Loner (4+)",
+            "Right Stuff",
+            "Stunty",
+            "Sure Hands"
+        ],
+        "special_ability": {
+            "name": "Delicious Distraction",
+            "description": "Once per game, Maple may force a Turn Over to be ignored."
+        },
+        "plays_for": [
+            "gnome",
+            "halfling",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "max_spleenripper",
+        "name": "Max Spleenripper",
+        "cost": 130000,
+        "stats": {
+            "MA": 5,
+            "ST": 4,
+            "AG": "4+",
+            "PA": "6+",
+            "AV": "9+"
+        },
+        "type": [
+            "Blocker",
+            "Chaos"
+        ],
+        "skills": [
+            "Chainsaw",
+            "Loner (4+)",
+            "Secret Weapon",
+            "Stand Firm"
+        ],
+        "special_ability": {
+            "name": "Maximum Carnage",
+            "description": "Once per game, Max can use his Chainsaw without risk of kickback."
+        },
+        "plays_for": [
+            "chaos_chosen",
+            "chaos_renegades",
+            "khorne",
+            "nurgle"
+        ]
+    },
+    {
+        "_id": "morg_n_thorg",
+        "name": "Morg 'n' Thorg",
+        "cost": 380000,
+        "stats": {
+            "MA": 6,
+            "ST": 6,
+            "AG": "3+",
+            "PA": "4+",
+            "AV": "11+"
+        },
+        "type": [
+            "Big Guy",
+            "Ogre"
+        ],
+        "skills": [
+            "Block",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Thick Skull",
+            "Throw Team-mate"
+        ],
+        "special_ability": {
+            "name": "The Mightiest!",
+            "description": "Morg can play for almost any team and does not suffer from Bone Head."
+        },
+        "plays_for": [
+            "amazon",
+            "black_orc",
+            "bretonnian",
+            "chaos_dwarf",
+            "chaos_renegades",
+            "dark_elf",
+            "dwarf",
+            "elven_union",
+            "gnome",
+            "goblin",
+            "halfling",
+            "high_elf",
+            "human",
+            "imperial_nobility",
+            "khorne",
+            "lizardmen",
+            "necromantic_horror",
+            "norse",
+            "ogre",
+            "old_world_alliance",
+            "orc",
+            "shambling_undead",
+            "skaven",
+            "snotling",
+            "tomb_kings",
+            "underworld_denizens",
+            "vampire",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "nobbla_blackwart",
+        "name": "Nobbla Blackwart",
+        "cost": 120000,
+        "stats": {
+            "MA": 6,
+            "ST": 2,
+            "AG": "3+",
+            "PA": "-",
+            "AV": "8+"
+        },
+        "type": [
+            "Goblin",
+            "Special"
+        ],
+        "skills": [
+            "Block",
+            "Chainsaw",
+            "Dodge",
+            "Loner (4+)",
+            "Secret Weapon",
+            "Stunty"
+        ],
+        "special_ability": {
+            "name": "Kick 'Em While They're Down",
+            "description": "Once per game, Nobbla may use his Chainsaw for a Foul action without rolling for Secret Weapon."
+        },
+        "plays_for": [
+            "black_orc",
+            "chaos_dwarf",
+            "goblin",
+            "ogre",
+            "orc",
+            "snotling",
+            "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "puggy_baconbreath",
+        "name": "Puggy Baconbreath",
+        "cost": 120000,
+        "stats": {
+            "MA": 5,
+            "ST": 3,
+            "AG": "3+",
+            "PA": "4+",
+            "AV": "7+"
+        },
+        "type": [
+            "Halfling",
+            "Runner"
+        ],
+        "skills": [
+            "Block",
+            "Dodge",
+            "Loner (4+)",
+            "Nerves of Steel",
+            "Right Stuff",
+            "Stunty"
+        ],
+        "special_ability": {
+            "name": "Halfling Luck",
+            "description": "Once per game, Puggy can re-roll any single dice."
+        },
+        "plays_for": [
+            "gnome",
+            "halfling",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "rashnak_backstabber",
+        "name": "Rashnak Backstabber",
+        "cost": 120000,
+        "stats": {
+            "MA": 7,
+            "ST": 3,
+            "AG": "3+",
+            "PA": "5+",
+            "AV": "8+"
+        },
+        "type": [
+            "Goblin",
+            "Special"
+        ],
+        "skills": [
+            "Loner (4+)",
+            "Shadowing",
+            "Sidestep",
+            "Sneaky Git",
+            "Stab"
+        ],
+        "special_ability": {
+            "name": "Toxin Connoisseur",
+            "description": "Once per game, when Rashnak successfully uses Stab, the target must roll for Injury even if the Armour roll fails."
+        },
+        "plays_for": [
+            "black_orc",
+            "chaos_dwarf",
+            "goblin",
+            "ogre",
+            "orc"
+        ]
+    },
+    {
+        "_id": "ripper_bolgrot",
+        "name": "Ripper Bolgrot",
+        "cost": 270000,
+        "stats": {
+            "MA": 5,
+            "ST": 6,
+            "AG": "5+",
+            "PA": "4+",
+            "AV": "10+"
+        },
+        "type": [
+            "Big Guy",
+            "Troll"
+        ],
+        "skills": [
+            "Grab",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Regeneration",
+            "Throw Team-mate"
+        ],
+        "special_ability": {
+            "name": "Thinking Man's Troll",
+            "description": "Ripper does not have Really Stupid or Always Hungry."
+        },
+        "plays_for": [
+            "black_orc",
+            "chaos_dwarf",
+            "goblin",
+            "ogre",
+            "orc",
+            "skaven",
+            "snotling",
+            "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "rodney_roachbait",
+        "name": "Rodney Roachbait",
+        "cost": 110000,
+        "stats": {
+            "MA": 6,
+            "ST": 2,
+            "AG": "3+",
+            "PA": "4+",
+            "AV": "7+"
+        },
+        "type": [
+            "Gnome",
+            "Special"
+        ],
+        "skills": [
+            "Catch",
+            "Diving Catch",
+            "Jump Up",
+            "Loner (4+)",
+            "On the Ball",
+            "Sidestep",
+            "Stunty",
+            "Wrestle"
+        ],
+        "special_ability": {
+            "name": "Catch of the Day",
+            "description": "Once per game, Rodney may re-roll a failed Catch roll."
+        },
+        "plays_for": [
+            "gnome",
+            "halfling",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "rowana_forestfoot",
+        "name": "Rowana Forestfoot",
+        "cost": 180000,
+        "stats": {
+            "MA": 6,
+            "ST": 3,
+            "AG": "3+",
+            "PA": "4+",
+            "AV": "8+"
+        },
+        "type": [
+            "Blocker",
+            "Gnome"
+        ],
+        "skills": [
+            "Dodge",
+            "Dump-off",
+            "Guard",
+            "Horns",
+            "Jump Up",
+            "Leap",
+            "Loner (4+)"
+        ],
+        "special_ability": {
+            "name": "Bounding Leap",
+            "description": "Once per game, Rowana may make a Leap without needing to roll for AG."
+        },
+        "plays_for": [
+            "gnome",
+            "halfling",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "roxanna_darknail",
+        "name": "Roxanna Darknail",
+        "cost": 270000,
+        "stats": {
+            "MA": 8,
+            "ST": 3,
+            "AG": "1+",
+            "PA": "3+",
+            "AV": "8+"
+        },
+        "type": [
+            "Elf",
+            "Special"
+        ],
+        "skills": [
+            "Dodge",
+            "Frenzy",
+            "Jump Up",
+            "Juggernaut",
+            "Leap",
+            "Loner (4+)"
+        ],
+        "special_ability": {
+            "name": "Slashing Nails",
+            "description": "Once per game, when Roxanna makes a Blitz action, she may apply the Claws skill."
+        },
+        "plays_for": [
+            "dark_elf",
+            "elven_union",
+            "high_elf",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "rumbelow_sheepskin",
+        "name": "Rumbelow Sheepskin",
+        "cost": 170000,
+        "stats": {
+            "MA": 6,
+            "ST": 3,
+            "AG": "3+",
+            "PA": "5+",
+            "AV": "8+"
+        },
+        "type": [
+            "Blitzer",
+            "Halfling"
+        ],
+        "skills": [
+            "Block",
+            "Horns",
+            "Juggernaut",
+            "Loner (4+)",
+            "Tackle",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Ram",
+            "description": "Once per game, when Rumbelow makes a Blitz action, he gains +2 ST."
+        },
+        "plays_for": [
+            "gnome",
+            "halfling"
+        ]
+    },
+    {
+        "_id": "scrappa_sorehead",
+        "name": "Scrappa Sorehead",
+        "cost": 130000,
+        "stats": {
+            "MA": 7,
+            "ST": 2,
+            "AG": "3+",
+            "PA": "4+",
+            "AV": "8+"
+        },
+        "type": [
+            "Goblin",
+            "Special"
+        ],
+        "skills": [
+            "Dirty Player",
+            "Dodge",
+            "Loner (4+)",
+            "Pogo",
+            "Right Stuff",
+            "Sprint",
+            "Stunty",
+            "Sure Feet"
+        ],
+        "special_ability": {
+            "name": "Yoink!",
+            "description": "Once per game, when an opponent carrying the ball is knocked down adjacent to Scrappa, he may catch the ball."
+        },
+        "plays_for": [
+            "black_orc",
+            "chaos_dwarf",
+            "goblin",
+            "ogre",
+            "orc",
+            "skaven",
+            "snotling",
+            "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "scyla_anfingrimm",
+        "name": "Scyla Anfingrimm",
+        "cost": 200000,
+        "stats": {
+            "MA": 5,
+            "ST": 5,
+            "AG": "4+",
+            "PA": "6+",
+            "AV": "10+"
+        },
+        "type": [
+            "Big Guy",
+            "Spawn"
+        ],
+        "skills": [
+            "Claws",
+            "Frenzy",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Prehensile Tail",
+            "Thick Skull",
+            "Unchannelled Fury"
+        ],
+        "special_ability": {
+            "name": "Fury of the Blood God",
+            "description": "Once per game, Scyla may re-roll a failed Unchannelled Fury roll."
+        },
+        "plays_for": [
+            "chaos_chosen",
+            "chaos_renegades",
+            "khorne",
+            "norse"
+        ]
+    },
+    {
+        "_id": "skitter_stab_stab",
+        "name": "Skitter Stab-stab",
+        "cost": 170000,
+        "stats": {
+            "MA": 9,
+            "ST": 2,
+            "AG": "2+",
+            "PA": "4+",
+            "AV": "8+"
+        },
+        "type": [
+            "Runner",
+            "Skaven"
+        ],
+        "skills": [
+            "Dodge",
+            "Loner (4+)",
+            "Prehensile Tail",
+            "Shadowing",
+            "Stab"
+        ],
+        "special_ability": {
+            "name": "Master Assassin",
+            "description": "Once per game, when Skitter Stab-stab uses his Stab skill, he may add +1 to the Armour roll."
+        },
+        "plays_for": [
+            "goblin",
+            "skaven",
+            "snotling",
+            "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "skrorg_snowpelt",
+        "name": "Skrorg Snowpelt",
+        "cost": 250000,
+        "stats": {
+            "MA": 5,
+            "ST": 5,
+            "AG": "4+",
+            "PA": "6+",
+            "AV": "9+"
+        },
+        "type": [
+            "Big Guy",
+            "Yhetee"
+        ],
+        "skills": [
+            "Block",
+            "Claws",
+            "Disturbing Presence",
+            "Juggernaut",
+            "Loner (4+)",
+            "Mighty Blow"
+        ],
+        "special_ability": {
+            "name": "Pump Up the Crowd",
+            "description": "Once per game, at the start of a drive, Skrorg may increase his team's Fan Factor by D3."
+        },
+        "plays_for": [
+            "bretonnian",
+            "dwarf",
+            "halfling",
+            "human",
+            "imperial_nobility",
+            "norse",
+            "ogre",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "skrull_halfheight",
+        "name": "Skrull Halfheight",
+        "cost": 150000,
+        "stats": {
+            "MA": 6,
+            "ST": 3,
+            "AG": "4+",
+            "PA": "3+",
+            "AV": "9+"
+        },
+        "type": [
+            "Dwarf",
+            "Skeleton",
+            "Thrower",
+            "Undead"
+        ],
+        "skills": [
+            "Accurate",
+            "Loner (4+)",
+            "Nerves of Steel",
+            "Pass",
+            "Regeneration",
+            "Sure Hands",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Strong Passing Game",
+            "description": "Once per game, Skrull may re-roll a failed Pass action."
+        },
+        "plays_for": [
+            "dwarf",
+            "necromantic_horror",
+            "ogre",
+            "shambling_undead",
+            "tomb_kings",
+            "vampire"
+        ]
+    },
+    {
+        "_id": "swiftvine_glimmershard",
+        "name": "Swiftvine Glimmershard",
+        "cost": 150000,
+        "stats": {
+            "MA": 7,
+            "ST": 2,
+            "AG": "3+",
+            "PA": "5+",
+            "AV": "7+"
+        },
+        "type": [
+            "Special",
+            "Spite"
+        ],
+        "skills": [
+            "Disturbing Presence",
+            "Fend",
+            "Loner (4+)",
+            "Sidestep",
+            "Stab",
+            "Stunty"
+        ],
+        "special_ability": {
+            "name": "Furious Outburst",
+            "description": "Once per game, Swiftvine may perform a free Block against an adjacent opponent without spending his activation."
+        },
+        "plays_for": [
+            "gnome",
+            "halfling",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "the_black_gobbo",
+        "name": "The Black Gobbo",
+        "cost": 225000,
+        "stats": {
+            "MA": 6,
+            "ST": 2,
+            "AG": "3+",
+            "PA": "3+",
+            "AV": "8+"
+        },
+        "type": [
+            "Goblin",
+            "Special"
+        ],
+        "skills": [
+            "Bombardier",
+            "Disturbing Presence",
+            "Dodge",
+            "Loner (3+)",
+            "Sidestep",
+            "Sneaky Git",
+            "Stab"
+        ],
+        "special_ability": {
+            "name": "Sneakiest of the Lot",
+            "description": "Once per game, the Black Gobbo may disappear and reappear in any empty square on the pitch."
+        },
+        "plays_for": [
+            "black_orc",
+            "chaos_dwarf",
+            "goblin",
+            "ogre",
+            "orc",
+            "skaven",
+            "snotling",
+            "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "the_mighty_zug",
+        "name": "The Mighty Zug",
+        "cost": 260000,
+        "stats": {
+            "MA": 4,
+            "ST": 5,
+            "AG": "4+",
+            "PA": "6+",
+            "AV": "10+"
+        },
+        "type": [
+            "Blocker",
+            "Human"
+        ],
+        "skills": [
+            "Block",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Stand Firm"
+        ],
+        "special_ability": {
+            "name": "Crushing Blow",
+            "description": "Once per game, The Mighty Zug may add +1 to an Injury roll he causes."
+        },
+        "plays_for": [
+            "bretonnian",
+            "chaos_renegades",
+            "human",
+            "imperial_nobility",
+            "khorne",
+            "norse",
+            "ogre",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "the_swift_twins",
+        "name": "The Swift Twins",
+        "cost": 300000,
+        "is_pair": true,
+        "players": [
+            {
+                "name": "Lucien Swift",
+                "stats": {
+                    "MA": 7,
+                    "ST": 3,
+                    "AG": "2+",
+                    "PA": "3+",
+                    "AV": "9+"
+                },
+                "type": [
+                    "Blitzer",
+                    "Elf"
+                ],
+                "skills": [
+                    "Block",
+                    "Loner (4+)",
+                    "Mighty Blow",
+                    "Tackle"
+                ]
+            },
+            {
+                "name": "Valen Swift",
+                "stats": {
+                    "MA": 7,
+                    "ST": 3,
+                    "AG": "2+",
+                    "PA": "2+",
+                    "AV": "9+"
+                },
+                "type": [
+                    "Elf",
+                    "Thrower"
+                ],
+                "skills": [
+                    "Accurate",
+                    "Loner (4+)",
+                    "Nerves of Steel",
+                    "Pass",
+                    "Safe Pass",
+                    "Sure Hands"
+                ]
+            }
+        ],
+        "special_ability": {
+            "name": "Working In Tandem",
+            "description": "The twins share one activation but can perform actions together. When one passes and the other catches, both rolls gain +1."
+        },
+        "plays_for": [
+            "dark_elf",
+            "elven_union",
+            "high_elf",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "thorsson_stoutmead",
+        "name": "Thorsson Stoutmead",
+        "cost": 170000,
+        "stats": {
+            "MA": 6,
+            "ST": 3,
+            "AG": "4+",
+            "PA": "3+",
+            "AV": "8+"
+        },
+        "type": [
+            "Human",
+            "Lineman"
+        ],
+        "skills": [
+            "Block",
+            "Drunkard",
+            "Loner (4+)",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Beer Barrel Bash",
+            "description": "Once per game, Thorsson may knock down all adjacent Standing players (friend and foe)."
+        },
+        "plays_for": [
+            "bretonnian",
+            "dwarf",
+            "human",
+            "imperial_nobility",
+            "norse",
+            "ogre",
+            "old_world_alliance"
+        ]
+    },
+    {
+        "_id": "varag_ghoul_chewer",
+        "name": "Varag Ghoul-Chewer",
+        "cost": 280000,
+        "stats": {
+            "MA": 6,
+            "ST": 5,
+            "AG": "3+",
+            "PA": "5+",
+            "AV": "10+"
+        },
+        "type": [
+            "Blocker",
+            "Orc"
+        ],
+        "skills": [
+            "Block",
+            "Hatred (Undead)",
+            "Jump Up",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Krump and Smash",
+            "description": "Once per game, when Varag makes a Block action against an Undead player, he may add +2 ST."
+        },
+        "plays_for": [
+            "black_orc",
+            "chaos_dwarf",
+            "goblin",
+            "ogre",
+            "orc"
+        ]
+    },
+    {
+        "_id": "wilhelm_chaney",
+        "name": "Wilhelm Chaney",
+        "cost": 220000,
+        "stats": {
+            "MA": 8,
+            "ST": 4,
+            "AG": "3+",
+            "PA": "4+",
+            "AV": "9+"
+        },
+        "type": [
+            "Blitzer",
+            "Undead",
+            "Werewolf"
+        ],
+        "skills": [
+            "Catch",
+            "Claws",
+            "Frenzy",
+            "Loner (4+)",
+            "Regeneration",
+            "Wrestle"
+        ],
+        "special_ability": {
+            "name": "Savage Mauling",
+            "description": "Once per game, after Wilhelm successfully knocks down an opponent, he may immediately make a free Foul action against that player."
+        },
+        "plays_for": [
+            "necromantic_horror",
+            "shambling_undead",
+            "tomb_kings",
+            "vampire"
+        ]
+    },
+    {
+        "_id": "willow_rosebark",
+        "name": "Willow Rosebark",
+        "cost": 150000,
+        "stats": {
+            "MA": 6,
+            "ST": 4,
+            "AG": "3+",
+            "PA": "5+",
+            "AV": "9+"
+        },
+        "type": [
+            "Blitzer",
+            "Dryad"
+        ],
+        "skills": [
+            "Dauntless",
+            "Loner (4+)",
+            "Sidestep",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Woodland Fury",
+            "description": "Once per game, Willow may gain the Frenzy skill for one Block or Blitz action."
+        },
+        "plays_for": [
+            "gnome",
+            "halfling",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "withergrasp_doubledrool",
+        "name": "Withergrasp Doubledrool",
+        "cost": 170000,
+        "stats": {
+            "MA": 6,
+            "ST": 3,
+            "AG": "3+",
+            "PA": "4+",
+            "AV": "9+"
+        },
+        "type": [
+            "Beastman",
+            "Blocker"
+        ],
+        "skills": [
+            "Foul Appearance",
+            "Loner (4+)",
+            "Prehensile Tail",
+            "Tackle",
+            "Tentacles",
+            "Two Heads",
+            "Wrestle"
+        ],
+        "special_ability": {
+            "name": "Watch Out!",
+            "description": "The first time each Drive that Withergrasp is the target of a Block action performed by an opposition player, he counts as having the Dodge skill."
+        },
+        "plays_for": [
+            "chaos_chosen",
+            "chaos_renegades",
+            "nurgle"
+        ]
+    },
+    {
+        "_id": "zolcath_the_zoat",
+        "name": "Zolcath the Zoat",
+        "cost": 230000,
+        "stats": {
+            "MA": 5,
+            "ST": 5,
+            "AG": "4+",
+            "PA": "5+",
+            "AV": "10+"
+        },
+        "type": [
+            "Big Guy",
+            "Zoat"
+        ],
+        "skills": [
+            "Disturbing Presence",
+            "Juggernaut",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Prehensile Tail",
+            "Regeneration",
+            "Sure Feet"
+        ],
+        "special_ability": {
+            "name": "Excuse me, are you a Zoat?",
+            "description": "Once per game, when Zolcath is activated he may select an opposition player within 3 squares. The selected player immediately becomes Distracted."
+        },
+        "plays_for": [
+            "amazon",
+            "dark_elf",
+            "elven_union",
+            "high_elf",
+            "lizardmen",
+            "wood_elf"
+        ]
+    },
+    {
+        "_id": "zzharg_madeye",
+        "name": "Zzharg Madeye",
+        "cost": 90000,
+        "stats": {
+            "MA": 4,
+            "ST": 4,
+            "AG": "4+",
+            "PA": "3+",
+            "AV": "10+"
+        },
+        "type": [
+            "Dwarf",
+            "Special"
+        ],
+        "skills": [
+            "Cannoneer",
+            "Hail Mary Pass",
+            "Loner (4+)",
+            "Nerves of Steel",
+            "Secret Weapon",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Blastin' Solves Everything",
+            "description": "Once per half, at the start of his activation, Zzharg may select a Standing opposition player within 3 squares and roll a D6. On a 3+, the selected player is hit. On a 2, the opposing coach selects a player (from either team, but not Zzharg) within 3 squares of the originally selected player to be hit instead. On a 1, Zzharg is hit instead. Make an Armour Roll for whichever player is hit. Zzharg's activation then immediately ends."
+        },
+        "plays_for": [
+            "chaos_chosen",
+            "chaos_dwarf"
+        ]
+    }
+]

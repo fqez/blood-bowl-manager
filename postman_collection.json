@@ -1,0 +1,795 @@
+{
+    "info": {
+        "_postman_id": "c1b0309f-7240-4b99-8761-403b37a12240",
+        "name": "Blood Bowl Manager",
+        "description": "API para gestionar ligas, equipos y jugadores de Blood Bowl",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "34200429"
+    },
+    "item": [
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "Register",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "  var jsonData = pm.response.json();",
+                                    "  pm.environment.set('authToken', jsonData.access_token);",
+                                    "  pm.environment.set('refreshToken', jsonData.refresh_token);",
+                                    "  console.log('Auth tokens stored');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"testcoach\",\n  \"email\": \"testcoach@bloodbowl.com\",\n  \"password\": \"Test@1234\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        },
+                        "description": "Registro de nuevo usuario. Validación: password mínimo 8 caracteres, 1 mayúscula, 1 número, 1 símbolo especial"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "  var jsonData = pm.response.json();",
+                                    "  pm.environment.set('authToken', jsonData.access_token);",
+                                    "  pm.environment.set('refreshToken', jsonData.refresh_token);",
+                                    "  console.log('Login successful. Auth tokens stored');",
+                                    "  console.log('Token expires in: ' + jsonData.expires_in + ' seconds');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"testcoach@bloodbowl.com\",\n  \"password\": \"Test@1234\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Login con email y contraseña. Retorna access_token (15 min) y refresh_token (7 días)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Refresh Token",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "  var jsonData = pm.response.json();",
+                                    "  pm.environment.set('authToken', jsonData.access_token);",
+                                    "  pm.environment.set('refreshToken', jsonData.refresh_token);",
+                                    "  console.log('Token rotated successfully. New tokens stored');",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/refresh",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "refresh"
+                            ]
+                        },
+                        "description": "Rotación segura de refresh token. Implementa token family para detección de robo"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Current User",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "me"
+                            ]
+                        },
+                        "description": "Obtiene el perfil del usuario autenticado"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{authToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/logout",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "logout"
+                            ]
+                        },
+                        "description": "Logout: revoca todos los refresh tokens del usuario (cierra todas las sesiones)"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        "item": [
+            {
+                "name": "Get All Rosters",
+                "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                        "raw": "{{baseUrl}}/base-rosters/",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "base-rosters",
+                            ""
+                        ]
+                    },
+                    "description": "Obtiene todas las plantillas de equipos disponibles"
+                },
+                "response": []
+            },
+            {
+                "name": "Get Roster Detail",
+                "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                        "raw": "{{baseUrl}}/base-rosters/{{rosterId}}",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "base-rosters",
+                            "{{rosterId}}"
+                        ]
+                    },
+                    "description": "Obtiene el detalle de una plantilla con todos sus tipos de jugadores"
+                },
+                "response": []
+            },
+            {
+                "name": "Get All Star Players",
+                "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                        "raw": "{{baseUrl}}/star-players",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "star-players"
+                        ]
+                    },
+                    "description": "Obtiene el detalle de una plantilla con todos sus tipos de jugadores"
+                },
+                "response": []
+            },
+            {
+                "name": "Get Star Player Detail",
+                "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                        "raw": "{{baseUrl}}/star-players",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "star-players"
+                        ]
+                    },
+                    "description": "Obtiene el detalle de una plantilla con todos sus tipos de jugadores"
+                },
+                "response": []
+            }
+        ]
+    },
+    {
+        "name": "User Teams",
+        "item": [
+            {
+                "name": "Players",
+                "item": [
+                    {
+                        "name": "Hire Player",
+                        "request": {
+                            "method": "POST",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{authToken}}"
+                                },
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": "{\n  \"player_type_id\": \"skeleton-lineman\",\n  \"name\": \"Huesos I\"\n}"
+                            },
+                            "url": {
+                                "raw": "{{baseUrl}}/user-teams/{{teamId}}/players",
+                                "host": [
+                                    "{{baseUrl}}"
+                                ],
+                                "path": [
+                                    "user-teams",
+                                    "{{teamId}}",
+                                    "players"
+                                ]
+                            },
+                            "description": "Contrata un nuevo jugador para el equipo"
+                        },
+                        "response": []
+                    },
+                    {
+                        "name": "Fire Player",
+                        "request": {
+                            "method": "DELETE",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{authToken}}"
+                                }
+                            ],
+                            "url": {
+                                "raw": "{{baseUrl}}/user-teams/{{teamId}}/players/{{playerId}}",
+                                "host": [
+                                    "{{baseUrl}}"
+                                ],
+                                "path": [
+                                    "user-teams",
+                                    "{{teamId}}",
+                                    "players",
+                                    "{{playerId}}"
+                                ]
+                            },
+                            "description": "Despide a un jugador del equipo"
+                        },
+                        "response": []
+                    },
+                    {
+                        "name": "Add Perk to Player",
+                        "request": {
+                            "method": "POST",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{authToken}}"
+                                },
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": "{\n  \"perk_id\": \"block\",\n  \"perk_name\": \"Block\",\n  \"category\": \"general\"\n}"
+                            },
+                            "url": {
+                                "raw": "{{baseUrl}}/user-teams/{{teamId}}/players/{{playerId}}/perks",
+                                "host": [
+                                    "{{baseUrl}}"
+                                ],
+                                "path": [
+                                    "user-teams",
+                                    "{{teamId}}",
+                                    "players",
+                                    "{{playerId}}",
+                                    "perks"
+                                ]
+                            },
+                            "description": "Añade una habilidad a un jugador"
+                        },
+                        "response": []
+                    }
+                ]
+            },
+            {
+                "name": "Create Team",
+                "request": {
+                    "method": "POST",
+                    "header": [
+                        {
+                            "key": "Authorization",
+                            "value": "Bearer {{authToken}}"
+                        },
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "body": {
+                        "mode": "raw",
+                        "raw": "{\n  \"base_roster_id\": \"shambling-undead\",\n  \"name\": \"Los Putrefactos FC\",\n  \"treasury\": 1000000\n}"
+                    },
+                    "url": {
+                        "raw": "{{baseUrl}}/user-teams/",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "user-teams",
+                            ""
+                        ]
+                    },
+                    "description": "Crea un nuevo equipo para el usuario"
+                },
+                "response": []
+            },
+            {
+                "name": "Get My Teams",
+                "request": {
+                    "method": "GET",
+                    "header": [
+                        {
+                            "key": "Authorization",
+                            "value": "Bearer {{authToken}}"
+                        }
+                    ],
+                    "url": {
+                        "raw": "{{baseUrl}}/user-teams/",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "user-teams",
+                            ""
+                        ]
+                    },
+                    "description": "Obtiene todos los equipos del usuario actual"
+                },
+                "response": []
+            },
+            {
+                "name": "Get Team Detail",
+                "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                        "raw": "{{baseUrl}}/user-teams/{{teamId}}",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "user-teams",
+                            "{{teamId}}"
+                        ]
+                    },
+                    "description": "Obtiene el detalle completo de un equipo con todos sus jugadores"
+                },
+                "response": []
+            },
+            {
+                "name": "Update Team",
+                "request": {
+                    "method": "PATCH",
+                    "header": [
+                        {
+                            "key": "Authorization",
+                            "value": "Bearer {{authToken}}"
+                        },
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "body": {
+                        "mode": "raw",
+                        "raw": "{\n  \"name\": \"Nuevo Nombre FC\"\n}"
+                    },
+                    "url": {
+                        "raw": "{{baseUrl}}/user-teams/{{teamId}}",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "user-teams",
+                            "{{teamId}}"
+                        ]
+                    },
+                    "description": "Actualiza la configuración de un equipo"
+                },
+                "response": []
+            },
+            {
+                "name": "Delete Team",
+                "request": {
+                    "method": "DELETE",
+                    "header": [
+                        {
+                            "key": "Authorization",
+                            "value": "Bearer {{authToken}}"
+                        }
+                    ],
+                    "url": {
+                        "raw": "{{baseUrl}}/user-teams/{{teamId}}",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "user-teams",
+                            "{{teamId}}"
+                        ]
+                    },
+                    "description": "Elimina un equipo"
+                },
+                "response": []
+            }
+        ]
+    },
+    {
+        "name": "Leagues",
+        "item": [
+            {
+                "name": "Matches",
+                "item": [
+                    {
+                        "name": "Get Match Detail",
+                        "request": {
+                            "method": "GET",
+                            "header": [],
+                            "url": {
+                                "raw": "{{baseUrl}}/leagues/{{leagueId}}/matches/{{matchId}}",
+                                "host": [
+                                    "{{baseUrl}}"
+                                ],
+                                "path": [
+                                    "leagues",
+                                    "{{leagueId}}",
+                                    "matches",
+                                    "{{matchId}}"
+                                ]
+                            },
+                            "description": "Obtiene el detalle de un partido"
+                        },
+                        "response": []
+                    },
+                    {
+                        "name": "Record Match Result",
+                        "request": {
+                            "method": "POST",
+                            "header": [
+                                {
+                                    "key": "Authorization",
+                                    "value": "Bearer {{authToken}}"
+                                },
+                                {
+                                    "key": "Content-Type",
+                                    "value": "application/json"
+                                }
+                            ],
+                            "body": {
+                                "mode": "raw",
+                                "raw": "{\n  \"home_touchdowns\": 2,\n  \"away_touchdowns\": 1,\n  \"home_casualties\": 3,\n  \"away_casualties\": 1\n}"
+                            },
+                            "url": {
+                                "raw": "{{baseUrl}}/leagues/{{leagueId}}/matches/{{matchId}}/result",
+                                "host": [
+                                    "{{baseUrl}}"
+                                ],
+                                "path": [
+                                    "leagues",
+                                    "{{leagueId}}",
+                                    "matches",
+                                    "{{matchId}}",
+                                    "result"
+                                ]
+                            },
+                            "description": "Registra el resultado de un partido"
+                        },
+                        "response": []
+                    }
+                ]
+            },
+            {
+                "name": "Create League",
+                "request": {
+                    "method": "POST",
+                    "header": [
+                        {
+                            "key": "Authorization",
+                            "value": "Bearer {{authToken}}"
+                        },
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "body": {
+                        "mode": "raw",
+                        "raw": "{\n  \"name\": \"Liga de la Muerte\",\n  \"description\": \"Campeonato apocaliptico\",\n  \"format\": \"round_robin\",\n  \"max_teams\": 8\n}"
+                    },
+                    "url": {
+                        "raw": "{{baseUrl}}/leagues/",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "leagues",
+                            ""
+                        ]
+                    },
+                    "description": "Crea una nueva liga"
+                },
+                "response": []
+            },
+            {
+                "name": "Get All Leagues",
+                "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                        "raw": "{{baseUrl}}/leagues/",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "leagues",
+                            ""
+                        ],
+                        "query": [
+                            {
+                                "key": "status",
+                                "value": "draft",
+                                "disabled": true
+                            }
+                        ]
+                    },
+                    "description": "Obtiene todas las ligas, opcionalmente filtradas por estado"
+                },
+                "response": []
+            },
+            {
+                "name": "Get My Leagues",
+                "request": {
+                    "method": "GET",
+                    "header": [
+                        {
+                            "key": "Authorization",
+                            "value": "Bearer {{authToken}}"
+                        }
+                    ],
+                    "url": {
+                        "raw": "{{baseUrl}}/leagues/my",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "leagues",
+                            "my"
+                        ]
+                    },
+                    "description": "Obtiene las ligas donde el usuario tiene un equipo"
+                },
+                "response": []
+            },
+            {
+                "name": "Get League Detail",
+                "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                        "raw": "{{baseUrl}}/leagues/{{leagueId}}",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "leagues",
+                            "{{leagueId}}"
+                        ]
+                    },
+                    "description": "Obtiene el detalle completo de una liga"
+                },
+                "response": []
+            },
+            {
+                "name": "Join League",
+                "request": {
+                    "method": "POST",
+                    "header": [
+                        {
+                            "key": "Authorization",
+                            "value": "Bearer {{authToken}}"
+                        },
+                        {
+                            "key": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ],
+                    "body": {
+                        "mode": "raw",
+                        "raw": "{\n  \"team_id\": \"{{teamId}}\"\n}"
+                    },
+                    "url": {
+                        "raw": "{{baseUrl}}/leagues/{{leagueId}}/teams",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "leagues",
+                            "{{leagueId}}",
+                            "teams"
+                        ]
+                    },
+                    "description": "Une un equipo a una liga"
+                },
+                "response": []
+            },
+            {
+                "name": "Leave League",
+                "request": {
+                    "method": "DELETE",
+                    "header": [
+                        {
+                            "key": "Authorization",
+                            "value": "Bearer {{authToken}}"
+                        }
+                    ],
+                    "url": {
+                        "raw": "{{baseUrl}}/leagues/{{leagueId}}/teams/{{teamId}}",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "leagues",
+                            "{{leagueId}}",
+                            "teams",
+                            "{{teamId}}"
+                        ]
+                    },
+                    "description": "Abandona una liga (solo antes de que empiece)"
+                },
+                "response": []
+            },
+            {
+                "name": "Start League",
+                "request": {
+                    "method": "POST",
+                    "header": [
+                        {
+                            "key": "Authorization",
+                            "value": "Bearer {{authToken}}"
+                        }
+                    ],
+                    "url": {
+                        "raw": "{{baseUrl}}/leagues/{{leagueId}}/start",
+                        "host": [
+                            "{{baseUrl}}"
+                        ],
+                        "path": [
+                            "leagues",
+                            "{{leagueId}}",
+                            "start"
+                        ]
+                    },
+                    "description": "Inicia la liga y genera los fixtures (solo el propietario)"
+                },
+                "response": []
+            }
+        ]
+    }
+],
+"variable": [
+    {
+        "key": "baseUrl",
+        "value": "http://127.0.0.1:8081"
+    },
+    {
+        "key": "authToken",
+        "value": ""
+    },
+    {
+        "key": "refreshToken",
+        "value": ""
+    },
+    {
+        "key": "rosterId",
+        "value": "shambling-undead",
+        "description": "Base roster ID for teams"
+    },
+    {
+        "key": "teamId",
+        "value": "69d92d086c9bcd91daa2bede"
+    },
+    {
+        "key": "playerId",
+        "value": ""
+    },
+    {
+        "key": "leagueId",
+        "value": "69d92da30b56fa2312552925"
+    },
+    {
+        "key": "matchId",
+        "value": ""
+    }
+]
+}

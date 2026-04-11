@@ -5,56 +5,39 @@ from database.mongo_database import MongoDatabase
 from exceptions.exceptions import PlayerNotFoundException, TeamNotFoundException
 from models.team.character import Character
 from schemas.character import CreateCharacter, UpdateCharacter
-from schemas.team import Response
+from schemas.responses import (
+    APIResponse,
+    created_response,
+    error_response,
+    success_response,
+)
 from services import character_operations
 
 router = APIRouter()
 
 
-# DONE
 # GET /characters/team/{team_id}
-@router.get(
-    "/team/{team_id}",
-    response_model=Response,
-)
+@router.get("/team/{team_id}", response_model=APIResponse)
 async def get_characters(
     team_id: str, db: MongoDatabase = Depends(get_character_database)
 ):
     roster = await character_operations.retrieve_roster(team_id, db)
     if roster:
-        return {
-            "status_code": 200,
-            "response_type": "success",
-            "description": "Student data retrieved successfully",
-            "data": roster,
-        }
+        return success_response(roster, "Characters retrieved successfully")
     raise TeamNotFoundException(team_id)
 
 
-# DONE
 # GET /characters/{character_id}
-@router.get(
-    "/{id}",
-    response_model=Response,
-)
+@router.get("/{id}", response_model=APIResponse)
 async def get_character(id: str, db: MongoDatabase = Depends(get_character_database)):
     character = await character_operations.retrieve_player(id, db)
     if character:
-        return {
-            "status_code": 200,
-            "response_type": "success",
-            "description": "Student data retrieved successfully",
-            "data": character,
-        }
+        return success_response(character, "Character retrieved successfully")
     raise PlayerNotFoundException(id)
 
 
-# DONE
 # POST /characters
-@router.post(
-    "/",
-    response_model=Response,
-)
+@router.post("/", response_model=APIResponse)
 async def create_character(
     char_db: MongoDatabase = Depends(get_character_database),
     team_db: MongoDatabase = Depends(get_team_database),
@@ -64,22 +47,12 @@ async def create_character(
         Character(**character.model_dump()), char_db, team_db
     )
     if new_character:
-        return {
-            "status_code": 201,
-            "response_type": "success",
-            "description": "Student data created successfully",
-            "data": new_character,
-        }
-    return {
-        "status_code": 400,
-        "response_type": "error",
-        "description": "An error occurred. Student data not created",
-        "data": False,
-    }
+        return created_response(new_character, "Character created successfully")
+    return error_response("Failed to create character")
 
 
-# DONE
-@router.put("/{id}", response_model=Response)
+# PUT /characters/{id}
+@router.put("/{id}", response_model=APIResponse)
 async def update_character(
     id: str,
     req: UpdateCharacter = Body(...),
@@ -89,15 +62,7 @@ async def update_character(
         id, req.model_dump(), db
     )
     if updated_character:
-        return {
-            "status_code": 200,
-            "response_type": "success",
-            "description": "Student with ID: {} updated".format(id),
-            "data": updated_character,
-        }
-    return {
-        "status_code": 404,
-        "response_type": "error",
-        "description": "An error occurred. Student with ID: {} not found".format(id),
-        "data": False,
-    }
+        return success_response(
+            updated_character, f"Character {id} updated successfully"
+        )
+    raise PlayerNotFoundException(id)

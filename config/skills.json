@@ -1,0 +1,1574 @@
+{
+    "families": [
+        {
+            "_id": "agility",
+            "name": {
+                "en": "Agility",
+                "es": "Agilidad"
+            },
+            "symbol": "A"
+        },
+        {
+            "_id": "devious",
+            "name": {
+                "en": "Devious",
+                "es": "Engaño"
+            },
+            "symbol": "D"
+        },
+        {
+            "_id": "general",
+            "name": {
+                "en": "General",
+                "es": "General"
+            },
+            "symbol": "G"
+        },
+        {
+            "_id": "mutation",
+            "name": {
+                "en": "Mutation",
+                "es": "Mutación"
+            },
+            "symbol": "M"
+        },
+        {
+            "_id": "passing",
+            "name": {
+                "en": "Passing",
+                "es": "Pase"
+            },
+            "symbol": "P"
+        },
+        {
+            "_id": "strength",
+            "name": {
+                "en": "Strength",
+                "es": "Fuerza"
+            },
+            "symbol": "S"
+        },
+        {
+            "_id": "trait",
+            "name": {
+                "en": "Trait",
+                "es": "Rasgo"
+            },
+            "symbol": "T"
+        }
+    ],
+    "skills": [
+        {
+            "_id": "catch",
+            "name": {
+                "en": "Catch",
+                "es": "Atrapar"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player may re-roll any failed Agility Test when attempting to Catch the ball.",
+                "es": "Este jugador puede repetir cualquier tirada de Agilidad fallida al intentar atrapar el balón."
+            }
+        },
+        {
+            "_id": "diving_catch",
+            "name": {
+                "en": "Diving Catch",
+                "es": "Recepción en Plancha"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player may attempt to Catch the ball if it lands in a square in their Tackle Zone as a result of a Pass, Throw-in or Kick-off. They may not use this Skill to attempt to Catch the ball if it lands in a square in their Tackle Zone as a result of a Bounce. Additionally, this player may apply a +1 modifier to their Agility Test when attempting to Catch the ball as part of a Pass Action if they are in the target square.",
+                "es": "Este jugador puede intentar atrapar el balón si cae en una casilla en su zona de placaje como resultado de un pase, saque de banda o patada inicial. No puede usar esta habilidad si el balón cae por rebote. Además, puede aplicar un modificador de +1 a su tirada de Agilidad al intentar atrapar el balón como parte de una acción de pase si está en la casilla objetivo."
+            }
+        },
+        {
+            "_id": "diving_tackle",
+            "name": {
+                "en": "Diving Tackle",
+                "es": "Placaje en Plancha"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When an opposition player attempts to leave this player's Tackle Zone as a result of a Dodge, Leap or Jump, and an Agility test has been rolled and any modifiers and re-rolls have been applied, this player may use this Skill. Immediately apply a -2 modifier to the opposition player's Agility Test and place this player Prone in the square the opposition player vacated. If a player tries to leave the Tackle Zone of multiple players with this Skill at the same time, only one of those players may use this Skill.",
+                "es": "Cuando un jugador rival intenta abandonar la zona de placaje de este jugador mediante Esquiva, Salto o Brinco, y ya se ha realizado la tirada de Agilidad con todos los modificadores y repeticiones aplicados, este jugador puede usar esta habilidad. Aplica inmediatamente un modificador de -2 a la tirada de Agilidad del rival y coloca a este jugador Tumbado en la casilla que el rival abandonó. Si un jugador intenta abandonar la zona de placaje de varios jugadores con esta habilidad, solo uno puede usarla."
+            }
+        },
+        {
+            "_id": "dodge",
+            "name": {
+                "en": "Dodge",
+                "es": "Esquivar"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "Once per Turn, this player may re-roll a single Agility Test when attempting to Dodge. Additionally, this Skill will impact the Stumble result when an opposition player performs a Block Action against this player.",
+                "es": "Una vez por turno, este jugador puede repetir una única tirada de Agilidad al intentar esquivar. Además, esta habilidad afecta el resultado de Tropezar cuando un jugador rival realiza una acción de Placaje contra este jugador."
+            }
+        },
+        {
+            "_id": "defensive",
+            "name": {
+                "en": "Defensive",
+                "es": "Defensivo"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "During your opponent's Turns, opposition players Marked by this player cannot use the Guard or Put the Boot In Skills.",
+                "es": "Durante los turnos del rival, los jugadores rivales marcados por este jugador no pueden usar las habilidades Guardia o Darle con todo."
+            }
+        },
+        {
+            "_id": "hit_and_run",
+            "name": {
+                "en": "Hit and Run",
+                "es": "Golpea y Corre"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When a player with this Skill performs a Block Action or a Stab Special Action, after fully resolving the Action, they may immediately move one free square ignoring Tackle Zones, so long as they are still Standing. The player must ensure that after this free move they are not Marked by or Marking any opposition players. A player with this Skill cannot also have the Frenzy Skill.",
+                "es": "Cuando un jugador con esta habilidad realiza una acción de Placaje o una acción especial de Puñalada, tras resolver completamente la acción, puede moverse inmediatamente una casilla gratis ignorando las zonas de placaje, siempre que siga de pie. El jugador debe asegurarse de que tras este movimiento libre no esté marcando ni sea marcado por ningún jugador rival. Un jugador con esta habilidad no puede tener también la habilidad Furia."
+            }
+        },
+        {
+            "_id": "jump_up",
+            "name": {
+                "en": "Jump Up",
+                "es": "Levantarse de un Salto"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This Skill can be used whilst a player is Prone. A Prone player with this Skill can stand up for free without having to spend 3 squares of movement to do so. Additionally, a Prone player with this Skill can declare a Block Action whilst Prone. If they do, they must make an Agility Test, applying a +1 modifier to the result. If the Agility Test is passed, they may immediately stand up and perform the Block Action. If the Agility Test is failed, then the player remains Prone and their activation immediately ends.",
+                "es": "Esta habilidad puede usarse mientras un jugador está Tumbado. Un jugador Tumbado con esta habilidad puede levantarse gratis sin necesidad de gastar 3 casillas de movimiento. Además, un jugador Tumbado con esta habilidad puede declarar una acción de Placaje mientras está Tumbado. Si lo hace, debe realizar una tirada de Agilidad, aplicando un modificador de +1 al resultado. Si la tirada tiene éxito, puede levantarse inmediatamente y realizar la acción de Placaje. Si falla, permanece Tumbado y su activación termina inmediatamente."
+            }
+        },
+        {
+            "_id": "leap",
+            "name": {
+                "en": "Leap",
+                "es": "Salto"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "During their Move Action, a player with this Skill can attempt to Leap over a single adjacent square regardless of what is in the square. Leaping works the same way as Jumping, with the exception that the Leaping player may reduce the negative modifiers they would receive by Leaping by 1, to a minimum of -1. A player with this Skill cannot also have the Pogo Trait.",
+                "es": "Durante su acción de Movimiento, un jugador con esta habilidad puede intentar saltar sobre una casilla adyacente sin importar lo que haya en ella. El Salto funciona igual que Brincar, con la excepción de que el jugador que salta puede reducir los modificadores negativos que recibiría en 1, hasta un mínimo de -1. Un jugador con esta habilidad no puede tener también el rasgo Pogo."
+            }
+        },
+        {
+            "_id": "safe_pair_of_hands",
+            "name": {
+                "en": "Safe Pair of Hands",
+                "es": "Manos Seguras"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "If this player would be Knocked Down, Fall Over or be Placed Prone whilst in possession of the ball then, before they become Prone, they may place the ball in any adjacent unoccupied square to the square they will become Prone in instead of Bouncing the ball as normal.",
+                "es": "Si este jugador fuera a ser Derribado, Caerse o ser Tumbado mientras tiene el balón, antes de quedar Tumbado, puede colocar el balón en cualquier casilla adyacente desocupada a la casilla donde quedará Tumbado en lugar de que el balón rebote normalmente."
+            }
+        },
+        {
+            "_id": "sidestep",
+            "name": {
+                "en": "Sidestep",
+                "es": "Paso Lateral"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "Whenever this player is Pushed Back for any reason, then instead of the opposing Coach choosing where this player is Pushed Back to, this player's Coach may choose any adjacent unoccupied square for this player to be Pushed Back into instead. If there are no adjacent unoccupied squares, then this Skill cannot be used.",
+                "es": "Siempre que este jugador sea Empujado por cualquier motivo, en lugar de que el entrenador rival elija a dónde es empujado, el entrenador de este jugador puede elegir cualquier casilla adyacente desocupada. Si no hay casillas adyacentes desocupadas, esta habilidad no puede usarse."
+            }
+        },
+        {
+            "_id": "sprint",
+            "name": {
+                "en": "Sprint",
+                "es": "Esprintar"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Move Action they may attempt to Rush one additional time than they would normally be allowed to.",
+                "es": "Cuando este jugador realiza una acción de Movimiento, puede intentar Precipitarse una vez adicional a lo que normalmente estaría permitido."
+            }
+        },
+        {
+            "_id": "sure_feet",
+            "name": {
+                "en": "Sure Feet",
+                "es": "Pies Firmes"
+            },
+            "family": "agility",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "Once per Turn, this player may re-roll a single D6 when attempting to Rush.",
+                "es": "Una vez por turno, este jugador puede repetir un único D6 al intentar Precipitarse."
+            }
+        },
+        {
+            "_id": "dirty_player",
+            "name": {
+                "en": "Dirty Player",
+                "es": "Juego Sucio"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Foul Action, they may apply a +1 modifier to either the Armour Roll or Injury Roll. This modifier may be applied after the roll has been made.",
+                "es": "Cuando este jugador realiza una acción de Falta, puede aplicar un modificador de +1 a la tirada de Armadura o de Heridas. Este modificador puede aplicarse después de hacer la tirada."
+            }
+        },
+        {
+            "_id": "eye_gouge",
+            "name": {
+                "en": "Eye Gouge",
+                "es": "Sacar los Ojos"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When an opposition player is Pushed Back by this player, the opposition player cannot provide Offensive or Defensive Assists until after they are next activated.",
+                "es": "Cuando un jugador rival es Empujado por este jugador, el jugador rival no puede proporcionar Asistencias Ofensivas o Defensivas hasta después de que sea activado nuevamente."
+            }
+        },
+        {
+            "_id": "fumblerooski",
+            "name": {
+                "en": "Fumblerooski",
+                "es": "Fumblerooski"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Move Action whilst they are in possession of the ball, they may choose to place the ball on the ground in any square they move out of during their Move Action. This will not cause a Turnover.",
+                "es": "Cuando este jugador realiza una acción de Movimiento mientras tiene el balón, puede elegir colocar el balón en el suelo en cualquier casilla de la que salga durante su acción de Movimiento. Esto no causará un Cambio de Turno."
+            }
+        },
+        {
+            "_id": "lethal_flight",
+            "name": {
+                "en": "Lethal Flight",
+                "es": "Vuelo Letal"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player is thrown as part of a Throw Team-mate Action, if they land in a square that contains an opposition player, including if they Bounce into a square containing an opposition player, and the opposition player is Knocked Down, then they may apply a +1 modifier to either the Armour Roll or Injury Roll. This modifier may be applied after the roll has been made. If an opposition player suffers a Casualty as a result of being Knocked Down by the thrown player with this Skill, then this player will count as having caused that Casualty and will receive Star Player Points as appropriate. A player without the Right Stuff Trait cannot have this Skill.",
+                "es": "Cuando este jugador es lanzado como parte de una acción de Lanzar Compañero, si aterriza en una casilla que contiene un jugador rival, incluyendo si rebota hacia una casilla con un rival, y el rival es Derribado, puede aplicar un modificador de +1 a la tirada de Armadura o de Heridas. Este modificador puede aplicarse después de hacer la tirada. Si un rival sufre una Baja como resultado de ser Derribado, este jugador contará como habiendo causado esa Baja y recibirá Puntos de Jugador Estrella apropiadamente. Un jugador sin el rasgo Right Stuff no puede tener esta habilidad."
+            }
+        },
+        {
+            "_id": "lone_fouler",
+            "name": {
+                "en": "Lone Fouler",
+                "es": "Pateador Solitario"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Foul Action, if there are no players providing an Offensive or Defensive Assist, then this player may re-roll a failed Armour Roll.",
+                "es": "Cuando este jugador realiza una acción de Falta, si no hay jugadores proporcionando Asistencia Ofensiva o Defensiva, este jugador puede repetir una tirada de Armadura fallida."
+            }
+        },
+        {
+            "_id": "pile_driver",
+            "name": {
+                "en": "Pile Driver",
+                "es": "Martinete"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When an opposition player is Knocked Down by this player during a Block Action, this player may perform a free Foul Action against the opposition player so long as they are still Standing and are still Marking the opposition player. This player is then Placed Prone and their activation immediately ends.",
+                "es": "Cuando un jugador rival es Derribado por este jugador durante una acción de Placaje, este jugador puede realizar una acción de Falta gratuita contra el rival siempre que siga de pie y siga Marcando al rival. Este jugador queda entonces Tumbado y su activación termina inmediatamente."
+            }
+        },
+        {
+            "_id": "put_the_boot_in",
+            "name": {
+                "en": "Put the Boot In",
+                "es": "Darle con Todo"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player can provide Offensive Assists when a team-mate performs a Foul Action regardless of how many opposition players are Marking this player.",
+                "es": "Este jugador puede proporcionar Asistencias Ofensivas cuando un compañero realiza una acción de Falta independientemente de cuántos rivales estén Marcando a este jugador."
+            }
+        },
+        {
+            "_id": "quick_foul",
+            "name": {
+                "en": "Quick Foul",
+                "es": "Falta Rápida"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player's activation does not end after performing a Foul Action, and they may continue with their Move Action with any movement they have remaining.",
+                "es": "La activación de este jugador no termina después de realizar una acción de Falta, y puede continuar con su acción de Movimiento con el movimiento que le quede."
+            }
+        },
+        {
+            "_id": "saboteur",
+            "name": {
+                "en": "Saboteur",
+                "es": "Saboteador"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player is Knocked Down as a result of an opposition player's Block Action, before the Armour Roll is made, they may roll a D6. On a 1‑3, nothing happens and the Armour Roll is made as normal. On a 4+, this player's sabotaged weapon goes off and the opposition player is also Knocked Down, though this will not cause a Turnover unless the opposition player was holding the ball. If this player's sabotaged weapon goes off, then they are automatically Knocked Out and the Armour Roll is not made for them. A player without the Secret Weapon Trait cannot have this Skill.",
+                "es": "Cuando este jugador es Derribado como resultado de una acción de Placaje rival, antes de la tirada de Armadura, puede tirar un D6. Con 1-3, no pasa nada y se hace la tirada de Armadura normalmente. Con 4+, el arma saboteada de este jugador explota y el rival también es Derribado, aunque esto no causará un Cambio de Turno a menos que el rival tuviera el balón. Si el arma saboteada explota, este jugador queda automáticamente Fuera de Combate y no se hace tirada de Armadura por él. Un jugador sin el rasgo Arma Secreta no puede tener esta habilidad."
+            }
+        },
+        {
+            "_id": "shadowing",
+            "name": {
+                "en": "Shadowing",
+                "es": "Perseguir"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "Each time an opposing player attempts to Dodge out of a square within this player's Tackle Zone, this player may use this Skill. When this player uses this Skill, roll a D6. On a 1‑3, nothing happens. On a 4+, this player is immediately placed into the square that the opposition player vacated. This player may only use this Skill a number of times per Turn equal to their MA. If a player tries to leave the Tackle Zone of multiple players with this Skill at the same time, only one of those players may use this Skill.",
+                "es": "Cada vez que un jugador rival intenta Esquivar fuera de una casilla dentro de la zona de placaje de este jugador, este jugador puede usar esta habilidad. Cuando la usa, tira un D6. Con 1-3, no pasa nada. Con 4+, este jugador se coloca inmediatamente en la casilla que el rival abandonó. Este jugador solo puede usar esta habilidad un número de veces por turno igual a su MO. Si un jugador intenta abandonar la zona de placaje de varios jugadores con esta habilidad, solo uno puede usarla."
+            }
+        },
+        {
+            "_id": "sneaky_git",
+            "name": {
+                "en": "Sneaky Git",
+                "es": "Tramposo"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player is not Sent-off when performing a Foul Action if a natural double is rolled for the Armour Roll, so long as the target player's Armour is not broken. If the target player's Armour is broken, this player will still be sent off as normal.",
+                "es": "Este jugador no es Expulsado al realizar una acción de Falta si se saca un doble natural en la tirada de Armadura, siempre que la Armadura del objetivo no se rompa. Si la Armadura del objetivo se rompe, este jugador será expulsado normalmente."
+            }
+        },
+        {
+            "_id": "violent_innovator",
+            "name": {
+                "en": "Violent Innovator",
+                "es": "Innovador Violento"
+            },
+            "family": "devious",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "If an opposition player suffers a Casualty as a result of a Special Action this player performed, this player will earn Star Player Points for causing a Casualty as appropriate. A player can only have this Skill if they have a Trait that allows them to perform a Special Action.",
+                "es": "Si un jugador rival sufre una Baja como resultado de una Acción Especial que este jugador realizó, este jugador ganará Puntos de Jugador Estrella por causar una Baja según corresponda. Un jugador solo puede tener esta habilidad si tiene un Rasgo que le permita realizar una Acción Especial."
+            }
+        },
+        {
+            "_id": "block",
+            "name": {
+                "en": "Block",
+                "es": "Placaje"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "A player with this Skill may choose not to be Knocked Down when a Both Down result is applied during a Block Action that they are part of.",
+                "es": "Un jugador con esta habilidad puede elegir no ser Derribado cuando se aplica un resultado de Ambos Caen durante una acción de Placaje en la que participa."
+            }
+        },
+        {
+            "_id": "dauntless",
+            "name": {
+                "en": "Dauntless",
+                "es": "Agallas"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When a player with this Skill performs a Block Action against an opposition player with a higher Strength Characteristic (before any modifiers are applied to either player), this player may roll a D6 and add their own Strength Characteristic. If the result is higher than the opposition player's unmodified Strength Characteristic, then this player increases their unmodified Strength Characteristic to match the opposition player for the duration of the Block Action. Modifiers are then applied as normal. If this player also has a Skill that allows them to perform multiple Block Actions, such as the Frenzy Skill, then they must make a separate roll for each Block Action.",
+                "es": "Cuando un jugador con esta habilidad realiza una acción de Placaje contra un rival con una característica de Fuerza mayor (antes de aplicar modificadores a ninguno de los jugadores), este jugador puede tirar un D6 y añadir su propia característica de Fuerza. Si el resultado es mayor que la característica de Fuerza sin modificar del rival, este jugador aumenta su característica de Fuerza sin modificar para igualar la del rival durante la acción de Placaje. Los modificadores se aplican después normalmente. Si este jugador tiene una habilidad que le permite realizar múltiples acciones de Placaje, como Furia, debe hacer una tirada separada por cada acción de Placaje."
+            }
+        },
+        {
+            "_id": "fend",
+            "name": {
+                "en": "Fend",
+                "es": "Defender"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When a player with this Skill is Pushed Back as a result of a Block Action performed against them, then the opposition player may not Follow-up. This Skill cannot be used against a player with the Ball & Chain Trait or against a player with the Juggernaut Skill that is performing a Blitz Action.",
+                "es": "Cuando un jugador con esta habilidad es Empujado como resultado de una acción de Placaje realizada contra él, el jugador rival no puede Seguir. Esta habilidad no puede usarse contra un jugador con el rasgo Bola y Cadena o contra un jugador con la habilidad Apisonadora que esté realizando una acción de Blitz."
+            }
+        },
+        {
+            "_id": "frenzy",
+            "name": {
+                "en": "Frenzy",
+                "es": "Furia"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": true,
+            "description": {
+                "en": "Every time this player performs a Block Action, if the target is Pushed Back, then this player must Follow-up if able. Additionally, if after the target is Pushed Back they are still Standing, then this player must perform a second Block Action targeting the same opposition player and must again Follow-up if the target is Pushed Back. If this player is performing a Blitz Action, performing a second Block Action will also cost the player a square of movement. If this player has no movement left, then they must Rush. If this player cannot Rush then they cannot perform the second Block Action. A player with this Skill cannot have the Grab, Hit & Run or Multiple Block Skills.",
+                "es": "Cada vez que este jugador realiza una acción de Placaje, si el objetivo es Empujado, entonces este jugador debe Seguir si puede. Además, si después de ser Empujado el objetivo sigue de pie, este jugador debe realizar una segunda acción de Placaje contra el mismo rival y debe volver a Seguir si el objetivo es Empujado. Si este jugador está realizando una acción de Blitz, realizar una segunda acción de Placaje también costará al jugador una casilla de movimiento. Si a este jugador no le queda movimiento, debe Precipitarse. Si no puede Precipitarse, no puede realizar la segunda acción de Placaje. Un jugador con esta habilidad no puede tener las habilidades Agarrar, Golpea y Corre o Placaje Múltiple."
+            }
+        },
+        {
+            "_id": "kick",
+            "name": {
+                "en": "Kick",
+                "es": "Patada"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "If this player is nominated as the kicking player, then when kicking Deviates this player's Coach may choose for it to only Deviate D3 squares rather than the usual D6.",
+                "es": "Si este jugador es nominado como el jugador que patea, entonces cuando la patada se Desvía, el entrenador de este jugador puede elegir que solo se Desvíe D3 casillas en lugar del D6 habitual."
+            }
+        },
+        {
+            "_id": "pro",
+            "name": {
+                "en": "Pro",
+                "es": "Profesional"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "During this player's activation, they may attempt to re-roll a single dice. This can be a dice roll on its own, as part of a multiple dice roll or as a dice pool. To use this Skill, the player must roll a D6: on a 3+ the dice may be re-rolled, on a 1-2 the dice may not be re-rolled. The Skill cannot be used to re-roll a dice made as part of an Armour Roll, Injury Roll, Casualty roll, a roll made outside of the player's activation, or any dice roll not made on the player's behalf. Once a player has attempted to use this Skill, they cannot use a re-roll from any other source to re-roll the dice.",
+                "es": "Durante la activación de este jugador, puede intentar repetir un único dado. Esto puede ser una tirada de dado individual, como parte de una tirada múltiple o como reserva de dados. Para usar esta habilidad, el jugador debe tirar un D6: con 3+ el dado puede repetirse, con 1-2 no puede repetirse. La habilidad no puede usarse para repetir un dado de una tirada de Armadura, Heridas, Baja, una tirada hecha fuera de la activación del jugador, o cualquier tirada no hecha en nombre del jugador. Una vez que un jugador ha intentado usar esta habilidad, no puede usar una repetición de ninguna otra fuente para repetir el dado."
+            }
+        },
+        {
+            "_id": "steady_footing",
+            "name": {
+                "en": "Steady Footing",
+                "es": "Paso Firme"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "Whenever this player would be Knocked Down or Fall Over, roll a D6. On a 6, this player does not get Knocked Down or Fall Over. If this happens during their activation, they may continue their activation as normal and no Turnover will be caused.",
+                "es": "Siempre que este jugador fuera a ser Derribado o Caerse, tira un D6. Con un 6, este jugador no es Derribado ni se Cae. Si esto ocurre durante su activación, puede continuar su activación normalmente y no se causará un Cambio de Turno."
+            }
+        },
+        {
+            "_id": "strip_ball",
+            "name": {
+                "en": "Strip Ball",
+                "es": "Robar Balón"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Block Action against an opposition player holding the ball, if an opposition player is Pushed Back then they will drop the ball in the square they are Pushed Back into, at which point it will Bounce from that square. This Bounce will happen before the opposition player becomes Prone (if applicable) but after this player chooses to Follow-up.",
+                "es": "Cuando este jugador realiza una acción de Placaje contra un rival que tiene el balón, si el rival es Empujado entonces dejará caer el balón en la casilla a la que es Empujado, en ese momento rebotará desde esa casilla. Este rebote ocurrirá antes de que el rival quede Tumbado (si aplica) pero después de que este jugador elija Seguir."
+            }
+        },
+        {
+            "_id": "sure_hands",
+            "name": {
+                "en": "Sure Hands",
+                "es": "Manos Firmes"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player may re-roll the D6 when attempting to pick up the ball, though not when making a Secure the Ball Action. Additionally, the Strip Ball Skill cannot be used against this player.",
+                "es": "Este jugador puede repetir el D6 al intentar recoger el balón, aunque no al realizar una acción de Asegurar el Balón. Además, la habilidad Robar Balón no puede usarse contra este jugador."
+            }
+        },
+        {
+            "_id": "tackle",
+            "name": {
+                "en": "Tackle",
+                "es": "Entrada"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When an opposition player attempts to Dodge away from a square in this player's Tackle Zone, they cannot use the Dodge Skill. Additionally, when this player performs a Block Action against an opposition player, the opposition player does not count as having the Dodge Skill if a Stumble result is selected.",
+                "es": "Cuando un jugador rival intenta Esquivar fuera de una casilla en la zona de placaje de este jugador, no puede usar la habilidad Esquivar. Además, cuando este jugador realiza una acción de Placaje contra un rival, el rival no cuenta como teniendo la habilidad Esquivar si se selecciona un resultado de Tropezar."
+            }
+        },
+        {
+            "_id": "taunt",
+            "name": {
+                "en": "Taunt",
+                "es": "Provocar"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When a player with this Skill is Pushed Back as a result of a Block Action performed against them, this player's Coach may choose to make the opposition player Follow-up. This Skill cannot be used against an opposition player with the Take Root Trait that has become Rooted.",
+                "es": "Cuando un jugador con esta habilidad es Empujado como resultado de una acción de Placaje realizada contra él, el entrenador de este jugador puede elegir hacer que el rival Siga. Esta habilidad no puede usarse contra un rival con el rasgo Echar Raíces que haya quedado Enraizado."
+            }
+        },
+        {
+            "_id": "wrestle",
+            "name": {
+                "en": "Wrestle",
+                "es": "Forcejeo"
+            },
+            "family": "general",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Block Action, or is the target of a Block Action, if the Both Down result is applied, this player may choose to use this Skill. If they do, both players in the Block Action are Placed Prone, regardless of any other Skills they may possess.",
+                "es": "Cuando este jugador realiza una acción de Placaje, o es objetivo de una acción de Placaje, si se aplica el resultado de Ambos Caen, este jugador puede elegir usar esta habilidad. Si lo hace, ambos jugadores quedan Tumbados, independientemente de cualquier otra habilidad que puedan tener."
+            }
+        },
+        {
+            "_id": "big_hand",
+            "name": {
+                "en": "Big Hand",
+                "es": "Mano Grande"
+            },
+            "family": "mutation",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player ignores all negative modifiers when attempting to pick up the ball.",
+                "es": "Este jugador ignora todos los modificadores negativos al intentar recoger el balón."
+            }
+        },
+        {
+            "_id": "claws",
+            "name": {
+                "en": "Claws",
+                "es": "Garras"
+            },
+            "family": "mutation",
+            "type": "passive",
+            "mandatory": false,
+            "description": {
+                "en": "Whenever an Armour Roll is made for an opposition player that has been Knocked Down by this player during a Block Action, even if this player is also Knocked Down, then any roll of a natural 8+ on the Armour Roll will break the opposition player's armour regardless of their actual Armour Value.",
+                "es": "Siempre que se haga una tirada de Armadura por un rival que ha sido Derribado por este jugador durante una acción de Placaje, incluso si este jugador también es Derribado, cualquier tirada natural de 8+ en la tirada de Armadura romperá la armadura del rival independientemente de su Valor de Armadura real."
+            }
+        },
+        {
+            "_id": "disturbing_presence",
+            "name": {
+                "en": "Disturbing Presence",
+                "es": "Presencia Perturbadora"
+            },
+            "family": "mutation",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "Any opposition player that performs a Pass Action, Throw Team-mate Action or a Throw Bomb Special Action, or attempts to Intercept or Catch the ball, applies a -1 modifier to their Passing Ability Test or Agility Test for each player on your team with this Skill within 3 squares of them.",
+                "es": "Cualquier jugador rival que realice una acción de Pase, Lanzar Compañero o Lanzar Bomba, o intente Interceptar o Atrapar el balón, aplica un modificador de -1 a su tirada de Habilidad de Pase o Agilidad por cada jugador de tu equipo con esta habilidad a 3 casillas o menos de él."
+            }
+        },
+        {
+            "_id": "extra_arms",
+            "name": {
+                "en": "Extra Arms",
+                "es": "Brazos Extra"
+            },
+            "family": "mutation",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player applies a +1 modifier to the Agility Test whenever they attempt to Catch, Pick Up or Intercept the ball.",
+                "es": "Este jugador aplica un modificador de +1 a la tirada de Agilidad siempre que intente Atrapar, Recoger o Interceptar el balón."
+            }
+        },
+        {
+            "_id": "foul_appearance",
+            "name": {
+                "en": "Foul Appearance",
+                "es": "Aspecto Asqueroso"
+            },
+            "family": "mutation",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "Whenever an opposition player attempts to perform a Block Action against this player, or a Special Action that targets this player directly, they must roll a D6 before any other dice are rolled. On a 2+, the Block Action continues as normal. On a 1, the Block Action is immediately cancelled and the opposition player's activation immediately ends.",
+                "es": "Siempre que un jugador rival intente realizar una acción de Placaje contra este jugador, o una Acción Especial que apunte directamente a este jugador, debe tirar un D6 antes de cualquier otro dado. Con 2+, la acción de Placaje continúa normalmente. Con 1, la acción de Placaje se cancela inmediatamente y la activación del rival termina inmediatamente."
+            }
+        },
+        {
+            "_id": "horns",
+            "name": {
+                "en": "Horns",
+                "es": "Cuernos"
+            },
+            "family": "mutation",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "Whenever this player declares a Blitz Action, then they apply a +1 modifier to their Strength Characteristic for any Block Actions performed during that Blitz Action.",
+                "es": "Siempre que este jugador declare una acción de Blitz, aplica un modificador de +1 a su característica de Fuerza para cualquier acción de Placaje realizada durante esa acción de Blitz."
+            }
+        },
+        {
+            "_id": "iron_hard_skin",
+            "name": {
+                "en": "Iron Hard Skin",
+                "es": "Piel de Hierro"
+            },
+            "family": "mutation",
+            "type": "passive",
+            "mandatory": false,
+            "description": {
+                "en": "Opposition players cannot apply any modifiers when making an Armour Roll against this player. Additionally, the Claws Skill cannot be used against this player.",
+                "es": "Los jugadores rivales no pueden aplicar ningún modificador al hacer una tirada de Armadura contra este jugador. Además, la habilidad Garras no puede usarse contra este jugador."
+            }
+        },
+        {
+            "_id": "monstrous_mouth",
+            "name": {
+                "en": "Monstrous Mouth",
+                "es": "Boca Monstruosa"
+            },
+            "family": "mutation",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player is activated, they may declare a Chomp Special Action; there is no limit to the number of players that can declare this Special Action each Turn. When this player declares a Chomp Special Action, they may select one Standing opposition player they are Marking and roll a D6. On a 1-2 nothing happens. On a 3+, the opposition player is considered to be Chomped. Whilst Chomped, the opposition player cannot leave the square they are in whilst this player remains Marking them. This condition ends immediately if this player is no longer Marking the opposition player for any reason. This player may use the Chomp Special Action to replace the Block Action made as part of a Blitz Action if they wish. Additionally, the Strip Ball Skill cannot be used against this player.",
+                "es": "Cuando este jugador es activado, puede declarar una Acción Especial de Morder; no hay límite en el número de jugadores que pueden declarar esta Acción Especial cada turno. Cuando este jugador declara una Acción Especial de Morder, puede seleccionar un jugador rival de pie que esté Marcando y tirar un D6. Con 1-2 no pasa nada. Con 3+, el jugador rival se considera Mordido. Mientras esté Mordido, el jugador rival no puede abandonar la casilla en la que está mientras este jugador siga Marcándolo. Esta condición termina inmediatamente si este jugador deja de Marcar al rival por cualquier motivo. Este jugador puede usar la Acción Especial de Morder para reemplazar la acción de Placaje como parte de un Blitz si lo desea. Además, la habilidad Robar Balón no puede usarse contra este jugador."
+            }
+        },
+        {
+            "_id": "prehensile_tail",
+            "name": {
+                "en": "Prehensile Tail",
+                "es": "Cola Prensil"
+            },
+            "family": "mutation",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When an opposition player attempts to Dodge, Jump or Leap away from a square in this player's Tackle Zone, they apply an additional -1 modifier to the Agility Test. If a player tries to leave the Tackle Zone of multiple players with this Skill at the same time, only one of those players may use this Skill.",
+                "es": "Cuando un jugador rival intenta Esquivar, Brincar o Saltar fuera de una casilla en la zona de placaje de este jugador, aplica un modificador adicional de -1 a la tirada de Agilidad. Si un jugador intenta abandonar la zona de placaje de varios jugadores con esta habilidad, solo uno puede usarla."
+            }
+        },
+        {
+            "_id": "tentacles",
+            "name": {
+                "en": "Tentacles",
+                "es": "Tentáculos"
+            },
+            "family": "mutation",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When an opposition player attempts to Dodge, Jump or Leap away from a square in this player's Tackle Zone, this player may use this Skill. When a player uses this Skill they roll a D6 and add their Strength characteristic to the roll; they then subtract the Strength Characteristic of the opposition player from the result. If the result is 6 or higher, or the roll is a natural 6, then the opposition player does not leave the square they attempted to leave and their activation comes to an end. If the result is 5 or lower, or the roll is a natural 1, this Skill has no effect. If a player tries to leave the Tackle Zone of multiple players with this Skill at the same time, only one of those players may use this Skill.",
+                "es": "Cuando un jugador rival intenta Esquivar, Brincar o Saltar fuera de una casilla en la zona de placaje de este jugador, este jugador puede usar esta habilidad. Cuando la usa, tira un D6 y añade su característica de Fuerza a la tirada; luego resta la característica de Fuerza del rival del resultado. Si el resultado es 6 o más, o la tirada es un 6 natural, el rival no abandona la casilla y su activación termina. Si el resultado es 5 o menos, o la tirada es un 1 natural, esta habilidad no tiene efecto. Si un jugador intenta abandonar la zona de placaje de varios jugadores con esta habilidad, solo uno puede usarla."
+            }
+        },
+        {
+            "_id": "two_heads",
+            "name": {
+                "en": "Two Heads",
+                "es": "Dos Cabezas"
+            },
+            "family": "mutation",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player may apply a +1 modifier to the Agility Test whenever they attempt to Dodge.",
+                "es": "Este jugador puede aplicar un modificador de +1 a la tirada de Agilidad siempre que intente Esquivar."
+            }
+        },
+        {
+            "_id": "very_long_legs",
+            "name": {
+                "en": "Very Long Legs",
+                "es": "Piernas Muy Largas"
+            },
+            "family": "mutation",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player may apply a +1 modifier to the Agility Test whenever they attempt to Leap or Jump, and may apply a +2 modifier to the Agility Test whenever they attempt to Intercept the ball. Additionally, this player ignores the Cloud Burster Skill.",
+                "es": "Este jugador puede aplicar un modificador de +1 a la tirada de Agilidad siempre que intente Saltar o Brincar, y puede aplicar un modificador de +2 a la tirada de Agilidad siempre que intente Interceptar el balón. Además, este jugador ignora la habilidad Rompe Nubes."
+            }
+        },
+        {
+            "_id": "accurate",
+            "name": {
+                "en": "Accurate",
+                "es": "Preciso"
+            },
+            "family": "passing",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Pass Action which is a Quick Pass or a Short Pass, this player may apply a +1 modifier to the Passing Ability Test.",
+                "es": "Cuando este jugador realiza una acción de Pase que es un Pase Rápido o un Pase Corto, puede aplicar un modificador de +1 a la tirada de Habilidad de Pase."
+            }
+        },
+        {
+            "_id": "cannoneer",
+            "name": {
+                "en": "Cannoneer",
+                "es": "Cañonero"
+            },
+            "family": "passing",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Pass Action which is a Long Pass or a Long Bomb, this player may apply a +1 modifier to the Passing Ability Test.",
+                "es": "Cuando este jugador realiza una acción de Pase que es un Pase Largo o una Bomba Larga, puede aplicar un modificador de +1 a la tirada de Habilidad de Pase."
+            }
+        },
+        {
+            "_id": "cloud_burster",
+            "name": {
+                "en": "Cloud Burster",
+                "es": "Rompe Nubes"
+            },
+            "family": "passing",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Pass Action, opposition players may not attempt to Intercept the ball.",
+                "es": "Cuando este jugador realiza una acción de Pase, los jugadores rivales no pueden intentar Interceptar el balón."
+            }
+        },
+        {
+            "_id": "dump_off",
+            "name": {
+                "en": "Dump-off",
+                "es": "Liberar Rápido"
+            },
+            "family": "passing",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "Whenever an opposition player attempts to perform a Block Action against this player, or a Special Action that targets this player directly, this player may use this Skill. When they do, this player may immediately perform a Quick Pass before the Action targeting them is resolved. This Quick Pass cannot cause a Turnover, but otherwise follows all the normal rules for making a Quick Pass. Once the Quick Pass has been resolved, this Action targeting this player continues.",
+                "es": "Siempre que un jugador rival intente realizar una acción de Placaje contra este jugador, o una Acción Especial que apunte directamente a este jugador, este jugador puede usar esta habilidad. Cuando lo hace, puede realizar inmediatamente un Pase Rápido antes de que se resuelva la acción que lo tiene como objetivo. Este Pase Rápido no puede causar un Cambio de Turno, pero por lo demás sigue todas las reglas normales para hacer un Pase Rápido. Una vez resuelto, la acción que tiene como objetivo a este jugador continúa."
+            }
+        },
+        {
+            "_id": "give_and_go",
+            "name": {
+                "en": "Give and Go",
+                "es": "Pasa y Muévete"
+            },
+            "family": "passing",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "If this player performs a Pass Action that is a Quick Pass, or performs a Hand-off Action, then, so long as a Turnover isn't caused, their activation does not end once the Pass or Hand-off is resolved. Instead, they may continue with their Move Action using any movement they have remaining.",
+                "es": "Si este jugador realiza una acción de Pase que es un Pase Rápido, o realiza una acción de Entregar, entonces, siempre que no se cause un Cambio de Turno, su activación no termina una vez que se resuelve el Pase o la Entrega. En su lugar, puede continuar con su acción de Movimiento usando el movimiento que le quede."
+            }
+        },
+        {
+            "_id": "hail_mary_pass",
+            "name": {
+                "en": "Hail Mary Pass",
+                "es": "Pase Desesperado"
+            },
+            "family": "passing",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Pass Action or a Throw Bomb Special Action, they may declare any square on the pitch as the target square rather than using the Range Ruler. Make a Passing Ability Test as normal treating the throw as a Long Bomb, and treating any result of an Accurate Pass as an Inaccurate Pass. A Hail Mary Pass cannot be Intercepted.",
+                "es": "Cuando este jugador realiza una acción de Pase o una Acción Especial de Lanzar Bomba, puede declarar cualquier casilla del campo como la casilla objetivo en lugar de usar la Regla de Alcance. Hace una tirada de Habilidad de Pase normalmente tratando el lanzamiento como una Bomba Larga, y tratando cualquier resultado de Pase Preciso como un Pase Impreciso. Un Pase Desesperado no puede ser Interceptado."
+            }
+        },
+        {
+            "_id": "leader",
+            "name": {
+                "en": "Leader",
+                "es": "Líder"
+            },
+            "family": "passing",
+            "type": "passive",
+            "mandatory": false,
+            "description": {
+                "en": "A team that has one or more players with this Skill on the pitch at the start of a half may gain a single extra Team Re-roll - this is called a Leader Re-roll. A team can only use a Leader Re-roll if they have a player with the Leader Skill on the pitch, and if all players with this Skill are removed from play, either as a Casualty or by being Sent-off, before the Leader Re-roll is used then it is lost. A Leader Re-roll follows all of the usual rules for standard Team Re-rolls, with the exception that it cannot be lost as a result of a Halfling Master Chef.",
+                "es": "Un equipo que tenga uno o más jugadores con esta habilidad en el campo al inicio de una mitad puede ganar una única Repetición de Equipo extra - esto se llama Repetición de Líder. Un equipo solo puede usar la Repetición de Líder si tiene un jugador con la habilidad Líder en el campo, y si todos los jugadores con esta habilidad son retirados del juego, ya sea como Baja o por ser Expulsados, antes de que se use la Repetición de Líder, se pierde. La Repetición de Líder sigue todas las reglas habituales para Repeticiones de Equipo estándar, con la excepción de que no puede perderse como resultado de un Chef Maestro Halfling."
+            }
+        },
+        {
+            "_id": "nerves_of_steel",
+            "name": {
+                "en": "Nerves of Steel",
+                "es": "Nervios de Acero"
+            },
+            "family": "passing",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player may ignore any modifiers for being Marked when making an Agility Test to Catch the ball, or when making a Passing Ability Test to Pass the ball.",
+                "es": "Este jugador puede ignorar cualquier modificador por estar Marcado al hacer una tirada de Agilidad para Atrapar el balón, o al hacer una tirada de Habilidad de Pase para Pasar el balón."
+            }
+        },
+        {
+            "_id": "on_the_ball",
+            "name": {
+                "en": "On the Ball",
+                "es": "Atento al Balón"
+            },
+            "family": "passing",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When an opposition player performs a Pass Action, after the target square has been declared but before the Passing Ability Test is rolled, this player may move up to 3 squares, following all the usual rules for a Move Action, with the exception that they cannot Rush. Should this player Fall Over during this move, then their move immediately ends and the Pass Action resumes. If multiple players have this Skill, then they may all use it during the same Pass Action, though they must do so one at a time, and if one of them Falls Over before the others have had the chance to move, then they may not do so. Additionally, during the Start of Drive Sequence, after the Kick Deviates but before the Kick-off Event is rolled, a single Open player on the receiving team with this Skill may move up to 3 squares, following all the usual rules for a Move Action, with the exception that they cannot Rush.",
+                "es": "Cuando un jugador rival realiza una acción de Pase, después de declarar la casilla objetivo pero antes de la tirada de Habilidad de Pase, este jugador puede moverse hasta 3 casillas, siguiendo todas las reglas habituales para una acción de Movimiento, con la excepción de que no puede Precipitarse. Si este jugador se Cae durante este movimiento, su movimiento termina inmediatamente y la acción de Pase continúa. Si varios jugadores tienen esta habilidad, todos pueden usarla durante la misma acción de Pase, aunque deben hacerlo uno a la vez. Además, durante la Secuencia de Inicio de Drive, después de que el Saque se Desvíe pero antes de tirar el Evento de Saque, un único jugador Libre del equipo receptor con esta habilidad puede moverse hasta 3 casillas."
+            }
+        },
+        {
+            "_id": "pass",
+            "name": {
+                "en": "Pass",
+                "es": "Pase"
+            },
+            "family": "passing",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player may re-roll any failed Passing Ability Test when performing a Pass Action.",
+                "es": "Este jugador puede repetir cualquier tirada de Habilidad de Pase fallida al realizar una acción de Pase."
+            }
+        },
+        {
+            "_id": "punt",
+            "name": {
+                "en": "Punt",
+                "es": "Despeje"
+            },
+            "family": "passing",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player may declare a Punt Special Action; only a single player may declare a Punt Special Action each Turn. When a player declares a Punt Special Action they are first allowed to make a Move Action, though they cannot continue to move after the Punt Special Action has been resolved. If after their Move Action this player is in possession of the ball, they can Punt it downfield. Position the Throw-in Template over this player so it faces one of the two End Zones or either Sideline. Roll a D6 to determine the direction the ball is kicked, and then a second D6 to determine how many squares in that direction the ball will travel. If this player has the Kick Skill, they may re-roll either or both of these dice. If the ball lands in a square containing a player, then they must attempt to Catch the ball, otherwise it will Bounce. When performing a Punt Special Action, no Turnover is caused if the ball comes to rest on the ground; however, if after the Punt Special Action is resolved the ball is in possession of an opposition player, or in the crowd, a Turnover is caused.",
+                "es": "Este jugador puede declarar una Acción Especial de Despeje; solo un jugador puede declarar esta Acción Especial cada turno. Cuando un jugador declara una Acción Especial de Despeje primero puede realizar una acción de Movimiento, aunque no puede continuar moviéndose después de resolver el Despeje. Si después de su acción de Movimiento este jugador tiene el balón, puede despejarlo hacia el campo rival. Coloca la Plantilla de Saque sobre este jugador apuntando hacia una de las dos Zonas de Anotación o líneas laterales. Tira un D6 para determinar la dirección y un segundo D6 para determinar cuántas casillas viajará. Si tiene la habilidad Patada, puede repetir cualquiera o ambos dados. Si el balón cae en una casilla con un jugador, debe intentar Atraparlo, de lo contrario Rebotará. No se causa Cambio de Turno si el balón queda en el suelo; sin embargo, si el balón queda en posesión de un rival o en la grada, se causa un Cambio de Turno."
+            }
+        },
+        {
+            "_id": "safe_pass",
+            "name": {
+                "en": "Safe Pass",
+                "es": "Pase Seguro"
+            },
+            "family": "passing",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "If this player rolls a natural 1 when making a Passing Ability Test, then it will not result in a Fumbled Pass. Instead, the player retains possession of the ball and their activation immediately ends. No Turnover is caused.",
+                "es": "Si este jugador saca un 1 natural al hacer una tirada de Habilidad de Pase, no resultará en un Pase Fumbleado. En su lugar, el jugador conserva la posesión del balón y su activación termina inmediatamente. No se causa un Cambio de Turno."
+            }
+        },
+        {
+            "_id": "arm_bar",
+            "name": {
+                "en": "Arm Bar",
+                "es": "Llave de Brazo"
+            },
+            "family": "strength",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "If an opposing player Falls Over as a result of attempting to Dodge, Leap or Jump away from a square in this player's Tackle Zone, this player may use this Skill. If they do, they may apply a +1 modifier to either the Armour Roll or Injury Roll. This modifier may be applied after the roll has been made. If this results in the opposing player becoming Casualty as a result of the Dodge, Leap or Jump away from the player with this Skill, then this player will count as having caused that Casualty and will receive Star Player Points as appropriate. If a player tries to leave the Tackle Zone of multiple players with this Skill at the same time, only one of those players may use this Skill.",
+                "es": "Si un jugador rival se Cae como resultado de intentar Esquivar, Saltar o Brincar fuera de una casilla en la zona de placaje de este jugador, este jugador puede usar esta habilidad. Si lo hace, puede aplicar un modificador de +1 a la tirada de Armadura o de Heridas. Este modificador puede aplicarse después de hacer la tirada. Si esto resulta en que el rival se convierte en Baja, este jugador contará como habiendo causado esa Baja y recibirá Puntos de Jugador Estrella apropiadamente. Si un jugador intenta abandonar la zona de placaje de varios jugadores con esta habilidad, solo uno puede usarla."
+            }
+        },
+        {
+            "_id": "brawler",
+            "name": {
+                "en": "Brawler",
+                "es": "Peleón"
+            },
+            "family": "strength",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player declares a Block Action, they may re-roll a single Both Down result.",
+                "es": "Cuando este jugador declara una acción de Placaje, puede repetir un único resultado de Ambos Caen."
+            }
+        },
+        {
+            "_id": "break_tackle",
+            "name": {
+                "en": "Break Tackle",
+                "es": "Romper Marcaje"
+            },
+            "family": "strength",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "Once per Turn, when this player attempts to Dodge, they may apply a +1 modifier to the Agility Test if they have a Strength characteristic of 3 or lower, a +2 modifier to the Agility Test if they have a Strength Characteristic of 4, or a +3 modifier to the Agility Test if they have a Strength Characteristic of 5 or higher.",
+                "es": "Una vez por turno, cuando este jugador intenta Esquivar, puede aplicar un modificador de +1 a la tirada de Agilidad si tiene una característica de Fuerza de 3 o menos, un modificador de +2 si tiene Fuerza 4, o un modificador de +3 si tiene Fuerza 5 o más."
+            }
+        },
+        {
+            "_id": "bullseye",
+            "name": {
+                "en": "Bullseye",
+                "es": "Diana"
+            },
+            "family": "strength",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Throw Team-mate Action, if the result of the throw is a Superb Throw then the thrown player will not Scatter before landing and will instead land in the target square. A player without the Throw Team-mate Trait cannot have this Skill.",
+                "es": "Cuando este jugador realiza una acción de Lanzar Compañero, si el resultado del lanzamiento es un Lanzamiento Soberbio, el jugador lanzado no se Dispersará antes de aterrizar y en su lugar aterrizará en la casilla objetivo. Un jugador sin el rasgo Lanzar Compañero no puede tener esta habilidad."
+            }
+        },
+        {
+            "_id": "grab",
+            "name": {
+                "en": "Grab",
+                "es": "Agarrar"
+            },
+            "family": "strength",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player declares a Block Action, if the opposition player is Pushed Back, then this player's Coach may choose any unoccupied square adjacent to the target for them to be Pushed Back into. If there are no adjacent unoccupied squares, then this Skill cannot be used. Additionally, when this player performs a Block Action, opposition players cannot use the Sidestep Skill. A player with this Skill cannot have the Frenzy Skill.",
+                "es": "Cuando este jugador declara una acción de Placaje, si el rival es Empujado, el entrenador de este jugador puede elegir cualquier casilla adyacente desocupada al objetivo para empujarlo allí. Si no hay casillas adyacentes desocupadas, esta habilidad no puede usarse. Además, cuando este jugador realiza una acción de Placaje, los rivales no pueden usar la habilidad Paso Lateral. Un jugador con esta habilidad no puede tener la habilidad Furia."
+            }
+        },
+        {
+            "_id": "guard",
+            "name": {
+                "en": "Guard",
+                "es": "Guardia"
+            },
+            "family": "strength",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player can provide Offensive and Defensive Assists when a player performs a Block Action regardless of how many opposition players are Marking this player.",
+                "es": "Este jugador puede proporcionar Asistencias Ofensivas y Defensivas cuando un jugador realiza una acción de Placaje independientemente de cuántos jugadores rivales estén Marcando a este jugador."
+            }
+        },
+        {
+            "_id": "juggernaut",
+            "name": {
+                "en": "Juggernaut",
+                "es": "Apisonadora"
+            },
+            "family": "strength",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player declares a Blitz Action, they may treat any result of Both Down as Pushed Back during any Block Actions they perform during the Blitz Action. Additionally, when this player performs a Block Action as part of a Blitz Action, opposition players cannot use the Fend, Stand Firm or Wrestle Skills.",
+                "es": "Cuando este jugador declara una acción de Blitz, puede tratar cualquier resultado de Ambos Caen como Empujado durante cualquier acción de Placaje que realice durante el Blitz. Además, cuando este jugador realiza una acción de Placaje como parte de un Blitz, los rivales no pueden usar las habilidades Defender, Firme o Forcejeo."
+            }
+        },
+        {
+            "_id": "mighty_blow",
+            "name": {
+                "en": "Mighty Blow",
+                "es": "Golpe Poderoso"
+            },
+            "family": "strength",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "Whenever this player Knocks Down an opposition player during a Block Action, even if this player is also Knocked Down, they may apply a +1 modifier to either the Armour Roll or Injury Roll. This modifier may be applied after the roll has been made.",
+                "es": "Siempre que este jugador Derribe a un rival durante una acción de Placaje, incluso si este jugador también es Derribado, puede aplicar un modificador de +1 a la tirada de Armadura o de Heridas. Este modificador puede aplicarse después de hacer la tirada."
+            }
+        },
+        {
+            "_id": "multiple_block",
+            "name": {
+                "en": "Multiple Block",
+                "es": "Placaje Múltiple"
+            },
+            "family": "strength",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player declares a Block Action, they may perform two Block Actions each targeting a different opposition player they are Marking. If they do, then this player will reduce their Strength Characteristic by 2 for the duration of the Block Actions. These Block Actions happen simultaneously, though you may wish to roll them separately for clarity. This means that if both Block Actions are resolved in full, even if one of them results in a Turnover. This player cannot Follow-up during either of these Block Actions. A player with this Skill cannot also have the Frenzy Skill.",
+                "es": "Cuando este jugador declara una acción de Placaje, puede realizar dos acciones de Placaje cada una apuntando a un jugador rival diferente que esté Marcando. Si lo hace, este jugador reducirá su característica de Fuerza en 2 durante las acciones de Placaje. Estas acciones de Placaje ocurren simultáneamente, aunque puedes tirar por separado para mayor claridad. Esto significa que ambas acciones de Placaje se resuelven completamente, incluso si una de ellas resulta en un Cambio de Turno. Este jugador no puede Seguir durante ninguna de estas acciones de Placaje. Un jugador con esta habilidad no puede tener también la habilidad Furia."
+            }
+        },
+        {
+            "_id": "stand_firm",
+            "name": {
+                "en": "Stand Firm",
+                "es": "Firme"
+            },
+            "family": "strength",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player would be Pushed Back during a Block Action, including during a Chain Push, they can choose to not be Pushed Back and instead remain in their current square. Using this Skill will not prevent a player with the Frenzy Skill from performing a second Block Action, so long as this player is still Standing.",
+                "es": "Cuando este jugador fuera a ser Empujado durante una acción de Placaje, incluyendo durante un Empujón en Cadena, puede elegir no ser Empujado y permanecer en su casilla actual. Usar esta habilidad no impedirá que un jugador con la habilidad Furia realice una segunda acción de Placaje, siempre que este jugador siga de pie."
+            }
+        },
+        {
+            "_id": "strong_arm",
+            "name": {
+                "en": "Strong Arm",
+                "es": "Brazo Fuerte"
+            },
+            "family": "strength",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player performs a Throw Team-mate Action, this player may apply a +1 modifier to the Passing Ability Test. A player without the Throw Team-mate Trait cannot have this Skill.",
+                "es": "Cuando este jugador realiza una acción de Lanzar Compañero, puede aplicar un modificador de +1 a la tirada de Habilidad de Pase. Un jugador sin el rasgo Lanzar Compañero no puede tener esta habilidad."
+            }
+        },
+        {
+            "_id": "thick_skull",
+            "name": {
+                "en": "Thick Skull",
+                "es": "Cabeza Dura"
+            },
+            "family": "strength",
+            "type": "passive",
+            "mandatory": false,
+            "description": {
+                "en": "When an Injury Roll is made for this player, they will only be Knocked-out on the roll of a 9; a roll of an 8 will be treated as a Stunned result. If this player also has the Stunty Trait, then they will only be Knocked-out on the roll of an 8; a roll of a 7 will be treated as a Stunned result.",
+                "es": "Cuando se hace una tirada de Heridas por este jugador, solo quedará Fuera de Combate con un resultado de 9; un 8 se tratará como un resultado de Aturdido. Si este jugador también tiene el rasgo Stunty, solo quedará Fuera de Combate con un 8; un 7 se tratará como un resultado de Aturdido."
+            }
+        },
+        {
+            "_id": "always_hungry",
+            "name": {
+                "en": "Always Hungry",
+                "es": "Siempre Hambriento"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": true,
+            "description": {
+                "en": "Whenever this player performs a Throw Team-mate Action, before making the Passing Ability Test, they must roll a D6. On a 2+, they may continue with the Throw Team-mate Action as normal. On a 1, the player will attempt to eat their team-mate - they must roll a further D6. On a 2+, the team-mate will squirm free and the Throw Team-mate Action will automatically result in a Fumbled Throw. On a 1, the player will eat their team-mate - immediately remove them from your Team Draft List. No Apothecary can be used to save them, and no Regeneration rolls can be attempted.",
+                "es": "Siempre que este jugador realiza una acción de Lanzar Compañero, antes de la tirada de Habilidad de Pase, debe tirar un D6. Con 2+, puede continuar normalmente. Con 1, el jugador intentará comerse a su compañero - debe tirar otro D6. Con 2+, el compañero se escabullirá y la acción resultará en un Lanzamiento Fumbleado. Con 1, el jugador se come a su compañero - retíralo inmediatamente de la Lista del Equipo. Ningún Boticario puede salvarlo, y no se pueden intentar tiradas de Regeneración."
+            }
+        },
+        {
+            "_id": "animal_savagery",
+            "name": {
+                "en": "Animal Savagery",
+                "es": "Salvajismo Animal"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "Whenever this player is activated, after declaring their action they must roll a D6. They may apply a +2 modifier to the roll if they have declared a Block Action or a Blitz Action. On a 4+, the player may perform the declared action as normal. On a 1‑3, this player lashes out at one of their team-mates. Choose one Standing team-mate adjacent to this player; the chosen player is immediately Knocked Down. This will not cause a Turnover unless the player was holding the ball. If this player has either the Claws or Mighty Blow Skill, then they must use them when making the Armour Roll for the Knocked Down player. If this player rolls a 1‑3 and there are no Standing team-mates adjacent to them, then they are Distracted.",
+                "es": "Siempre que este jugador es activado, después de declarar su acción debe tirar un D6. Puede aplicar un modificador de +2 si ha declarado una acción de Placaje o Blitz. Con 4+, puede realizar la acción normalmente. Con 1-3, este jugador arremete contra un compañero. Elige un compañero de pie adyacente a este jugador; el elegido es inmediatamente Derribado. Esto no causará un Cambio de Turno a menos que el jugador tuviera el balón. Si este jugador tiene Garras o Golpe Poderoso, debe usarlos al hacer la tirada de Armadura. Si saca 1-3 y no hay compañeros de pie adyacentes, queda Distraído."
+            }
+        },
+        {
+            "_id": "animosity",
+            "name": {
+                "en": "Animosity",
+                "es": "Animosidad"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": true,
+            "description": {
+                "en": "Whenever this player attempts to perform a Pass Action or a Hand-off Action to a team-mate with the same Keyword as the one shown in brackets, roll a D6. On a 1, the player refuses to perform the action and their activation immediately ends. Some players may have the Animosity (all) Trait, in which case they will apply this rule to all of their team-mates, regardless of the Keywords they have.",
+                "es": "Siempre que este jugador intente realizar una acción de Pase o Entrega a un compañero con la misma Palabra Clave que la mostrada entre paréntesis, tira un D6. Con 1, el jugador se niega a realizar la acción y su activación termina inmediatamente. Algunos jugadores pueden tener el rasgo Animosidad (todos), en cuyo caso aplicarán esta regla a todos sus compañeros, independientemente de las Palabras Clave que tengan."
+            }
+        },
+        {
+            "_id": "ball_and_chain",
+            "name": {
+                "en": "Ball & Chain",
+                "es": "Bola y Cadena"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": true,
+            "description": {
+                "en": "When this player is activated, the only action they can declare is a Ball & Chain Special Action. When a player performs a Ball & Chain Special Action, position the Throw-in Template over this player so it faces one of the two End Zones or either Sideline. Then roll a D6 and move this player into the square as indicated by the Throw-in Template. A player that moves in this manner does not have to make an Agility Test to Dodge away; they will automatically pass. Opposition players cannot use Shadowing or Tentacles against a player performing a Ball & Chain Action. If this move takes this player into a square containing a Standing player (from either team) they will automatically perform a Block Action against that player. A player performing a Ball & Chain Special Action can move a number of squares up to their MA. If this player is Knocked Down, Falls Over or Placed Prone for any reason, immediately make an Injury Roll treating any Stunned result as Knocked-out.",
+                "es": "Cuando este jugador es activado, la única acción que puede declarar es una Acción Especial de Bola y Cadena. Cuando un jugador realiza esta Acción Especial, coloca la Plantilla de Saque sobre este jugador apuntando hacia una de las dos Zonas de Anotación o líneas laterales. Luego tira un D6 y mueve a este jugador a la casilla indicada por la Plantilla. Un jugador que se mueve así no necesita hacer tiradas de Esquivar; pasa automáticamente. Los rivales no pueden usar Perseguir o Tentáculos contra un jugador realizando esta acción. Si el movimiento lleva a este jugador a una casilla con un jugador de pie, realizará automáticamente una acción de Placaje contra él. El jugador puede moverse un número de casillas igual a su MO. Si este jugador es Derribado, se Cae o queda Tumbado, haz inmediatamente una tirada de Heridas tratando cualquier resultado de Aturdido como Fuera de Combate."
+            }
+        },
+        {
+            "_id": "bloodlust",
+            "name": {
+                "en": "Bloodlust",
+                "es": "Sed de Sangre"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "Whenever this player is activated, after declaring their action, they must roll a D6, adding 1 to the roll if they declared a Block Action or a Blitz Action. If they roll equal to or higher than the number shown in brackets, they may activate as normal. If the player rolls lower than the number shown in brackets, or rolls a natural 1, they may continue their activation as normal though they may change their declared action to a Move Action if they wish. At the end of their activation, this player may bite an adjacent Thrall Lineman team-mate. If they do, immediately make an Injury Roll for the Thrall Lineman, treating any Casualty result as Badly Hurt. If this player does not bite a Thrall Lineman for any reason, then a Turnover is caused, this player becomes Distracted, and will immediately drop the ball if they were holding it.",
+                "es": "Siempre que este jugador es activado, después de declarar su acción, debe tirar un D6, añadiendo 1 si declaró una acción de Placaje o Blitz. Si saca igual o más que el número entre paréntesis, puede activarse normalmente. Si saca menos, o saca un 1 natural, puede continuar su activación aunque puede cambiar su acción a una acción de Movimiento. Al final de su activación, este jugador puede morder a un compañero Lacayo Lineman adyacente. Si lo hace, haz inmediatamente una tirada de Heridas por el Lacayo, tratando cualquier resultado de Baja como Malherido. Si este jugador no muerde a un Lacayo por cualquier motivo, se causa un Cambio de Turno, este jugador queda Distraído, y soltará el balón inmediatamente si lo tenía."
+            }
+        },
+        {
+            "_id": "bombardier",
+            "name": {
+                "en": "Bombardier",
+                "es": "Bombardero"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player is activated, they can declare a Throw Bomb Special Action; only one player can declare this Special Action each Turn. When a player performs a Throw Bomb Special Action, they throw a bomb in the same manner as when a player performs a Pass Action, following all the usual rules for a Pass Action. If at any point a bomb comes to rest on the ground then it will immediately explode in that square. When a bomb explodes, any player in the square it exploded in is hit by the explosion. Additionally, roll a D6 for each player adjacent to the square in which the bomb exploded. On a 4+, they are hit by the explosion. Any Standing player that is hit by the explosion is immediately Knocked Down. Additionally, make an Armour Roll for any Prone or Stunned players hit by the explosion. If a player successfully Catches or Intercepts a thrown bomb, the player that caught the bomb must immediately throw it again.",
+                "es": "Cuando este jugador es activado, puede declarar una Acción Especial de Lanzar Bomba; solo un jugador puede declarar esta Acción Especial cada turno. Cuando un jugador realiza esta Acción Especial, lanza una bomba de la misma manera que un Pase, siguiendo todas las reglas normales. Si en algún momento la bomba queda en el suelo, explotará inmediatamente en esa casilla. Cuando la bomba explota, cualquier jugador en esa casilla es alcanzado por la explosión. Además, tira un D6 por cada jugador adyacente a la casilla donde explotó. Con 4+, es alcanzado. Cualquier jugador de pie alcanzado queda inmediatamente Derribado. Además, haz una tirada de Armadura por cualquier jugador Tumbado o Aturdido alcanzado. Si un jugador Atrapa o Intercepta una bomba, debe lanzarla inmediatamente de nuevo."
+            }
+        },
+        {
+            "_id": "bone_head",
+            "name": {
+                "en": "Bone Head",
+                "es": "Cabeza de Hueso"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "Whenever this player is activated, after declaring their Action they must roll a D6. On a 2+, the player may perform the declared Action as normal. On a 1, the player becomes Distracted.",
+                "es": "Siempre que este jugador es activado, después de declarar su acción debe tirar un D6. Con 2+, puede realizar la acción normalmente. Con 1, el jugador queda Distraído."
+            }
+        },
+        {
+            "_id": "breathe_fire",
+            "name": {
+                "en": "Breathe Fire",
+                "es": "Escupir Fuego"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player is activated, they can declare a Breathe Fire Special Action. When a player makes a Breathe Fire Special Action, they may choose one Standing opposition player they are Marking and roll a D6, applying a -1 modifier if the target has an ST of 5 or higher. On a 1, this player is immediately Knocked Down. On a 2-3, nothing happens. On a 4+, the opposition player is immediately Placed Prone. If the roll is a natural 6, the opposition player is Knocked Down instead. After the Breathe Fire Special Action has been resolved, this player's activation immediately ends. This player may use the Breathe Fire Special Action to replace the Block Action made as part of a Blitz Action if they wish.",
+                "es": "Cuando este jugador es activado, puede declarar una Acción Especial de Escupir Fuego. Cuando un jugador realiza esta Acción Especial, puede elegir un jugador rival de pie que esté Marcando y tirar un D6, aplicando un -1 si el objetivo tiene FU 5 o más. Con 1, este jugador queda inmediatamente Derribado. Con 2-3, no pasa nada. Con 4+, el rival queda inmediatamente Tumbado. Si la tirada es un 6 natural, el rival queda Derribado en su lugar. Después de resolver la Acción Especial, la activación de este jugador termina inmediatamente. Este jugador puede usar esta Acción Especial para reemplazar la acción de Placaje de un Blitz si lo desea."
+            }
+        },
+        {
+            "_id": "chainsaw",
+            "name": {
+                "en": "Chainsaw",
+                "es": "Motosierra"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": true,
+            "description": {
+                "en": "When this player is activated, they can declare a Chainsaw Attack Special Action. When a player performs a Chainsaw Attack Special Action, roll a D6. On a 2+, this player immediately makes an Armour Roll against one opposition player they are Marking, applying a +3 modifier to the Armour Roll. On a 1, the Chainsaw will Kick-back and this player is Knocked Down instead. If this player is Knocked Down or Falls Over for any reason, then a +3 modifier is applied when the opposition Coach makes an Armour Roll for this player. Should they wish, this player may also use their chainsaw when performing a Foul Action. This player may use the Chainsaw Attack Special Action to replace the Block Action made as part of a Blitz Action if they wish.",
+                "es": "Cuando este jugador es activado, puede declarar una Acción Especial de Ataque con Motosierra. Cuando un jugador realiza esta Acción Especial, tira un D6. Con 2+, este jugador hace inmediatamente una tirada de Armadura contra un rival que esté Marcando, aplicando un modificador de +3. Con 1, la Motosierra Retrocede y este jugador queda Derribado en su lugar. Si este jugador es Derribado o se Cae por cualquier motivo, se aplica un modificador de +3 cuando el entrenador rival hace la tirada de Armadura por este jugador. Si lo desea, este jugador puede usar su motosierra al realizar una acción de Falta. Este jugador puede usar esta Acción Especial para reemplazar la acción de Placaje de un Blitz si lo desea."
+            }
+        },
+        {
+            "_id": "decay",
+            "name": {
+                "en": "Decay",
+                "es": "Descomposición"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "Apply a +1 modifier to any Casualty Roll made against this player.",
+                "es": "Aplica un modificador de +1 a cualquier tirada de Baja hecha contra este jugador."
+            }
+        },
+        {
+            "_id": "drunkard",
+            "name": {
+                "en": "Drunkard",
+                "es": "Borracho"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "This player applies a -1 modifier to test whenever they attempt to Rush.",
+                "es": "Este jugador aplica un modificador de -1 a la tirada siempre que intente Precipitarse."
+            }
+        },
+        {
+            "_id": "hatred",
+            "name": {
+                "en": "Hatred",
+                "es": "Odio"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "Whenever this player performs a Block Action against a player with the same keyword as that shown in brackets, this player may re-roll a single Player Down result.",
+                "es": "Siempre que este jugador realiza una acción de Placaje contra un jugador con la misma palabra clave que la mostrada entre paréntesis, este jugador puede repetir un único resultado de Defensor Derribado."
+            }
+        },
+        {
+            "_id": "hypnotic_gaze",
+            "name": {
+                "en": "Hypnotic Gaze",
+                "es": "Mirada Hipnótica"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player is activated, they can declare a Hypnotic Gaze Special Action. When a player declares a Hypnotic Gaze Special Action they are first allowed to make a Move Action, though they cannot continue to move after the Hypnotic Gaze Special Action has been attempted. When a player performs a Hypnotic Gaze Special Action, they select a Standing opposition player adjacent to them and roll a D6. On a 1-2, nothing happens and this player's activation immediately ends. On a 3+, the selected opposition player becomes Distracted and this player's activation immediately ends.",
+                "es": "Cuando este jugador es activado, puede declarar una Acción Especial de Mirada Hipnótica. Cuando un jugador declara esta Acción Especial primero puede realizar una acción de Movimiento, aunque no puede continuar moviéndose después de intentar la Mirada Hipnótica. Cuando un jugador realiza esta Acción Especial, selecciona un jugador rival de pie adyacente y tira un D6. Con 1-2, no pasa nada y la activación termina inmediatamente. Con 3+, el rival seleccionado queda Distraído y la activación de este jugador termina inmediatamente."
+            }
+        },
+        {
+            "_id": "insignificant",
+            "name": {
+                "en": "Insignificant",
+                "es": "Insignificante"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "When creating a Team Draft List, you may not include more players with this Trait than players without this Trait.",
+                "es": "Al crear una Lista de Equipo, no puedes incluir más jugadores con este rasgo que jugadores sin este rasgo."
+            }
+        },
+        {
+            "_id": "kick_team_mate",
+            "name": {
+                "en": "Kick Team-mate",
+                "es": "Patear Compañero"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": false,
+            "description": {
+                "en": "When this player is activated, they can declare a Kick Team-mate Special Action; only one player can declare this Special Action each Turn. A Kick Team-mate Special Action works exactly the same as a Throw Team-mate Action, with the following exceptions: Performing a Kick Team-mate Special Action does not count as a team's Throw Team-mate Action for the Turn, and so a team can perform both a Kick Team-mate Special Action and a Throw Team-mate Action in the same Turn if they wish. However, if a Kick Team-mate Special Action results in a Fumbled Throw, immediately make an Injury Roll for the team-mate being kicked, treating any result of Stunned as Knocked Out. If the kicked player was holding the ball, it will Bounce from the square they were in.",
+                "es": "Cuando este jugador es activado, puede declarar una Acción Especial de Patear Compañero; solo un jugador puede declarar esta Acción Especial cada turno. Una Acción Especial de Patear Compañero funciona exactamente igual que una acción de Lanzar Compañero, con las siguientes excepciones: Realizar esta Acción Especial no cuenta como la acción de Lanzar Compañero del turno, por lo que un equipo puede realizar ambas en el mismo turno. Sin embargo, si la Acción Especial resulta en un Lanzamiento Fumbleado, haz inmediatamente una tirada de Heridas por el compañero pateado, tratando cualquier resultado de Aturdido como Fuera de Combate. Si el jugador pateado tenía el balón, Rebotará desde la casilla donde estaba."
+            }
+        },
+        {
+            "_id": "loner",
+            "name": {
+                "en": "Loner",
+                "es": "Solitario"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "Whenever this player wishes to use a Team Re-roll, they must roll a D6. If they roll equal to or higher than the number shown in brackets, then they may use the Team Re-roll as normal. If they roll lower than the number shown in brackets, then they may not re-roll the dice and the Team Re-roll is lost just as if it had been used.",
+                "es": "Siempre que este jugador quiera usar una Repetición de Equipo, debe tirar un D6. Si saca igual o más que el número entre paréntesis, puede usar la Repetición de Equipo normalmente. Si saca menos, no puede repetir el dado y la Repetición de Equipo se pierde como si se hubiera usado."
+            }
+        },
+        {
+            "_id": "my_ball",
+            "name": {
+                "en": "My Ball",
+                "es": "Mi Balón"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "A player with this Trait may not willingly give up the ball when in possession of it, and so may not declare Pass Actions, Hand-off Actions, or use any other Skill or Trait that would allow them to relinquish possession of the ball. The only way they can lose possession of the ball is by being Knocked Down, Placed Prone, Falling Over or by the effect of a Skill, Trait, or special rule of an opposing model.",
+                "es": "Un jugador con este rasgo no puede ceder voluntariamente el balón cuando lo tiene, por lo que no puede declarar acciones de Pase, Entrega, o usar cualquier otra habilidad o rasgo que le permita renunciar a la posesión del balón. La única forma de perder la posesión es siendo Derribado, Tumbado, Cayéndose o por el efecto de una habilidad, rasgo o regla especial de un modelo rival."
+            }
+        },
+        {
+            "_id": "no_ball",
+            "name": {
+                "en": "No Ball",
+                "es": "Sin Balón"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "A player with this Trait may never have possession of the ball. If this player would be required to attempt to Catch or Pick-up the Ball, they will automatically fail to do so as if they had rolled a natural 1. A player with this Trait may not attempt to Intercept a Pass.",
+                "es": "Un jugador con este rasgo nunca puede tener posesión del balón. Si este jugador tuviera que intentar Atrapar o Recoger el balón, fallará automáticamente como si hubiera sacado un 1 natural. Un jugador con este rasgo no puede intentar Interceptar un Pase."
+            }
+        },
+        {
+            "_id": "pick_me_up",
+            "name": {
+                "en": "Pick-me-up",
+                "es": "Levántame"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "At the end of each of the opposition's Turns, roll a D6 for each Prone team-mate within 3 squares of one or more Standing players with this Trait. On a 5+, the Prone player may immediately stand up. Should a player with this Trait stand up as a result of a team-mate using this Trait, they may not also use this Trait during the same Turn.",
+                "es": "Al final de cada turno del rival, tira un D6 por cada compañero Tumbado a 3 casillas o menos de uno o más jugadores de pie con este rasgo. Con 5+, el jugador Tumbado puede levantarse inmediatamente. Si un jugador con este rasgo se levanta como resultado de un compañero usando este rasgo, no puede también usar este rasgo durante el mismo turno."
+            }
+        },
+        {
+            "_id": "plague_ridden",
+            "name": {
+                "en": "Plague Ridden",
+                "es": "Apestado"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": false,
+            "description": {
+                "en": "Once per game, when a player with this Trait causes a Casualty against an opposition player as a result of a Block Action, and that player suffers a Dead result on their Casualty Roll and is not saved by an Apothecary, you may immediately add one new Lineman player from your team's Team Roster to your Reserves Box. This may cause your team to have more than 16 players for the remainder of the game. During the Post-game Sequence, this player may be hired in the same manner as any Journeyman players. This Trait cannot be used against Big Guy players, or any player with the Decay, Regeneration or Stunty Traits.",
+                "es": "Una vez por partido, cuando un jugador con este rasgo causa una Baja contra un rival como resultado de una acción de Placaje, y ese jugador sufre un resultado de Muerto en su tirada de Baja y no es salvado por un Boticario, puedes añadir inmediatamente un nuevo jugador Lineman de la Plantilla de tu equipo a tu Caja de Reservas. Esto puede causar que tu equipo tenga más de 16 jugadores durante el resto del partido. Durante la Secuencia Post-partido, este jugador puede ser contratado igual que cualquier Journeyman. Este rasgo no puede usarse contra jugadores Big Guy, o cualquier jugador con los rasgos Descomposición, Regeneración o Stunty."
+            }
+        },
+        {
+            "_id": "pogo",
+            "name": {
+                "en": "Pogo",
+                "es": "Pogo"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "During their movement, a player with this Trait can attempt to Pogo over a single adjacent square regardless of what is in the square. Pogoing works the same way as Jumping, with the exception that the Pogoing player may ignore all negative modifiers they would receive by Jumping. A player with this Trait cannot also have the Leap Skill.",
+                "es": "Durante su movimiento, un jugador con este rasgo puede intentar Saltar con Pogo sobre una casilla adyacente sin importar lo que haya en ella. El Pogo funciona igual que Brincar, con la excepción de que el jugador puede ignorar todos los modificadores negativos que recibiría al Brincar. Un jugador con este rasgo no puede tener también la habilidad Salto."
+            }
+        },
+        {
+            "_id": "projectile_vomit",
+            "name": {
+                "en": "Projectile Vomit",
+                "es": "Vómito Proyectil"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player is activated, they can declare a Projectile Vomit Special Action. When this player performs a Projectile Vomit Special Action, select a Standing opposition player adjacent to this player and roll a D6. On a 2+, this player hits the opposition player with a gout of acidic bile. Make an Armour Roll for the targeted player. This Armour Roll cannot be modified in any way. If the player's armour is broken, make an Injury Roll for them, otherwise nothing happens. On a 1, this player covers themselves in acidic bile; make an Armour Roll for this player. This Armour Roll cannot be modified in any way. This player may use the Projectile Vomit Special Action to replace the Block Action made as part of a Blitz Action if they wish.",
+                "es": "Cuando este jugador es activado, puede declarar una Acción Especial de Vómito Proyectil. Cuando un jugador realiza esta Acción Especial, selecciona un jugador rival de pie adyacente y tira un D6. Con 2+, este jugador golpea al rival con un chorro de bilis ácida. Haz una tirada de Armadura por el objetivo. Esta tirada no puede ser modificada de ninguna manera. Si la armadura del jugador se rompe, haz una tirada de Heridas, de lo contrario no pasa nada. Con 1, este jugador se cubre a sí mismo de bilis ácida; haz una tirada de Armadura por este jugador. Esta tirada no puede ser modificada de ninguna manera. Este jugador puede usar esta Acción Especial para reemplazar la acción de Placaje de un Blitz si lo desea."
+            }
+        },
+        {
+            "_id": "really_stupid",
+            "name": {
+                "en": "Really Stupid",
+                "es": "Verdaderamente Estúpido"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "Whenever this player is activated, after declaring their Action, they must roll a D6. They may apply a +2 modifier to the roll if they have any Standing team-mates who are not Distracted, and do not have the Really Stupid Trait, adjacent to them. On a 4+, the player may perform the declared Action as normal. On a 1‑3, this player becomes Distracted.",
+                "es": "Siempre que este jugador es activado, después de declarar su acción, debe tirar un D6. Puede aplicar un modificador de +2 si tiene algún compañero de pie que no esté Distraído, y no tenga el rasgo Verdaderamente Estúpido, adyacente a él. Con 4+, puede realizar la acción normalmente. Con 1-3, este jugador queda Distraído."
+            }
+        },
+        {
+            "_id": "regeneration",
+            "name": {
+                "en": "Regeneration",
+                "es": "Regeneración"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": false,
+            "description": {
+                "en": "Whenever this player suffers a Casualty, before making the Casualty Roll for them, roll a D6. On a 1‑3, this player suffers the Casualty; make the Casualty Roll as normal. On a 4+, this player regenerates and ignores the Casualty (though any Star Player Points earned for causing the Casualty are still earned) and is instead placed in their team's Reserves Box.",
+                "es": "Siempre que este jugador sufre una Baja, antes de hacer la tirada de Baja por él, tira un D6. Con 1-3, este jugador sufre la Baja; haz la tirada de Baja normalmente. Con 4+, este jugador regenera e ignora la Baja (aunque los Puntos de Jugador Estrella ganados por causar la Baja se mantienen) y en su lugar se coloca en la Caja de Reservas de su equipo."
+            }
+        },
+        {
+            "_id": "right_stuff",
+            "name": {
+                "en": "Right Stuff",
+                "es": "Buen Material"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "This player can be thrown by a team-mate with the Throw Team-mate Trait, even if this player is Prone.",
+                "es": "Este jugador puede ser lanzado por un compañero con el rasgo Lanzar Compañero, incluso si este jugador está Tumbado."
+            }
+        },
+        {
+            "_id": "secret_weapon",
+            "name": {
+                "en": "Secret Weapon",
+                "es": "Arma Secreta"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "At the end of a Drive in which this player took part, even if they are not on the pitch at the end of the Drive, they are Sent-off for committing a Foul.",
+                "es": "Al final de un Drive en el que este jugador participó, incluso si no está en el campo al final del Drive, es Expulsado por cometer una Falta."
+            }
+        },
+        {
+            "_id": "stab",
+            "name": {
+                "en": "Stab",
+                "es": "Puñalada"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player is activated, they can declare a Stab Special Action. When this player performs a Stab Special Action, select a Standing opposition player adjacent to this player and make an Armour Roll for the selected player. This Armour Roll cannot be modified in any way. If the player's Armour is broken, make an Injury Roll for them, otherwise nothing happens. This player may use the Stab Special Action to replace the Block Action made as part of a Blitz Action if they wish.",
+                "es": "Cuando este jugador es activado, puede declarar una Acción Especial de Puñalada. Cuando un jugador realiza esta Acción Especial, selecciona un jugador rival de pie adyacente y haz una tirada de Armadura por el jugador seleccionado. Esta tirada de Armadura no puede ser modificada de ninguna manera. Si la Armadura del jugador se rompe, haz una tirada de Heridas, de lo contrario no pasa nada. Este jugador puede usar esta Acción Especial para reemplazar la acción de Placaje de un Blitz si lo desea."
+            }
+        },
+        {
+            "_id": "stunty",
+            "name": {
+                "en": "Stunty",
+                "es": "Canijo"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "When this player attempts to Dodge, they do not suffer any negative modifiers to their Agility Test for being Marked by opposition players. Additionally, this player applies a -1 modifier to the Agility Test when attempting to Intercept the ball. A player with this Trait is more prone to injury and so if an Injury Roll is made for them, roll on the Stunty Injury Table instead.",
+                "es": "Cuando este jugador intenta Esquivar, no sufre ningún modificador negativo a su tirada de Agilidad por estar Marcado por jugadores rivales. Además, este jugador aplica un modificador de -1 a la tirada de Agilidad al intentar Interceptar el balón. Un jugador con este rasgo es más propenso a lesiones y por lo tanto si se hace una tirada de Heridas por él, se tira en la Tabla de Heridas Canijo en su lugar."
+            }
+        },
+        {
+            "_id": "swoop",
+            "name": {
+                "en": "Swoop",
+                "es": "Planear"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "When this player is thrown by a Throw Team-mate Action, they may choose not to Scatter before landing as normal. If they do, position the Throw-in Template over this player so it faces one of the two End Zones or either Sideline. Roll a D6 to determine the direction this player will travel, and then a second die to determine how many squares in that direction this player will travel. Additionally, if they choose not to Scatter as normal, this player may re-roll the Agility Test when attempting to land.",
+                "es": "Cuando este jugador es lanzado por una acción de Lanzar Compañero, puede elegir no Dispersarse antes de aterrizar normalmente. Si lo hace, coloca la Plantilla de Saque sobre este jugador apuntando hacia una de las dos Zonas de Anotación o líneas laterales. Tira un D6 para determinar la dirección en que viajará este jugador, y un segundo dado para determinar cuántas casillas en esa dirección viajará. Además, si elige no Dispersarse normalmente, este jugador puede repetir la tirada de Agilidad al intentar aterrizar."
+            }
+        },
+        {
+            "_id": "take_root",
+            "name": {
+                "en": "Take Root",
+                "es": "Echar Raíces"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "Whenever this player is activated, after declaring their Action, if they are Standing they must roll a D6. On a 2+, the player may perform the declared Action as normal. On a 1, the player becomes Rooted. Whilst Rooted, a player cannot perform Move Actions, may not Follow-up after performing a Block Action, cannot be Pushed Back, and may not leave their current square for any reason, with the exception of being Knocked Out or suffering a Casualty. A Rooted player will immediately stop being Rooted at the end of a Drive, or if they are ever Knocked Down or Placed Prone.",
+                "es": "Siempre que este jugador es activado, después de declarar su acción, si está de pie debe tirar un D6. Con 2+, puede realizar la acción normalmente. Con 1, el jugador queda Enraizado. Mientras está Enraizado, un jugador no puede realizar acciones de Movimiento, no puede Seguir después de realizar una acción de Placaje, no puede ser Empujado, y no puede abandonar su casilla actual por ningún motivo, con la excepción de quedar Fuera de Combate o sufrir una Baja. Un jugador Enraizado dejará inmediatamente de estar Enraizado al final de un Drive, o si es Derribado o Tumbado."
+            }
+        },
+        {
+            "_id": "throw_team_mate",
+            "name": {
+                "en": "Throw Team-mate",
+                "es": "Lanzar Compañero"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "This player may declare the Throw Team-mate Action.",
+                "es": "Este jugador puede declarar la acción de Lanzar Compañero."
+            }
+        },
+        {
+            "_id": "timmm_ber",
+            "name": {
+                "en": "Timmm-ber!",
+                "es": "¡Timmm-ber!"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": false,
+            "description": {
+                "en": "If this player has an MA of 2 or less and attempts to stand up, apply a +1 modifier to the roll for standing up for each Open Standing team-mate adjacent to this player. A roll of a natural 1 will still fail as normal.",
+                "es": "Si este jugador tiene un MO de 2 o menos e intenta levantarse, aplica un modificador de +1 a la tirada de levantarse por cada compañero Libre de pie adyacente a este jugador. Una tirada de 1 natural seguirá fallando normalmente."
+            }
+        },
+        {
+            "_id": "titchy",
+            "name": {
+                "en": "Titchy",
+                "es": "Diminuto"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "A player with this Trait may apply a +1 modifier to the Agility Test when attempting to Dodge. However, when an opposition player attempts to Dodge into a square within this player's Tackle Zone, this player will not apply a -1 modifier to the opposition player's Agility Test for Marking the opposition player.",
+                "es": "Un jugador con este rasgo puede aplicar un modificador de +1 a la tirada de Agilidad al intentar Esquivar. Sin embargo, cuando un jugador rival intenta Esquivar hacia una casilla dentro de la zona de placaje de este jugador, este jugador no aplicará un modificador de -1 a la tirada de Agilidad del rival por Marcarlo."
+            }
+        },
+        {
+            "_id": "trickster",
+            "name": {
+                "en": "Trickster",
+                "es": "Tramposo"
+            },
+            "family": "trait",
+            "type": "active",
+            "mandatory": false,
+            "description": {
+                "en": "Whenever an opposition player attempts to perform a Block Action against this player, or a Special Action that targets this player directly (with the exception of a Block Action caused by the Ball & Chain Special Action), this player may use this Trait. Before determining how many dice are rolled, this player may be removed from the pitch and placed in any other unoccupied square adjacent to the player performing the Action. The Action then takes place as normal. If the player using this Trait is holding the ball and places themselves in the opposition End Zone, the Action will still be fully resolved before any touchdown is resolved. If this player uses this Trait to be placed on the ball, they may attempt to pick it up before any dice are rolled.",
+                "es": "Siempre que un jugador rival intente realizar una acción de Placaje contra este jugador, o una Acción Especial que tenga como objetivo directo a este jugador (con la excepción de una acción de Placaje causada por la Acción Especial de Bola y Cadena), este jugador puede usar este rasgo. Antes de determinar cuántos dados se tiran, este jugador puede ser retirado del campo y colocado en cualquier otra casilla desocupada adyacente al jugador que realiza la acción. La acción procede normalmente. Si el jugador que usa este rasgo tiene el balón y se coloca en la Zona de Anotación rival, la acción se resolverá completamente antes de resolver cualquier touchdown. Si este jugador usa este rasgo para colocarse sobre el balón, puede intentar recogerlo antes de tirar cualquier dado."
+            }
+        },
+        {
+            "_id": "unchannelled_fury",
+            "name": {
+                "en": "Unchannelled Fury",
+                "es": "Furia Descontrolada"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "Whenever this player is activated, after declaring their Action, they must roll a D6. They may apply a +2 modifier to the roll if they have declared a Block Action or a Blitz Action. On a 4+, the player may perform the declared Action as normal. On a 1‑3, this player rages incoherently but nothing really happens. Their activation immediately ends.",
+                "es": "Siempre que este jugador es activado, después de declarar su acción, debe tirar un D6. Puede aplicar un modificador de +2 si ha declarado una acción de Placaje o Blitz. Con 4+, puede realizar la acción normalmente. Con 1-3, este jugador rabia incoherentemente pero realmente no pasa nada. Su activación termina inmediatamente."
+            }
+        },
+        {
+            "_id": "unsteady",
+            "name": {
+                "en": "Unsteady",
+                "es": "Inestable"
+            },
+            "family": "trait",
+            "type": "passive",
+            "mandatory": true,
+            "description": {
+                "en": "This player may not declare Secure the Ball Actions.",
+                "es": "Este jugador no puede declarar acciones de Asegurar el Balón."
+            }
+        }
+    ]
+}
