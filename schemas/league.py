@@ -75,6 +75,22 @@ class MatchSummary(BaseModel):
     played_at: Optional[datetime] = None
 
 
+class FlatMatchResponse(BaseModel):
+    """Flat match response compatible with the frontend Match model."""
+
+    id: str
+    league_id: str
+    round: int
+    home_team_id: str
+    home_team_name: str
+    away_team_id: str
+    away_team_name: str
+    home_score: int
+    away_score: int
+    status: str
+    played_at: Optional[datetime] = None
+
+
 class MatchDetail(BaseModel):
     """Full match detail."""
 
@@ -155,6 +171,21 @@ class JoinLeagueRequest(BaseModel):
     """Request to join a league with a team."""
 
     team_id: str
+    invite_code: str = Field(..., description="League invite code")
+
+
+class LeagueByCodePreview(BaseModel):
+    """League preview returned when looking up by invite code."""
+
+    id: str
+    name: str
+    owner_username: str
+    status: str
+    format: str
+    team_count: int
+    max_teams: int
+    season: int
+    invite_code: str
 
 
 class LeagueSummary(BaseModel):
@@ -168,7 +199,12 @@ class LeagueSummary(BaseModel):
     team_count: int
     max_teams: int
     season: int
+    invite_code: Optional[str] = None
     created_at: datetime
+    # User-specific fields
+    is_owner: bool = False
+    user_team_name: Optional[str] = None
+    current_round: Optional[int] = None
 
 
 class LeagueDetail(BaseModel):
@@ -179,6 +215,7 @@ class LeagueDetail(BaseModel):
     description: Optional[str]
     owner_id: str
     owner_username: str
+    invite_code: Optional[str] = None
 
     status: str
     season: int

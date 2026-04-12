@@ -12,11 +12,14 @@ from exceptions.exceptions import (
 )
 from schemas.league import (
     CreateLeagueRequest,
+    FlatMatchResponse,
     JoinLeagueRequest,
+    LeagueByCodePreview,
     LeagueDetail,
     LeagueSummary,
     MatchDetail,
     RecordMatchResultRequest,
+    UpdateLeagueRequest,
 )
 from services.league_service import LeagueService
 
@@ -66,6 +69,74 @@ async def get_league(league_id: str):
     return detail
 
 
+@router.get("/by-code/{invite_code}", response_model=LeagueByCodePreview)
+async def get_league_by_invite_code(
+    invite_code: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Look up a league by its invite code."""
+    preview = await LeagueService.get_league_by_code(invite_code)
+    if not preview:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No se encontró ninguna liga con el código '{invite_code}'",
+        )
+    return preview
+
+
+@router.patch("/{league_id}", response_model=LeagueDetail)
+async def update_league_settings(
+    league_id: str,
+    request: UpdateLeagueRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Update league settings (owner only)."""
+    try:
+        await LeagueService.update_league(league_id, user_id, request)
+        return await LeagueService.get_league_detail(league_id)
+    except LeagueNotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"League '{league_id}' not found",
+        )
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.delete("/{league_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_league(
+    league_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Delete a league (owner only)."""
+    try:
+        await LeagueService.delete_league(league_id, user_id)
+    except LeagueNotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"League '{league_id}' not found",
+        )
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/{league_id}/archive", status_code=status.HTTP_204_NO_CONTENT)
+async def archive_league(
+    league_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Archive/complete a league (owner only)."""
+    try:
+        await LeagueService.archive_league(league_id, user_id)
+    except LeagueNotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"League '{league_id}' not found",
+        )
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
 # ============== Team Management ==============
 
 
@@ -75,9 +146,11 @@ async def join_league(
     request: JoinLeagueRequest,
     user_id: str = Depends(get_current_user),
 ):
-    """Join a league with a team."""
+    """Join a league with a team using the invite code."""
     try:
-        await LeagueService.join_league(league_id, user_id, request.team_id)
+        await LeagueService.join_league(
+            league_id, user_id, request.team_id, request.invite_code
+        )
         return await LeagueService.get_league_detail(league_id)
     except LeagueNotFoundException:
         raise HTTPException(
@@ -130,6 +203,33 @@ async def start_league(league_id: str, user_id: str = Depends(get_current_user))
 
 
 # ============== Match Operations ==============
+
+
+@router.get("/{league_id}/matches", response_model=list[FlatMatchResponse])
+async def get_league_matches(league_id: str):
+    """Get all matches for a league as a flat list."""
+    detail = await LeagueService.get_league_detail(league_id)
+    if not detail:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"League '{league_id}' not found",
+        )
+    return [
+        FlatMatchResponse(
+            id=m.id,
+            league_id=league_id,
+            round=m.round,
+            home_team_id=m.home.team_id,
+            home_team_name=m.home.team_name,
+            away_team_id=m.away.team_id,
+            away_team_name=m.away.team_name,
+            home_score=m.score_home,
+            away_score=m.score_away,
+            status=m.status,
+            played_at=m.played_at,
+        )
+        for m in detail.matches
+    ]
 
 
 @router.get("/{league_id}/matches/{match_id}", response_model=MatchDetail)

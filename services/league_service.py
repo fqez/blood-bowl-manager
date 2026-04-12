@@ -26,6 +26,7 @@ from models.user.user import User
 from models.user_team.team import UserTeam
 from schemas.league import (
     CreateLeagueRequest,
+    LeagueByCodePreview,
     LeagueDetail,
     LeagueRulesRequest,
     LeagueStandingResponse,
@@ -36,6 +37,7 @@ from schemas.league import (
     MatchSummary,
     MatchTeamResponse,
     RecordMatchResultRequest,
+    UpdateLeagueRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -105,6 +107,7 @@ class LeagueService:
                     team_count=len(league.teams),
                     max_teams=league.max_teams,
                     season=league.season,
+                    invite_code=league.invite_code,
                     created_at=league.created_at,
                 )
             )
@@ -113,8 +116,10 @@ class LeagueService:
 
     @staticmethod
     async def get_leagues_by_user(user_id: str) -> list[LeagueSummary]:
-        """Get leagues where user has a team."""
-        leagues = await League.find({"teams.user_id": user_id}).to_list()
+        """Get leagues where user is the owner or has a team."""
+        leagues = await League.find(
+            {"$or": [{"owner_id": user_id}, {"teams.user_id": user_id}]}
+        ).to_list()
 
         results = []
         for league in leagues:
@@ -123,6 +128,29 @@ class LeagueService:
                 owner = await User.get(league.owner_id)
             except Exception:
                 pass
+
+            # Find user's team in this league
+            user_team_name = None
+            for team in league.teams:
+                if team.user_id == user_id:
+                    user_team_name = team.team_name
+                    break
+
+            # Check if user is the owner
+            is_owner = league.owner_id == user_id
+
+            # Calculate current round from matches (lowest round with pending matches)
+            current_round = None
+            if league.matches:
+                pending_rounds = [
+                    m.round for m in league.matches if m.status != MatchStatus.COMPLETED
+                ]
+                if pending_rounds:
+                    current_round = min(pending_rounds)
+                else:
+                    # All matches completed - show the last round
+                    current_round = max(m.round for m in league.matches)
+
             results.append(
                 LeagueSummary(
                     id=str(league.id),
@@ -133,7 +161,11 @@ class LeagueService:
                     team_count=len(league.teams),
                     max_teams=league.max_teams,
                     season=league.season,
+                    invite_code=league.invite_code,
                     created_at=league.created_at,
+                    is_owner=is_owner,
+                    user_team_name=user_team_name,
+                    current_round=current_round,
                 )
             )
 
@@ -212,6 +244,7 @@ class LeagueService:
             description=league.description,
             owner_id=league.owner_id,
             owner_username=owner.username if owner else "Unknown",
+            invite_code=league.invite_code,
             status=league.status,
             season=league.season,
             format=league.format,
@@ -234,11 +267,16 @@ class LeagueService:
     # ============== Team Management ==============
 
     @staticmethod
-    async def join_league(league_id: str, user_id: str, team_id: str) -> League:
-        """Join a league with a team."""
+    async def join_league(
+        league_id: str, user_id: str, team_id: str, invite_code: str
+    ) -> League:
+        """Join a league with a team (invite code required)."""
         league = await League.get(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
+
+        if league.invite_code != invite_code.upper():
+            raise InvalidOperationException("Código de invitación incorrecto")
 
         team = await UserTeam.get(team_id)
         if not team:
@@ -247,7 +285,7 @@ class LeagueService:
         if team.user_id != user_id:
             raise InvalidOperationException("Cannot join with another user's team")
 
-        can_join, reason = league.can_join(team_id)
+        can_join, reason = league.can_join(team_id, user_id)
         if not can_join:
             raise InvalidOperationException(reason)
 
@@ -306,6 +344,55 @@ class LeagueService:
         await league.save()
         logger.info(f"Team {team_id} left league {league_id}")
 
+        return league
+
+    @staticmethod
+    async def get_league_by_code(invite_code: str) -> Optional[LeagueByCodePreview]:
+        """Look up a league by its invite code."""
+        league = await League.find_one({"invite_code": invite_code.upper()})
+        if not league:
+            return None
+        owner = None
+        try:
+            owner = await User.get(league.owner_id)
+        except Exception:
+            pass
+        return LeagueByCodePreview(
+            id=str(league.id),
+            name=league.name,
+            owner_username=owner.username if owner else "Unknown",
+            status=league.status,
+            format=league.format,
+            team_count=len(league.teams),
+            max_teams=league.max_teams,
+            season=league.season,
+            invite_code=league.invite_code,
+        )
+
+    @staticmethod
+    async def update_league(
+        league_id: str, owner_id: str, request: UpdateLeagueRequest
+    ) -> League:
+        """Update league settings (owner only)."""
+        league = await League.get(league_id)
+        if not league:
+            raise LeagueNotFoundException(league_id)
+        if league.owner_id != owner_id:
+            raise InvalidOperationException(
+                "Solo el propietario puede modificar la liga"
+            )
+        if request.name is not None:
+            league.name = request.name
+        if request.description is not None:
+            league.description = request.description
+        if request.max_teams is not None:
+            if request.max_teams < len(league.teams):
+                raise InvalidOperationException(
+                    "No se puede reducir el límite por debajo del número de equipos actuales"
+                )
+            league.max_teams = request.max_teams
+        await league.save()
+        logger.info(f"League {league_id} updated by owner {owner_id}")
         return league
 
     # ============== League Lifecycle ==============
@@ -514,3 +601,44 @@ class LeagueService:
                 )
 
         return None
+
+    # ============== Delete Operations ==============
+
+    @staticmethod
+    async def delete_league(league_id: str, user_id: str) -> None:
+        """Delete a league (owner only)."""
+        league = await League.get(league_id)
+        if not league:
+            raise LeagueNotFoundException(league_id)
+
+        if league.owner_id != user_id:
+            raise InvalidOperationException("Only the owner can delete the league")
+
+        if league.status == LeagueStatus.ACTIVE:
+            raise InvalidOperationException(
+                "Cannot delete an active league. Complete or archive it first."
+            )
+
+        await league.delete()
+        logger.info(f"League {league_id} deleted by user {user_id}")
+
+    @staticmethod
+    async def archive_league(league_id: str, user_id: str) -> None:
+        """Mark a league as completed/archived (owner only)."""
+        league = await League.get(league_id)
+        if not league:
+            raise LeagueNotFoundException(league_id)
+
+        if league.owner_id != user_id:
+            raise InvalidOperationException(
+                "Solo el propietario puede archivar la liga"
+            )
+
+        if league.status == LeagueStatus.DRAFT:
+            raise InvalidOperationException(
+                "No puedes archivar una liga que aún no ha empezado"
+            )
+
+        league.status = LeagueStatus.COMPLETED
+        await league.save()
+        logger.info(f"League {league_id} archived by user {user_id}")

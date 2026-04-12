@@ -180,6 +180,10 @@ class League(Document):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     owner_id: str = Field(..., description="User who created the league")
+    invite_code: str = Field(
+        default_factory=lambda: uuid.uuid4().hex[:8].upper(),
+        description="Invite code for joining the league",
+    )
 
     # Configuration
     status: LeagueStatus = Field(default=LeagueStatus.DRAFT)
@@ -222,7 +226,7 @@ class League(Document):
             reverse=True,
         )
 
-    def can_join(self, team_id: str) -> tuple[bool, str]:
+    def can_join(self, team_id: str, user_id: str | None = None) -> tuple[bool, str]:
         """Check if a team can join this league."""
         if self.status != LeagueStatus.DRAFT:
             return False, "League is not accepting teams"
@@ -232,6 +236,9 @@ class League(Document):
 
         if any(t.team_id == team_id for t in self.teams):
             return False, "Team is already in this league"
+
+        if user_id and any(t.user_id == user_id for t in self.teams):
+            return False, "User already has a team in this league"
 
         return True, "OK"
 

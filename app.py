@@ -1,9 +1,8 @@
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from auth.jwt_bearer import get_current_user
 from config.config import initiate_database
 from exceptions import exception_handlers
 from routes.admin import router as AdminRouter
@@ -53,5 +52,7 @@ app.include_router(BaseRosterRouter)
 app.include_router(StarPlayerRouter)
 
 # Protected routes: require valid JWT
-app.include_router(UserTeamRouter, dependencies=[Depends(get_current_user)])
-app.include_router(LeagueRouter, dependencies=[Depends(get_current_user)])
+# Note: Don't add dependencies at router level - it blocks CORS preflight OPTIONS requests
+# Each route that needs auth should use Depends(get_current_user) directly
+app.include_router(UserTeamRouter)
+app.include_router(LeagueRouter)
