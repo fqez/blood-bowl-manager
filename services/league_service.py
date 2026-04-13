@@ -25,6 +25,7 @@ from models.league.league import (
 from models.user.user import User
 from models.user_team.team import UserTeam
 from schemas.league import (
+    AddMatchEventRequest,
     CreateLeagueRequest,
     LeagueByCodePreview,
     LeagueDetail,
@@ -38,6 +39,7 @@ from schemas.league import (
     MatchTeamResponse,
     RecordMatchResultRequest,
     UpdateLeagueRequest,
+    UpdateMatchStateRequest,
 )
 
 logger = logging.getLogger(__name__)
@@ -222,16 +224,25 @@ class LeagueService:
                 home=MatchTeamResponse(
                     team_id=m.home.team_id,
                     team_name=m.home.team_name,
+                    user_id=m.home.user_id,
                     username=m.home.username,
+                    base_roster_id=m.home.base_roster_id,
                 ),
                 away=MatchTeamResponse(
                     team_id=m.away.team_id,
                     team_name=m.away.team_name,
+                    user_id=m.away.user_id,
                     username=m.away.username,
+                    base_roster_id=m.away.base_roster_id,
                 ),
                 status=m.status,
                 score_home=m.score_home,
                 score_away=m.score_away,
+                weather=m.weather,
+                kickoff_event=m.kickoff_event,
+                current_half=m.current_half,
+                current_turn=m.current_turn,
+                started_at=m.started_at,
                 scheduled_at=m.scheduled_at,
                 played_at=m.played_at,
             )
@@ -444,12 +455,14 @@ class LeagueService:
                     team_name=t1.team_name,
                     user_id=t1.user_id,
                     username=t1.username,
+                    base_roster_id=t1.base_roster_id,
                 ),
                 away=MatchTeamInfo(
                     team_id=t2.team_id,
                     team_name=t2.team_name,
                     user_id=t2.user_id,
                     username=t2.username,
+                    base_roster_id=t2.base_roster_id,
                 ),
             )
             matches.append(match)
@@ -569,33 +582,49 @@ class LeagueService:
                     home=MatchTeamResponse(
                         team_id=m.home.team_id,
                         team_name=m.home.team_name,
+                        user_id=m.home.user_id,
                         username=m.home.username,
+                        base_roster_id=m.home.base_roster_id,
                     ),
                     away=MatchTeamResponse(
                         team_id=m.away.team_id,
                         team_name=m.away.team_name,
+                        user_id=m.away.user_id,
                         username=m.away.username,
+                        base_roster_id=m.away.base_roster_id,
                     ),
                     status=m.status,
                     score_home=m.score_home,
                     score_away=m.score_away,
                     weather=m.weather,
+                    kickoff_event=m.kickoff_event,
+                    current_half=m.current_half,
+                    current_turn=m.current_turn,
+                    rerolls_used_home=m.rerolls_used_home,
+                    rerolls_used_away=m.rerolls_used_away,
                     events=[
                         MatchEventResponse(
                             id=e.id,
                             type=e.type,
                             team=e.team,
+                            player_id=e.player_id,
                             player_name=e.player_name,
+                            victim_id=e.victim_id,
                             victim_name=e.victim_name,
                             injury=e.injury,
+                            detail=e.detail,
                             half=e.half,
                             turn=e.turn,
+                            timestamp=e.timestamp,
+                            created_by=e.created_by,
+                            created_by_name=e.created_by_name,
                         )
                         for e in m.events
                     ],
                     mvp_home=m.mvp_home,
                     mvp_away=m.mvp_away,
                     gate=m.gate,
+                    started_at=m.started_at,
                     scheduled_at=m.scheduled_at,
                     played_at=m.played_at,
                 )
@@ -642,3 +671,382 @@ class LeagueService:
         league.status = LeagueStatus.COMPLETED
         await league.save()
         logger.info(f"League {league_id} archived by user {user_id}")
+
+    # ============== Live Match Operations ==============
+
+    @staticmethod
+    async def _get_league_and_match(league_id: str, match_id: str):
+        """Helper to fetch league and find match by id."""
+        league = await League.get(league_id)
+        if not league:
+            raise LeagueNotFoundException(league_id)
+        match = None
+        for m in league.matches:
+            if m.id == match_id:
+                match = m
+                break
+        if not match:
+            raise InvalidOperationException(f"Match {match_id} not found")
+        return league, match
+
+    @staticmethod
+    def _user_can_manage_match(league: League, match: Match, user_id: str) -> bool:
+        """Check if user is owner, home, or away player."""
+        if league.owner_id == user_id:
+            return True
+        if match.home.user_id == user_id or match.away.user_id == user_id:
+            return True
+        return False
+
+    @staticmethod
+    async def start_match(league_id: str, match_id: str, user_id: str) -> League:
+        """Start a match (either contestant or owner)."""
+        league, match = await LeagueService._get_league_and_match(league_id, match_id)
+
+        if league.status != LeagueStatus.ACTIVE:
+            raise InvalidOperationException("League is not active")
+
+        if not LeagueService._user_can_manage_match(league, match, user_id):
+            raise InvalidOperationException(
+                "Only match participants or the league owner can start a match"
+            )
+
+        if match.status == MatchStatus.COMPLETED:
+            raise InvalidOperationException("Match is already completed")
+
+        if match.status == MatchStatus.IN_PROGRESS:
+            raise InvalidOperationException("Match is already in progress")
+
+        match.status = MatchStatus.IN_PROGRESS
+        match.started_at = datetime.utcnow()
+        match.current_half = 1
+        match.current_turn = 1
+
+        await league.save()
+        logger.info(f"Match {match_id} started by user {user_id}")
+        return league
+
+    @staticmethod
+    async def add_match_event(
+        league_id: str,
+        match_id: str,
+        user_id: str,
+        request: AddMatchEventRequest,
+    ) -> MatchDetail:
+        """Add an event to a live match with audit trail."""
+        league, match = await LeagueService._get_league_and_match(league_id, match_id)
+
+        if match.status != MatchStatus.IN_PROGRESS:
+            raise InvalidOperationException("Match is not in progress")
+
+        if not LeagueService._user_can_manage_match(league, match, user_id):
+            raise InvalidOperationException(
+                "Only match participants or the league owner can add events"
+            )
+
+        # Resolve username for audit trail
+        user = await User.get(user_id)
+        username = user.username if user else "unknown"
+
+        event = MatchEvent(
+            id=str(uuid.uuid4()),
+            type=request.type,
+            team=request.team,
+            player_id=request.player_id,
+            player_name=request.player_name,
+            victim_id=request.victim_id,
+            victim_name=request.victim_name,
+            injury=request.injury,
+            detail=request.detail,
+            half=request.half,
+            turn=request.turn,
+            timestamp=datetime.utcnow(),
+            created_by=user_id,
+            created_by_name=username,
+        )
+        match.events.append(event)
+
+        # Auto-update score for touchdowns
+        if request.type == "touchdown":
+            if request.team == "home":
+                match.score_home += 1
+            else:
+                match.score_away += 1
+
+        await league.save()
+        logger.info(f"Event '{request.type}' added to match {match_id} by {username}")
+
+        return await LeagueService.get_match_detail(league_id, match_id)
+
+    @staticmethod
+    async def delete_match_event(
+        league_id: str,
+        match_id: str,
+        event_id: str,
+        user_id: str,
+    ) -> MatchDetail:
+        """Remove an event from a live match."""
+        league, match = await LeagueService._get_league_and_match(league_id, match_id)
+
+        if match.status != MatchStatus.IN_PROGRESS:
+            raise InvalidOperationException("Match is not in progress")
+
+        if not LeagueService._user_can_manage_match(league, match, user_id):
+            raise InvalidOperationException(
+                "Only match participants or the league owner can remove events"
+            )
+
+        event_to_remove = None
+        for e in match.events:
+            if e.id == event_id:
+                event_to_remove = e
+                break
+
+        if not event_to_remove:
+            raise InvalidOperationException(f"Event {event_id} not found")
+
+        # Reverse score impact for touchdowns
+        if event_to_remove.type == "touchdown":
+            if event_to_remove.team == "home":
+                match.score_home = max(0, match.score_home - 1)
+            else:
+                match.score_away = max(0, match.score_away - 1)
+
+        match.events.remove(event_to_remove)
+        await league.save()
+
+        logger.info(f"Event {event_id} removed from match {match_id} by user {user_id}")
+        return await LeagueService.get_match_detail(league_id, match_id)
+
+    @staticmethod
+    async def update_match_state(
+        league_id: str,
+        match_id: str,
+        user_id: str,
+        request: UpdateMatchStateRequest,
+    ) -> MatchDetail:
+        """Update live match state (score, half, turn, weather, etc.)."""
+        league, match = await LeagueService._get_league_and_match(league_id, match_id)
+
+        # Allow weather / kickoff changes before the match starts (pre-match ceremony)
+        _pre_match_only = (
+            request.weather is not None or request.kickoff_event is not None
+        ) and all(
+            v is None
+            for v in [
+                request.score_home,
+                request.score_away,
+                request.current_half,
+                request.current_turn,
+                request.rerolls_used_home,
+                request.rerolls_used_away,
+                request.mvp_home,
+                request.mvp_away,
+                request.gate,
+            ]
+        )
+        if match.status != MatchStatus.IN_PROGRESS and not _pre_match_only:
+            raise InvalidOperationException("Match is not in progress")
+
+        if not LeagueService._user_can_manage_match(league, match, user_id):
+            raise InvalidOperationException(
+                "Only match participants or the league owner can update match state"
+            )
+
+        # Resolve username for audit trail
+        user = await User.get(user_id)
+        username = user.username if user else "unknown"
+
+        def _make_event(
+            event_type: str, detail: str, team: str = "system"
+        ) -> MatchEvent:
+            return MatchEvent(
+                id=str(uuid.uuid4()),
+                type=event_type,
+                team=team,
+                detail=detail,
+                half=match.current_half,
+                turn=match.current_turn,
+                timestamp=datetime.utcnow(),
+                created_by=user_id,
+                created_by_name=username,
+            )
+
+        # Apply only provided fields & log changes as events
+        if request.score_home is not None and request.score_home != match.score_home:
+            old, new = match.score_home, request.score_home
+            match.score_home = new
+            match.events.append(
+                _make_event("score_change", f"Home score: {old} → {new}", "home")
+            )
+        if request.score_away is not None and request.score_away != match.score_away:
+            old, new = match.score_away, request.score_away
+            match.score_away = new
+            match.events.append(
+                _make_event("score_change", f"Away score: {old} → {new}", "away")
+            )
+        if (
+            request.current_half is not None
+            and request.current_half != match.current_half
+        ):
+            old, new = match.current_half, request.current_half
+            match.current_half = new
+            match.events.append(_make_event("half_change", f"Half: {old} → {new}"))
+        if (
+            request.current_turn is not None
+            and request.current_turn != match.current_turn
+        ):
+            old, new = match.current_turn, request.current_turn
+            match.current_turn = new
+            match.events.append(_make_event("turn_change", f"Turn: {old} → {new}"))
+        if request.weather is not None and request.weather != match.weather:
+            old = match.weather or "—"
+            match.weather = request.weather
+            match.events.append(
+                _make_event("weather_change", f"Weather: {old} → {request.weather}")
+            )
+        if (
+            request.kickoff_event is not None
+            and request.kickoff_event != match.kickoff_event
+        ):
+            old = match.kickoff_event or "—"
+            match.kickoff_event = request.kickoff_event
+            match.events.append(
+                _make_event(
+                    "kickoff_change", f"Kickoff: {old} → {request.kickoff_event}"
+                )
+            )
+        if request.rerolls_used_home is not None:
+            if request.rerolls_used_home != match.rerolls_used_home:
+                old, new = match.rerolls_used_home, request.rerolls_used_home
+                match.rerolls_used_home = new
+                match.events.append(
+                    _make_event(
+                        "reroll_change",
+                        f"Home rerolls used: {old} → {new}",
+                        "home",
+                    )
+                )
+            else:
+                match.rerolls_used_home = request.rerolls_used_home
+        if request.rerolls_used_away is not None:
+            if request.rerolls_used_away != match.rerolls_used_away:
+                old, new = match.rerolls_used_away, request.rerolls_used_away
+                match.rerolls_used_away = new
+                match.events.append(
+                    _make_event(
+                        "reroll_change",
+                        f"Away rerolls used: {old} → {new}",
+                        "away",
+                    )
+                )
+            else:
+                match.rerolls_used_away = request.rerolls_used_away
+        if request.mvp_home is not None:
+            match.mvp_home = request.mvp_home
+        if request.mvp_away is not None:
+            match.mvp_away = request.mvp_away
+        if request.gate is not None:
+            match.gate = request.gate
+
+        await league.save()
+        logger.info(f"Match {match_id} state updated by user {user_id}")
+        return await LeagueService.get_match_detail(league_id, match_id)
+
+    @staticmethod
+    async def complete_match(league_id: str, match_id: str, user_id: str) -> League:
+        """Complete a live match and update standings."""
+        league, match = await LeagueService._get_league_and_match(league_id, match_id)
+
+        if match.status != MatchStatus.IN_PROGRESS:
+            raise InvalidOperationException("Match is not in progress")
+
+        if not LeagueService._user_can_manage_match(league, match, user_id):
+            raise InvalidOperationException(
+                "Only match participants or the league owner can complete a match"
+            )
+
+        match.status = MatchStatus.COMPLETED
+        match.played_at = datetime.utcnow()
+
+        # Update standings
+        home_standing = league.get_team_standing(match.home.team_id)
+        away_standing = league.get_team_standing(match.away.team_id)
+
+        if home_standing and away_standing:
+            home_standing.touchdowns_for += match.score_home
+            home_standing.touchdowns_against += match.score_away
+            away_standing.touchdowns_for += match.score_away
+            away_standing.touchdowns_against += match.score_home
+
+            home_cas = sum(
+                1 for e in match.events if e.type == "casualty" and e.team == "home"
+            )
+            away_cas = sum(
+                1 for e in match.events if e.type == "casualty" and e.team == "away"
+            )
+            home_standing.casualties_for += home_cas
+            home_standing.casualties_against += away_cas
+            away_standing.casualties_for += away_cas
+            away_standing.casualties_against += home_cas
+
+            if match.score_home > match.score_away:
+                home_standing.wins += 1
+                away_standing.losses += 1
+            elif match.score_home < match.score_away:
+                home_standing.losses += 1
+                away_standing.wins += 1
+            else:
+                home_standing.draws += 1
+                away_standing.draws += 1
+
+        await league.save()
+        logger.info(
+            f"Match {match_id} completed: {match.score_home}-{match.score_away}"
+        )
+        return league
+
+    @staticmethod
+    async def get_active_matches_for_user(user_id: str) -> list:
+        """Get all active (in-progress) matches involving a user."""
+        leagues = await League.find({"status": LeagueStatus.ACTIVE}).to_list()
+
+        active_matches = []
+        for league in leagues:
+            for m in league.matches:
+                if m.status == MatchStatus.IN_PROGRESS and (
+                    m.home.user_id == user_id or m.away.user_id == user_id
+                ):
+                    active_matches.append(
+                        {
+                            "league_id": str(league.id),
+                            "league_name": league.name,
+                            "match": MatchSummary(
+                                id=m.id,
+                                round=m.round,
+                                home=MatchTeamResponse(
+                                    team_id=m.home.team_id,
+                                    team_name=m.home.team_name,
+                                    user_id=m.home.user_id,
+                                    username=m.home.username,
+                                    base_roster_id=m.home.base_roster_id,
+                                ),
+                                away=MatchTeamResponse(
+                                    team_id=m.away.team_id,
+                                    team_name=m.away.team_name,
+                                    user_id=m.away.user_id,
+                                    username=m.away.username,
+                                    base_roster_id=m.away.base_roster_id,
+                                ),
+                                status=m.status,
+                                score_home=m.score_home,
+                                score_away=m.score_away,
+                                weather=m.weather,
+                                kickoff_event=m.kickoff_event,
+                                current_half=m.current_half,
+                                current_turn=m.current_turn,
+                                started_at=m.started_at,
+                            ),
+                        }
+                    )
+        return active_matches

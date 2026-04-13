@@ -12,20 +12,18 @@ from exceptions.exceptions import (
     TeamNotFoundException,
 )
 from models.base.roster import BaseRoster
+from models.base.star_player import StarPlayer
 from models.user.user import User
-from models.user_team.team import (
-    PlayerPerk,
-    PlayerStats,
-    UserPlayer,
-    UserTeam,
-)
+from models.user_team.team import PlayerPerk, PlayerStats, UserPlayer, UserTeam
 from schemas.user_team import (
     CreateTeamRequest,
     HirePlayerRequest,
     HirePlayerResponse,
+    HireStarPlayerRequest,
     PlayerCareerResponse,
     PlayerPerkResponse,
     PlayerStatsResponse,
+    UpdatePlayerRequest,
     UpdateTeamRequest,
     UserPlayerResponse,
     UserTeamDetail,
@@ -136,6 +134,31 @@ class UserTeamService:
         if not team:
             raise TeamNotFoundException(team_id)
 
+        # Load base roster for costs
+        roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
+        reroll_cost = roster.reroll_cost if roster else 60000
+
+        # Calculate treasury delta for staff changes
+        cost_delta = 0
+        if request.rerolls is not None:
+            diff = request.rerolls - team.rerolls
+            cost_delta += diff * reroll_cost
+        if request.cheerleaders is not None:
+            diff = request.cheerleaders - team.cheerleaders
+            cost_delta += diff * 10000
+        if request.assistant_coaches is not None:
+            diff = request.assistant_coaches - team.assistant_coaches
+            cost_delta += diff * 10000
+        if request.apothecary is not None:
+            if request.apothecary and not team.apothecary:
+                cost_delta += 50000
+            elif not request.apothecary and team.apothecary:
+                cost_delta -= 50000
+
+        # Validate treasury
+        if cost_delta > 0 and team.treasury < cost_delta:
+            raise InvalidOperationException("Not enough treasury")
+
         if request.name is not None:
             team.name = request.name
         if request.rerolls is not None:
@@ -149,6 +172,7 @@ class UserTeamService:
         if request.fan_factor is not None:
             team.fan_factor = request.fan_factor
 
+        team.treasury -= cost_delta
         team.updated_at = datetime.utcnow()
         await team.save()
 
@@ -253,6 +277,83 @@ class UserTeamService:
         )
 
     @staticmethod
+    async def hire_star_player(
+        team_id: str, request: HireStarPlayerRequest
+    ) -> HirePlayerResponse:
+        """Hire a star player for a team."""
+        team = await UserTeam.get(team_id)
+        if not team:
+            raise TeamNotFoundException(team_id)
+
+        # Fetch star player
+        star = await StarPlayer.find_one(StarPlayer.id == request.star_player_id)
+        if not star:
+            raise InvalidOperationException(
+                f"Star player '{request.star_player_id}' not found"
+            )
+
+        # Validate team compatibility
+        if team.base_roster_id not in star.plays_for:
+            raise InvalidOperationException(
+                f"Star player '{star.name}' cannot play for this team"
+            )
+
+        # Check roster space
+        if len(team.players) >= 16:
+            raise InvalidOperationException("Roster is full (max 16 players)")
+
+        # Check treasury
+        if team.treasury < star.cost:
+            raise InvalidOperationException(
+                f"Insufficient treasury ({team.treasury} < {star.cost})"
+            )
+
+        # Check not already hired
+        for p in team.players:
+            if p.base_type == f"star_{request.star_player_id}":
+                raise InvalidOperationException(
+                    f"Star player '{star.name}' is already on the roster"
+                )
+
+        name = request.name or star.name
+        number = request.number or UserTeamService._next_available_number(team)
+
+        new_player = UserPlayer(
+            id=uuid.uuid4().hex,
+            base_type=f"star_{request.star_player_id}",
+            name=name,
+            number=number,
+            current_value=star.cost,
+            stats=PlayerStats(
+                MA=star.stats.MA,
+                ST=star.stats.ST,
+                AG=star.stats.AG,
+                PA=star.stats.PA,
+                AV=star.stats.AV,
+            ),
+            perks=[
+                PlayerPerk(id=s.lower().replace(" ", "_"), name=s) for s in star.skills
+            ],
+            image=star.image,
+        )
+
+        team.players.append(new_player)
+        team.treasury -= star.cost
+        team.team_value = team.calculate_team_value()
+        team.updated_at = datetime.utcnow()
+        await team.save()
+
+        logger.info(
+            f"Hired star player '{name}' ({request.star_player_id}) for team {team_id}"
+        )
+
+        return HirePlayerResponse(
+            player=UserTeamService._player_to_response(new_player),
+            treasury_remaining=team.treasury,
+            team_value=team.team_value,
+        )
+
+    @staticmethod
     async def fire_player(team_id: str, player_id: str) -> UserTeam:
         """Remove a player from a team (no refund)."""
         team = await UserTeam.get(team_id)
@@ -305,6 +406,44 @@ class UserTeamService:
         team.updated_at = datetime.utcnow()
         await team.save()
 
+        return team
+
+    @staticmethod
+    async def update_player(
+        team_id: str, player_id: str, request: UpdatePlayerRequest
+    ) -> UserTeam:
+        """Update a player's name and/or jersey number."""
+        team = await UserTeam.get(team_id)
+        if not team:
+            raise TeamNotFoundException(team_id)
+
+        player = None
+        for p in team.players:
+            if p.id == player_id:
+                player = p
+                break
+
+        if not player:
+            raise PlayerNotFoundException(player_id)
+
+        if request.number is not None:
+            # Check number is not already taken by another player
+            for p in team.players:
+                if p.id != player_id and p.number == request.number:
+                    raise InvalidOperationException(
+                        f"Jersey number {request.number} is already taken"
+                    )
+            player.number = request.number
+
+        if request.name is not None:
+            player.name = request.name
+
+        team.updated_at = datetime.utcnow()
+        await team.save()
+
+        logger.info(
+            f"Updated player '{player.name}' (#{player.number}) in team {team_id}"
+        )
         return team
 
     # ============== Helpers ==============

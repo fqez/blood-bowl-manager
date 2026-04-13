@@ -34,6 +34,40 @@ class StarPlayerService:
         ]
 
     @staticmethod
+    async def get_all_star_players_detail() -> list[StarPlayerDetail]:
+        """Get full detail for all star players in a single query."""
+        star_players = await StarPlayer.find_all().to_list()
+        results = []
+        for sp in star_players:
+            stats = StarPlayerStatsResponse.from_stats(
+                ma=sp.stats.MA,
+                st=sp.stats.ST,
+                ag=sp.stats.AG,
+                pa=sp.stats.PA,
+                av=sp.stats.AV,
+            )
+            special_ability = None
+            if sp.special_ability:
+                special_ability = SpecialAbilityResponse(
+                    name=sp.special_ability.name,
+                    description=sp.special_ability.description,
+                )
+            results.append(
+                StarPlayerDetail(
+                    id=sp.id,
+                    name=sp.name,
+                    cost=sp.cost,
+                    stats=stats,
+                    player_types=sp.player_types,
+                    skills=sp.skills,
+                    special_ability=special_ability,
+                    plays_for=sp.plays_for,
+                    image=sp.image,
+                )
+            )
+        return results
+
+    @staticmethod
     async def get_star_player_by_id(star_player_id: str) -> Optional[StarPlayerDetail]:
         """Get full star player detail."""
         sp = await StarPlayer.find_one(StarPlayer.id == star_player_id)

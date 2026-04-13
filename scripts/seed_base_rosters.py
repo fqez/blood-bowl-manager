@@ -154,7 +154,7 @@ async def seed_base_rosters():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     with open(
-        os.path.join(base_dir, "config", "base_teams.json"), encoding="utf-8"
+        os.path.join(base_dir, "config", "base_teams.json"), encoding="utf-8-sig"
     ) as f:
         teams_data = json.load(f)
 

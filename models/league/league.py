@@ -82,6 +82,7 @@ class MatchTeamInfo(BaseModel):
     team_name: str
     user_id: str
     username: str
+    base_roster_id: str = ""
 
 
 class MatchEvent(BaseModel):
@@ -89,9 +90,12 @@ class MatchEvent(BaseModel):
 
     id: str = Field(default_factory=lambda: uuid.uuid4().hex[:8])
     type: str = Field(
-        ..., description="touchdown, casualty, interception, completion, mvp, etc."
+        ...,
+        description="touchdown, casualty, interception, completion, mvp, "
+        "weather, kickoff, inducement, reroll, foul, pass_attempt, "
+        "badly_hurt, serious_injury, rip, ko, stun, etc.",
     )
-    team: str = Field(..., pattern="^(home|away)$")
+    team: str = Field(..., pattern="^(home|away|system)$")
     player_id: Optional[str] = None
     player_name: Optional[str] = None
 
@@ -100,11 +104,20 @@ class MatchEvent(BaseModel):
     victim_name: Optional[str] = None
     injury: Optional[str] = None
 
+    # Extra data (weather result, kickoff result, inducement detail, etc.)
+    detail: Optional[str] = None
+
     # Timing
-    half: int = Field(default=1, ge=1, le=2)
-    turn: int = Field(default=1, ge=1, le=8)
+    half: int = Field(default=0, ge=0, le=2)
+    turn: int = Field(default=0, ge=0, le=16)
 
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+    # Audit trail
+    created_by: Optional[str] = Field(
+        None, description="user_id who created this event"
+    )
+    created_by_name: Optional[str] = None
 
 
 class Match(BaseModel):
@@ -129,8 +142,15 @@ class Match(BaseModel):
     score_home: int = Field(default=0, ge=0)
     score_away: int = Field(default=0, ge=0)
 
-    # Weather (affects gameplay)
+    # Pre-match
     weather: Optional[str] = None
+    kickoff_event: Optional[str] = None
+
+    # Live state
+    current_half: int = Field(default=0, ge=0, le=2)
+    current_turn: int = Field(default=0, ge=0, le=16)
+    rerolls_used_home: int = Field(default=0, ge=0)
+    rerolls_used_away: int = Field(default=0, ge=0)
 
     # Match events (goals, casualties, etc.)
     events: list[MatchEvent] = Field(default_factory=list)
@@ -143,6 +163,7 @@ class Match(BaseModel):
     gate: int = Field(default=0, ge=0)
 
     # Timing
+    started_at: Optional[datetime] = None
     scheduled_at: Optional[datetime] = None
     played_at: Optional[datetime] = None
 

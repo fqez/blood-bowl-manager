@@ -4,6 +4,8 @@ from models.base.roster import BaseRoster
 from models.base.skill_family import SkillFamily
 from models.base.star_player import StarPlayer
 from models.league.league import League
+from models.quick_match.quick_match import QuickMatch
+from models.tactic.tactic import Tactic
 from models.team.character import Character
 from models.team.perk import Perk
 from models.team.team import Team
@@ -21,7 +23,9 @@ __all__ = [
     BaseRoster,
     UserTeam,
     League,
+    QuickMatch,
     User,
     StarPlayer,
     SkillFamily,
+    Tactic,
 ]

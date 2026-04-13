@@ -11,7 +11,9 @@ from routes.base_roster import router as BaseRosterRouter
 from routes.character import router as CharacterRouter
 from routes.league import router as LeagueRouter
 from routes.perk import router as PerkRouter
+from routes.quick_match import router as QuickMatchRouter
 from routes.star_player import router as StarPlayerRouter
+from routes.tactic import router as TacticRouter
 from routes.team import router as TeamRouter
 from routes.user_team import router as UserTeamRouter
 
@@ -56,3 +58,5 @@ app.include_router(StarPlayerRouter)
 # Each route that needs auth should use Depends(get_current_user) directly
 app.include_router(UserTeamRouter)
 app.include_router(LeagueRouter)
+app.include_router(QuickMatchRouter)
+app.include_router(TacticRouter)

@@ -18,6 +18,16 @@ async def get_all_star_players():
     return await StarPlayerService.get_all_star_players()
 
 
+@router.get("/details", response_model=list[StarPlayerDetail])
+async def get_all_star_players_detail():
+    """
+    Get full detail for all star players in a single request.
+
+    More efficient than fetching each star player individually.
+    """
+    return await StarPlayerService.get_all_star_players_detail()
+
+
 @router.get("/team/{team_id}", response_model=list[StarPlayerSummary])
 async def get_star_players_for_team(team_id: str):
     """

@@ -45,7 +45,9 @@ class MatchTeamResponse(BaseModel):
 
     team_id: str
     team_name: str
+    user_id: str = ""
     username: str
+    base_roster_id: str = ""
 
 
 class MatchEventResponse(BaseModel):
@@ -54,11 +56,17 @@ class MatchEventResponse(BaseModel):
     id: str
     type: str
     team: str
+    player_id: Optional[str] = None
     player_name: Optional[str] = None
+    victim_id: Optional[str] = None
     victim_name: Optional[str] = None
     injury: Optional[str] = None
+    detail: Optional[str] = None
     half: int
     turn: int
+    timestamp: Optional[datetime] = None
+    created_by: Optional[str] = None
+    created_by_name: Optional[str] = None
 
 
 class MatchSummary(BaseModel):
@@ -71,6 +79,11 @@ class MatchSummary(BaseModel):
     status: str
     score_home: int
     score_away: int
+    weather: Optional[str] = None
+    kickoff_event: Optional[str] = None
+    current_half: int = 0
+    current_turn: int = 0
+    started_at: Optional[datetime] = None
     scheduled_at: Optional[datetime] = None
     played_at: Optional[datetime] = None
 
@@ -102,10 +115,16 @@ class MatchDetail(BaseModel):
     score_home: int
     score_away: int
     weather: Optional[str] = None
+    kickoff_event: Optional[str] = None
+    current_half: int = 0
+    current_turn: int = 0
+    rerolls_used_home: int = 0
+    rerolls_used_away: int = 0
     events: list[MatchEventResponse]
     mvp_home: Optional[str] = None
     mvp_away: Optional[str] = None
     gate: int
+    started_at: Optional[datetime] = None
     scheduled_at: Optional[datetime] = None
     played_at: Optional[datetime] = None
 
@@ -132,8 +151,44 @@ class MatchEventRequest(BaseModel):
     victim_id: Optional[str] = None
     victim_name: Optional[str] = None
     injury: Optional[str] = None
-    half: int = Field(default=1, ge=1, le=2)
-    turn: int = Field(default=1, ge=1, le=8)
+    detail: Optional[str] = None
+    half: int = Field(default=1, ge=0, le=2)
+    turn: int = Field(default=1, ge=0, le=16)
+
+
+class AddMatchEventRequest(BaseModel):
+    """Request to add a single event to a live match."""
+
+    type: str = Field(
+        ...,
+        description="touchdown, casualty, interception, completion, mvp, "
+        "weather, kickoff, inducement, reroll, foul, pass_attempt, etc.",
+    )
+    team: str = Field(..., pattern="^(home|away)$")
+    player_id: Optional[str] = None
+    player_name: Optional[str] = None
+    victim_id: Optional[str] = None
+    victim_name: Optional[str] = None
+    injury: Optional[str] = None
+    detail: Optional[str] = None
+    half: int = Field(default=0, ge=0, le=2)
+    turn: int = Field(default=0, ge=0, le=16)
+
+
+class UpdateMatchStateRequest(BaseModel):
+    """Request to update live match state (score, half, turn, weather, etc.)."""
+
+    score_home: Optional[int] = Field(None, ge=0)
+    score_away: Optional[int] = Field(None, ge=0)
+    current_half: Optional[int] = Field(None, ge=0, le=2)
+    current_turn: Optional[int] = Field(None, ge=0, le=16)
+    weather: Optional[str] = None
+    kickoff_event: Optional[str] = None
+    rerolls_used_home: Optional[int] = Field(None, ge=0)
+    rerolls_used_away: Optional[int] = Field(None, ge=0)
+    mvp_home: Optional[str] = None
+    mvp_away: Optional[str] = None
+    gate: Optional[int] = Field(None, ge=0)
 
 
 # ============== League Schemas ==============

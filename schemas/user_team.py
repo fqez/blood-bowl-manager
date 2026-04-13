@@ -67,6 +67,20 @@ class HirePlayerRequest(BaseModel):
     )
 
 
+class HireStarPlayerRequest(BaseModel):
+    """Request to hire a star player."""
+
+    star_player_id: str = Field(..., description="Star player ID")
+    name: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="Custom name (uses star player name if not provided)",
+    )
+    number: Optional[int] = Field(
+        None, ge=1, le=99, description="Jersey number (auto-assigned if not provided)"
+    )
+
+
 class HirePlayerResponse(BaseModel):
     """Response after hiring a player."""
 
