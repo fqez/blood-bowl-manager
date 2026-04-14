@@ -87,6 +87,10 @@ class QuickMatchService:
             started_at=m.started_at,
             scheduled_at=m.scheduled_at,
             played_at=m.played_at,
+            home_ready=m.home_ready,
+            away_ready=m.away_ready,
+            home_squad=m.home_squad,
+            away_squad=m.away_squad,
         )
 
     @staticmethod
@@ -265,9 +269,14 @@ class QuickMatchService:
         qm = await QuickMatchService._get_qm(qm_id)
         m = qm.match
 
-        # Allow weather/kickoff before match starts (pre-match ceremony)
+        # Allow weather/kickoff/ready before match starts (pre-match ceremony)
         _pre_match_only = (
-            request.weather is not None or request.kickoff_event is not None
+            request.weather is not None
+            or request.kickoff_event is not None
+            or request.home_ready is not None
+            or request.away_ready is not None
+            or request.home_squad is not None
+            or request.away_squad is not None
         ) and all(
             v is None
             for v in [
@@ -350,6 +359,14 @@ class QuickMatchService:
                 )
             else:
                 m.rerolls_used_away = request.rerolls_used_away
+        if request.home_ready is not None:
+            m.home_ready = request.home_ready
+        if request.away_ready is not None:
+            m.away_ready = request.away_ready
+        if request.home_squad is not None:
+            m.home_squad = request.home_squad
+        if request.away_squad is not None:
+            m.away_squad = request.away_squad
         if request.mvp_home is not None:
             m.mvp_home = request.mvp_home
         if request.mvp_away is not None:

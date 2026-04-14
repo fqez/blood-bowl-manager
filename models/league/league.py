@@ -145,6 +145,10 @@ class Match(BaseModel):
     # Pre-match
     weather: Optional[str] = None
     kickoff_event: Optional[str] = None
+    home_ready: bool = Field(default=False)
+    away_ready: bool = Field(default=False)
+    home_squad: list[str] = Field(default_factory=list)
+    away_squad: list[str] = Field(default_factory=list)
 
     # Live state
     current_half: int = Field(default=0, ge=0, le=2)

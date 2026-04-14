@@ -116,6 +116,10 @@ class MatchDetail(BaseModel):
     score_away: int
     weather: Optional[str] = None
     kickoff_event: Optional[str] = None
+    home_ready: bool = False
+    away_ready: bool = False
+    home_squad: list[str] = []
+    away_squad: list[str] = []
     current_half: int = 0
     current_turn: int = 0
     rerolls_used_home: int = 0
@@ -184,6 +188,10 @@ class UpdateMatchStateRequest(BaseModel):
     current_turn: Optional[int] = Field(None, ge=0, le=16)
     weather: Optional[str] = None
     kickoff_event: Optional[str] = None
+    home_ready: Optional[bool] = None
+    away_ready: Optional[bool] = None
+    home_squad: Optional[list[str]] = None
+    away_squad: Optional[list[str]] = None
     rerolls_used_home: Optional[int] = Field(None, ge=0)
     rerolls_used_away: Optional[int] = Field(None, ge=0)
     mvp_home: Optional[str] = None
