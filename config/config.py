@@ -6,8 +6,8 @@ from pydantic_settings import BaseSettings
 from pymongo.errors import ConnectionFailure
 
 import models as models
-from utils.logging_config import get_db_logger
 from database.seeding import auto_seed_database
+from utils.logging_config import get_db_logger
 
 logger = get_db_logger()
 
@@ -37,7 +37,7 @@ async def initiate_database():
             database=client.get_default_database(), document_models=models.__all__
         )
         logger.info("Beanie ODM initialized with document models")
-        
+
         # Auto-seed database with base catalogs if empty
         await auto_seed_database()
     except ConnectionFailure as e:

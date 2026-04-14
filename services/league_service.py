@@ -6,6 +6,7 @@ from datetime import datetime
 from itertools import combinations
 from typing import Optional
 
+from bson import ObjectId
 from exceptions.exceptions import (
     InvalidOperationException,
     LeagueNotFoundException,
@@ -45,6 +46,15 @@ from schemas.league import (
 logger = logging.getLogger(__name__)
 
 
+async def _get_league(league_id: str) -> Optional[League]:
+    """Helper to get league by ID, handling ObjectId conversion."""
+    try:
+        # Try as ObjectId first
+        return await League.get(ObjectId(league_id))
+    except Exception:
+        return None
+
+
 class LeagueService:
     """Service for managing leagues."""
 
@@ -81,7 +91,7 @@ class LeagueService:
     @staticmethod
     async def get_league_by_id(league_id: str) -> Optional[League]:
         """Get a league by ID."""
-        return await League.get(league_id)
+        return await _get_league(league_id)
 
     @staticmethod
     async def get_all_leagues(status: Optional[str] = None) -> list[LeagueSummary]:
@@ -176,7 +186,15 @@ class LeagueService:
     @staticmethod
     async def get_league_detail(league_id: str) -> Optional[LeagueDetail]:
         """Get full league detail."""
-        league = await League.get(league_id)
+        from bson import ObjectId
+        
+        # Try to convert to ObjectId if it's a valid MongoDB id
+        try:
+            league = await League.get(ObjectId(league_id))
+        except Exception:
+            # If not a valid ObjectId, try finding by custom id field
+            league = await League.find_one(League.id == league_id) if hasattr(League, 'id') else None
+        
         if not league:
             return None
 
@@ -282,7 +300,7 @@ class LeagueService:
         league_id: str, user_id: str, team_id: str, invite_code: str
     ) -> League:
         """Join a league with a team (invite code required)."""
-        league = await League.get(league_id)
+        league = await _get_league(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
 
@@ -328,7 +346,7 @@ class LeagueService:
     @staticmethod
     async def leave_league(league_id: str, team_id: str, user_id: str) -> League:
         """Leave a league."""
-        league = await League.get(league_id)
+        league = await _get_league(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
 
@@ -385,7 +403,7 @@ class LeagueService:
         league_id: str, owner_id: str, request: UpdateLeagueRequest
     ) -> League:
         """Update league settings (owner only)."""
-        league = await League.get(league_id)
+        league = await _get_league(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
         if league.owner_id != owner_id:
@@ -411,7 +429,7 @@ class LeagueService:
     @staticmethod
     async def start_league(league_id: str, owner_id: str) -> League:
         """Start the league and generate fixtures."""
-        league = await League.get(league_id)
+        league = await _get_league(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
 
@@ -480,7 +498,7 @@ class LeagueService:
         league_id: str, match_id: str, request: RecordMatchResultRequest
     ) -> League:
         """Record the result of a match."""
-        league = await League.get(league_id)
+        league = await _get_league(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
 
@@ -570,7 +588,7 @@ class LeagueService:
     @staticmethod
     async def get_match_detail(league_id: str, match_id: str) -> Optional[MatchDetail]:
         """Get full match detail."""
-        league = await League.get(league_id)
+        league = await _get_league(league_id)
         if not league:
             return None
 
@@ -640,7 +658,7 @@ class LeagueService:
     @staticmethod
     async def delete_league(league_id: str, user_id: str) -> None:
         """Delete a league (owner only)."""
-        league = await League.get(league_id)
+        league = await _get_league(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
 
@@ -658,7 +676,7 @@ class LeagueService:
     @staticmethod
     async def archive_league(league_id: str, user_id: str) -> None:
         """Mark a league as completed/archived (owner only)."""
-        league = await League.get(league_id)
+        league = await _get_league(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
 
@@ -681,7 +699,7 @@ class LeagueService:
     @staticmethod
     async def _get_league_and_match(league_id: str, match_id: str):
         """Helper to fetch league and find match by id."""
-        league = await League.get(league_id)
+        league = await _get_league(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
         match = None

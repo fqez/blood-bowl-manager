@@ -1,12 +1,8 @@
 """Auto-seeding database with base catalogs on startup."""
 
-import asyncio
 import json
-import os
 from pathlib import Path
 
-from beanie import init_beanie
-from motor.motor_asyncio import AsyncIOMotorClient
 
 from models.base.roster import BasePerk, BasePlayer, BaseRoster, BaseStats
 from models.base.skill_family import SkillFamily
@@ -106,8 +102,10 @@ async def seed_skill_families(skills_data: dict) -> dict[str, dict]:
     existing_count = await SkillFamily.find().count()
     if existing_count > 0:
         logger.info(f"Skill families already seeded ({existing_count} found)")
-        return {fam["_id"]: {"name": fam["name"], "symbol": fam["symbol"]} 
-                for fam in families}
+        return {
+            fam["_id"]: {"name": fam["name"], "symbol": fam["symbol"]}
+            for fam in families
+        }
 
     family_lookup = {}
     for fam in families:
@@ -121,7 +119,7 @@ async def seed_skill_families(skills_data: dict) -> dict[str, dict]:
             "name": fam["name"],
             "symbol": fam["symbol"],
         }
-    
+
     logger.info(f"Seeded {len(families)} skill families")
     return family_lookup
 
@@ -173,7 +171,11 @@ async def seed_perks(skills_data: dict) -> dict[str, dict]:
             "trait": "T",
         }
         perk_lookup[skill["_id"]] = {
-            "name": skill.get("name", {}).get("en", skill["_id"]) if isinstance(skill.get("name"), dict) else skill.get("name", skill["_id"]),
+            "name": (
+                skill.get("name", {}).get("en", skill["_id"])
+                if isinstance(skill.get("name"), dict)
+                else skill.get("name", skill["_id"])
+            ),
             "category": family_to_symbol.get(family, "G"),
         }
 
@@ -321,7 +323,9 @@ async def auto_seed_database():
         teams_path = base_dir / "config" / "base_teams.json"
         star_players_path = base_dir / "config" / "star_players.json"
 
-        if not all([skills_path.exists(), teams_path.exists(), star_players_path.exists()]):
+        if not all(
+            [skills_path.exists(), teams_path.exists(), star_players_path.exists()]
+        ):
             logger.warning("Some JSON config files are missing - skipping auto-seed")
             return
 
