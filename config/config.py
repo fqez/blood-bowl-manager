@@ -1,6 +1,8 @@
 from typing import Optional
+from urllib.parse import urlparse
 
 from beanie import init_beanie
+from mongomock_motor import AsyncMongoMockClient
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic_settings import BaseSettings
 from pymongo.errors import ConnectionFailure
@@ -15,6 +17,7 @@ logger = get_db_logger()
 class Settings(BaseSettings):
     # database configurations
     DATABASE_URL: Optional[str] = None
+    USE_MOCK_DB: bool = False
 
     # JWT
     secret_key: str = "secret"
@@ -25,17 +28,24 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         from_attributes = True
+        extra = "ignore"
 
 
 async def initiate_database():
     """Initialize database connection and Beanie ODM."""
     try:
-        client = AsyncIOMotorClient(Settings().DATABASE_URL)
-        await client.admin.command("ping")
-        logger.info("Database connection established successfully")
-        await init_beanie(
-            database=client.get_default_database(), document_models=models.__all__
-        )
+        settings = Settings()
+        if settings.USE_MOCK_DB:
+            client = AsyncMongoMockClient()
+            database_name = urlparse(settings.DATABASE_URL or "").path.strip("/")
+            database = client[database_name or "blood-manager"]
+            logger.info("Using in-memory MongoDB mock database")
+        else:
+            client = AsyncIOMotorClient(settings.DATABASE_URL)
+            await client.admin.command("ping")
+            database = client.get_default_database()
+            logger.info("Database connection established successfully")
+        await init_beanie(database=database, document_models=models.__all__)
         logger.info("Beanie ODM initialized with document models")
 
         # Auto-seed database with base catalogs if empty

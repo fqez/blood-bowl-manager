@@ -1,6 +1,7 @@
 """Auto-seeding database with base catalogs on startup."""
 
 import json
+import re
 from pathlib import Path
 
 
@@ -33,8 +34,65 @@ def parse_cost(value) -> int:
     if isinstance(value, int):
         return value
     if isinstance(value, str):
-        return int(value.replace(",", "").replace(".", ""))
+        english_value = get_english_text(value)
+        digits = re.sub(r"[^0-9]", "", english_value)
+        return int(digits) if digits else 0
     return 0
+
+
+def get_english_text(value) -> str:
+    """Return the English half from bilingual values like 'Dodge / Esquivar'."""
+    return str(value or "").split(" / ", 1)[0].strip()
+
+
+def slugify(value: str) -> str:
+    """Convert display text to snake_case identifiers."""
+    value = re.sub(r"\([^)]*\)", "", get_english_text(value))
+    value = value.replace("'", "").replace("’", "")
+    return re.sub(r"_+", "_", re.sub(r"[^A-Za-z0-9]+", "_", value).strip("_").lower())
+
+
+def parse_max_quantity(value) -> int:
+    """Parse max quantity from values like '0-16'."""
+    match = re.search(r"(\d+)\s*-\s*(\d+)", str(value or ""))
+    if match:
+        return int(match.group(2))
+    match = re.search(r"\d+", str(value or ""))
+    return int(match.group(0)) if match else 1
+
+
+def parse_skill_access(value) -> list[str]:
+    """Parse skill access strings like 'A, S'."""
+    text = get_english_text(value)
+    if not text or text == "-":
+        return []
+    return [part.strip() for part in text.split(",") if part.strip()]
+
+
+def split_top_level_commas(value: str) -> list[str]:
+    """Split comma-separated rules while preserving commas inside parentheses."""
+    text = get_english_text(value)
+    if not text or text.lower() == "none":
+        return []
+    parts = []
+    current = []
+    depth = 0
+    for char in text:
+        if char == "(":
+            depth += 1
+        elif char == ")" and depth:
+            depth -= 1
+        if char == "," and depth == 0:
+            part = "".join(current).strip()
+            if part:
+                parts.append(part)
+            current = []
+        else:
+            current.append(char)
+    part = "".join(current).strip()
+    if part:
+        parts.append(part)
+    return parts
 
 
 def normalize_perk_name_to_id(perk_name: str) -> str:
@@ -93,6 +151,70 @@ def determine_tier(team_id: str) -> int:
         if t in team_id:
             return 3
     return 2
+
+
+def convert_front_team_to_roster(team_data: dict, perk_lookup: dict) -> BaseRoster:
+    """Convert frontend assets/rules/teams.json format to BaseRoster format."""
+    team_id = team_data.get("name", "unknown")
+    details = team_data.get("team_details", {})
+    players = []
+
+    for raw_player in team_data.get("roster", []):
+        player_name = get_english_text(raw_player.get("position", "Unknown"))
+        player_perks = []
+        for raw_perk in raw_player.get("skills_traits", []):
+            perk_name = get_english_text(raw_perk)
+            if not perk_name or perk_name.lower() == "none":
+                continue
+            perk_id = slugify(perk_name)
+            perk_info = perk_lookup.get(perk_id, {})
+            player_perks.append(
+                BasePerk(
+                    id=perk_id,
+                    name=perk_info.get("name", perk_name),
+                    category=perk_info.get("category", "G"),
+                )
+            )
+
+        stats = raw_player.get("stats", {})
+        players.append(
+            BasePlayer(
+                type=f"{team_id}_{slugify(player_name)}",
+                name=player_name,
+                position=determine_position(player_name),
+                max=parse_max_quantity(raw_player.get("qty")),
+                cost=parse_cost(raw_player.get("cost", 0)),
+                stats=BaseStats(
+                    MA=parse_stat_value(stats.get("MA", 5)) or 5,
+                    ST=parse_stat_value(stats.get("ST", 3)) or 3,
+                    AG=parse_stat_value(stats.get("AG", "4+")) or 4,
+                    PA=parse_stat_value(stats.get("PA", "-")),
+                    AV=parse_stat_value(stats.get("AV", "8+")) or 8,
+                ),
+                perks=player_perks,
+                primary_access=parse_skill_access(
+                    raw_player.get("categories", {}).get("primary", "")
+                ),
+                secondary_access=parse_skill_access(
+                    raw_player.get("categories", {}).get("secondary", "")
+                ),
+                image=raw_player.get("image"),
+                tag_image=raw_player.get("tag_image"),
+            )
+        )
+
+    return BaseRoster(
+        id=team_id,
+        name=" ".join(part.capitalize() for part in team_id.split("_")),
+        reroll_cost=parse_cost(details.get("rerolls", {}).get("cost", 0)),
+        apothecary_allowed=get_english_text(details.get("apothecary", "")).upper()
+        in {"YES", "SI", "SÍ"},
+        tier=determine_tier(team_id),
+        special_rules=split_top_level_commas(details.get("special_rules", "")),
+        players=players,
+        icon=f"teams/{team_id}/icon.png",
+        wallpaper=f"teams/{team_id}/wallpaper.png",
+    )
 
 
 async def seed_skill_families(skills_data: dict) -> dict[str, dict]:
@@ -249,7 +371,10 @@ async def seed_base_rosters(teams_data: list, perk_lookup: dict):
         return
 
     for team in teams_data:
-        roster = convert_team_to_roster(team, perk_lookup)
+        if "team_details" in team and "roster" in team:
+            roster = convert_front_team_to_roster(team, perk_lookup)
+        else:
+            roster = convert_team_to_roster(team, perk_lookup)
         await roster.insert()
 
     logger.info(f"Seeded {len(teams_data)} base rosters")
