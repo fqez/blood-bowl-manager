@@ -13,6 +13,26 @@ from utils.logging_config import get_db_logger
 
 logger = get_db_logger()
 
+FAMILY_TO_SYMBOL = {
+    "agility": "A",
+    "devious": "D",
+    "general": "G",
+    "mutation": "M",
+    "passing": "P",
+    "strength": "S",
+    "trait": "T",
+}
+
+
+async def upsert_catalog_document(document_model, document):
+    """Upsert catalog documents without parsing existing legacy documents first."""
+    collection = document_model.get_motor_collection()
+    await collection.replace_one(
+        {"_id": document.id},
+        document.model_dump(by_alias=True, exclude_none=True),
+        upsert=True,
+    )
+
 
 def parse_stat_value(value) -> int | None:
     """Parse stat value from string format (e.g., '4+', '5', '-') or int."""
@@ -220,58 +240,29 @@ def convert_front_team_to_roster(team_data: dict, perk_lookup: dict) -> BaseRost
 async def seed_skill_families(skills_data: dict) -> dict[str, dict]:
     """Seed skill_families collection."""
     families = skills_data.get("families", [])
-
-    existing_count = await SkillFamily.find().count()
-    if existing_count > 0:
-        logger.info(f"Skill families already seeded ({existing_count} found)")
-        return {
-            fam["_id"]: {"name": fam["name"], "symbol": fam["symbol"]}
-            for fam in families
-        }
-
     family_lookup = {}
+
     for fam in families:
         skill_family = SkillFamily(
             id=fam["_id"],
             name=fam["name"],
             symbol=fam["symbol"],
         )
-        await skill_family.insert()
+        await upsert_catalog_document(SkillFamily, skill_family)
         family_lookup[fam["_id"]] = {
             "name": fam["name"],
             "symbol": fam["symbol"],
         }
 
-    logger.info(f"Seeded {len(families)} skill families")
+    logger.info(f"Upserted {len(families)} skill families")
     return family_lookup
 
 
 async def seed_perks(skills_data: dict) -> dict[str, dict]:
     """Seed perks collection."""
     skills = skills_data.get("skills", [])
-
-    existing_count = await Perk.find().count()
-    if existing_count > 0:
-        logger.info(f"Perks already seeded ({existing_count} found)")
-        skills_list = await Perk.find_all().to_list()
-        perk_lookup = {}
-        for perk in skills_list:
-            family_to_symbol = {
-                "agility": "A",
-                "devious": "D",
-                "general": "G",
-                "mutation": "M",
-                "passing": "P",
-                "strength": "S",
-                "trait": "T",
-            }
-            perk_lookup[perk.id] = {
-                "name": perk.name,
-                "category": family_to_symbol.get(perk.family, "G"),
-            }
-        return perk_lookup
-
     perk_lookup = {}
+
     for skill in skills:
         perk = Perk(
             id=skill["_id"],
@@ -280,28 +271,19 @@ async def seed_perks(skills_data: dict) -> dict[str, dict]:
             family=skill.get("family", "general"),
             modifier=skill.get("modifier"),
         )
-        await perk.insert()
+        await upsert_catalog_document(Perk, perk)
 
         family = skill.get("family", "general")
-        family_to_symbol = {
-            "agility": "A",
-            "devious": "D",
-            "general": "G",
-            "mutation": "M",
-            "passing": "P",
-            "strength": "S",
-            "trait": "T",
-        }
         perk_lookup[skill["_id"]] = {
             "name": (
                 skill.get("name", {}).get("en", skill["_id"])
                 if isinstance(skill.get("name"), dict)
                 else skill.get("name", skill["_id"])
             ),
-            "category": family_to_symbol.get(family, "G"),
+            "category": FAMILY_TO_SYMBOL.get(family, "G"),
         }
 
-    logger.info(f"Seeded {len(skills)} perks")
+    logger.info(f"Upserted {len(skills)} perks")
     return perk_lookup
 
 
@@ -365,19 +347,14 @@ def convert_team_to_roster(team_data: dict, perk_lookup: dict) -> BaseRoster:
 
 async def seed_base_rosters(teams_data: list, perk_lookup: dict):
     """Seed base_rosters collection."""
-    existing_count = await BaseRoster.find().count()
-    if existing_count > 0:
-        logger.info(f"Base rosters already seeded ({existing_count} found)")
-        return
-
     for team in teams_data:
         if "team_details" in team and "roster" in team:
             roster = convert_front_team_to_roster(team, perk_lookup)
         else:
             roster = convert_team_to_roster(team, perk_lookup)
-        await roster.insert()
+        await upsert_catalog_document(BaseRoster, roster)
 
-    logger.info(f"Seeded {len(teams_data)} base rosters")
+    logger.info(f"Upserted {len(teams_data)} base rosters")
 
 
 def convert_star_player(sp_data: dict) -> StarPlayer:
@@ -429,16 +406,7 @@ async def seed_star_players(star_players_data: list):
 async def auto_seed_database():
     """Auto-seed database with base catalogs if empty."""
     try:
-        # Check if database has any data
-        perk_count = await Perk.find().count()
-        roster_count = await BaseRoster.find().count()
-        star_count = await StarPlayer.find().count()
-
-        if perk_count > 0 and roster_count > 0 and star_count > 0:
-            logger.info("Database already seeded - skipping auto-seed")
-            return
-
-        logger.info("Starting auto-seed of database catalogs...")
+        logger.info("Starting catalog reconciliation...")
 
         # Find config directory
         base_dir = Path(__file__).parent.parent
@@ -467,7 +435,7 @@ async def auto_seed_database():
         await seed_base_rosters(teams_data, perk_lookup)
         await seed_star_players(star_players_data)
 
-        logger.info("Auto-seed completed successfully")
+        logger.info("Catalog reconciliation completed successfully")
 
     except Exception as e:
         logger.error(f"Auto-seed failed: {e}")
