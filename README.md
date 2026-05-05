@@ -233,14 +233,14 @@ Based on [Youngestdev&#39;s FastAPI Template](https://github.com/Youngestdev/fas
 - [ ] Regression tests
 - [ ] Code coverage
 
-### Infrastructure (3/9)
+### Infrastructure (4/9)
 
-![](https://progress-bar.dev/33)
+![](https://progress-bar.dev/44)
 
 - [X] Configure a MongoDB database
 - [X] Create a docker-compose file for database
 - [X] Create a Dockerfile for backend
-- [ ] Create a docker-compose file for backend
+- [X] Create a docker-compose file for backend [DONE]
 - [ ] Study deployment options
   - [ ] Database deployment (MongoDB Atlas?)
   - [ ] API deployment (Heroku? AWS? Azure? Google Cloud? Cloudflare? Free hosting?)

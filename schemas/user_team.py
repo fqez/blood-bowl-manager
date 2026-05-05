@@ -67,6 +67,10 @@ class HirePlayerRequest(BaseModel):
     )
 
 
+class CreateTeamPlayerRequest(HirePlayerRequest):
+    """Player to hire while creating a team."""
+
+
 class HireStarPlayerRequest(BaseModel):
     """Request to hire a star player."""
 
@@ -112,6 +116,11 @@ class CreateTeamRequest(BaseModel):
 
     base_roster_id: str = Field(..., description="Which race/roster to use")
     name: str = Field(..., min_length=1, max_length=50)
+    players: list[CreateTeamPlayerRequest] = Field(default_factory=list, max_length=16)
+    rerolls: int = Field(default=0, ge=0, le=8)
+    cheerleaders: int = Field(default=0, ge=0, le=12)
+    assistant_coaches: int = Field(default=0, ge=0, le=6)
+    apothecary: bool = False
 
 
 class UpdateTeamRequest(BaseModel):

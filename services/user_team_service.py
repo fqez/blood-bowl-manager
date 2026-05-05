@@ -11,7 +11,7 @@ from exceptions.exceptions import (
     PlayerNotFoundException,
     TeamNotFoundException,
 )
-from models.base.roster import BaseRoster
+from models.base.roster import BasePlayer, BaseRoster
 from models.base.star_player import StarPlayer
 from models.user.user import User
 from models.user_team.team import PlayerPerk, PlayerStats, UserPlayer, UserTeam
@@ -58,6 +58,50 @@ class UserTeamService:
             icon=roster.icon,
             wallpaper=roster.wallpaper,
         )
+
+        cost_delta = 0
+        for player_request in request.players:
+            base_player = UserTeamService._find_base_player(
+                roster, player_request.base_type
+            )
+            can_hire, reason = team.can_hire_player(
+                base_type=player_request.base_type,
+                max_allowed=base_player.max,
+                cost=base_player.cost,
+            )
+            if not can_hire:
+                raise InvalidOperationException(reason)
+
+            new_player = UserTeamService._build_user_player(
+                team=team,
+                base_player=base_player,
+                base_type=player_request.base_type,
+                name=player_request.name,
+                number=player_request.number,
+            )
+            team.players.append(new_player)
+            team.treasury -= base_player.cost
+
+        if request.rerolls:
+            cost_delta += request.rerolls * roster.reroll_cost
+        if request.cheerleaders:
+            cost_delta += request.cheerleaders * 10000
+        if request.assistant_coaches:
+            cost_delta += request.assistant_coaches * 10000
+        if request.apothecary:
+            if not roster.apothecary_allowed:
+                raise InvalidOperationException("Apothecary is not allowed")
+            cost_delta += 50000
+
+        if cost_delta > team.treasury:
+            raise InvalidOperationException("Not enough treasury")
+
+        team.rerolls = request.rerolls
+        team.cheerleaders = request.cheerleaders
+        team.assistant_coaches = request.assistant_coaches
+        team.apothecary = request.apothecary
+        team.treasury -= cost_delta
+        team.team_value = team.calculate_team_value()
 
         await team.insert()
 
@@ -215,16 +259,7 @@ class UserTeamService:
         if not roster:
             raise InvalidOperationException("Team roster not found")
 
-        base_player = None
-        for p in roster.players:
-            if p.type == request.base_type:
-                base_player = p
-                break
-
-        if not base_player:
-            raise InvalidOperationException(
-                f"Player type '{request.base_type}' not available in this roster"
-            )
+        base_player = UserTeamService._find_base_player(roster, request.base_type)
 
         # Validate hiring
         can_hire, reason = team.can_hire_player(
@@ -235,30 +270,12 @@ class UserTeamService:
         if not can_hire:
             raise InvalidOperationException(reason)
 
-        # Generate name and number if not provided
-        name = request.name or f"{base_player.name} #{len(team.players) + 1}"
-        number = request.number or UserTeamService._next_available_number(team)
-
-        # Create player with copied stats/perks from base
-        new_player = UserPlayer(
-            id=uuid.uuid4().hex,
+        new_player = UserTeamService._build_user_player(
+            team=team,
+            base_player=base_player,
             base_type=request.base_type,
-            name=name,
-            number=number,
-            current_value=base_player.cost,
-            stats=PlayerStats(
-                MA=base_player.stats.MA,
-                ST=base_player.stats.ST,
-                AG=base_player.stats.AG,
-                PA=base_player.stats.PA,
-                AV=base_player.stats.AV,
-            ),
-            perks=[
-                PlayerPerk(id=pk.id, name=pk.name, category=pk.category)
-                for pk in base_player.perks
-            ],
-            image=base_player.image,
-            tag_image=base_player.tag_image,
+            name=request.name,
+            number=request.number,
         )
 
         # Update team
@@ -456,6 +473,62 @@ class UserTeamService:
             if n not in used:
                 return n
         return random.randint(1, 99)
+
+    @staticmethod
+    def _find_base_player(roster: BaseRoster, base_type: str) -> BasePlayer:
+        """Find a player type in a base roster."""
+        for player in roster.players:
+            if player.type == base_type:
+                return player
+        raise InvalidOperationException(
+            f"Player type '{base_type}' not available in this roster"
+        )
+
+    @staticmethod
+    def _build_user_player(
+        team: UserTeam,
+        base_player: BasePlayer,
+        base_type: str,
+        name: Optional[str],
+        number: Optional[int],
+    ) -> UserPlayer:
+        """Create a user player from a base roster player."""
+        jersey_number = number or UserTeamService._next_available_number(team)
+        if any(player.number == jersey_number for player in team.players):
+            raise InvalidOperationException(
+                f"Jersey number {jersey_number} is already taken"
+            )
+        player_name = name or UserTeamService._default_player_name(
+            base_player, len(team.players) + 1
+        )
+
+        return UserPlayer(
+            id=uuid.uuid4().hex,
+            base_type=base_type,
+            name=player_name,
+            number=jersey_number,
+            current_value=base_player.cost,
+            stats=PlayerStats(
+                MA=base_player.stats.MA,
+                ST=base_player.stats.ST,
+                AG=base_player.stats.AG,
+                PA=base_player.stats.PA,
+                AV=base_player.stats.AV,
+            ),
+            perks=[
+                PlayerPerk(id=pk.id, name=pk.name, category=pk.category)
+                for pk in base_player.perks
+            ],
+            image=base_player.image,
+            tag_image=base_player.tag_image,
+        )
+
+    @staticmethod
+    def _default_player_name(base_player: BasePlayer, index: int) -> str:
+        """Build a compact default name from verbose roster labels."""
+        base_name = base_player.name.split("(", 1)[0].strip()
+        player_name = f"{base_name} #{index}"
+        return player_name[:50]
 
     @staticmethod
     def _player_to_response(player: UserPlayer) -> UserPlayerResponse:

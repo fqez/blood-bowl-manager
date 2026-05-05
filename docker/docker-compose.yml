@@ -1,6 +1,18 @@
-version: '3.9'
-
 services:
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: always
+    depends_on:
+      - mongodb
+    environment:
+      DATABASE_URL: mongodb://root:root@mongodb:27017/blood-manager?authSource=admin
+      secret_key: guiyfgc837tgf3iw87-012389764
+      environment: development
+    ports:
+      - "8080:8080"
 
   mongodb:
     image: mongo:7.0
@@ -12,6 +24,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
+      - mongo-data:/data/db
       - ./mongo/initdb:/docker-entrypoint-initdb.d:ro
 
   mongo-express:
