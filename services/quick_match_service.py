@@ -60,6 +60,12 @@ class QuickMatchService:
             kickoff_event=m.kickoff_event,
             current_half=m.current_half,
             current_turn=m.current_turn,
+            current_team=m.current_team,
+            home_turn=m.home_turn,
+            away_turn=m.away_turn,
+            turn_started_at=m.turn_started_at,
+            home_turn_seconds=m.home_turn_seconds,
+            away_turn_seconds=m.away_turn_seconds,
             rerolls_used_home=m.rerolls_used_home,
             rerolls_used_away=m.rerolls_used_away,
             events=[
@@ -187,9 +193,16 @@ class QuickMatchService:
             raise InvalidOperationException("Match is already in progress")
 
         m.status = MatchStatus.IN_PROGRESS
-        m.started_at = datetime.utcnow()
+        now = datetime.utcnow()
+        m.started_at = now
         m.current_half = 1
         m.current_turn = 1
+        m.current_team = "home"
+        m.home_turn = 1
+        m.away_turn = 1
+        m.turn_started_at = now
+        m.home_turn_seconds = []
+        m.away_turn_seconds = []
         await qm.save()
         logger.info(f"Quick match {qm_id} started by {user_id}")
         return QuickMatchService._to_detail(qm)
@@ -284,6 +297,9 @@ class QuickMatchService:
                 request.score_away,
                 request.current_half,
                 request.current_turn,
+                request.current_team,
+                request.home_turn,
+                request.away_turn,
                 request.rerolls_used_home,
                 request.rerolls_used_away,
                 request.mvp_home,
@@ -326,6 +342,28 @@ class QuickMatchService:
             old, new = m.current_turn, request.current_turn
             m.current_turn = new
             m.events.append(_evt("turn_change", f"Turn: {old} → {new}"))
+        if request.current_team is not None and request.current_team != m.current_team:
+            previous_team = m.current_team
+            now = datetime.utcnow()
+            elapsed = 0
+            if m.turn_started_at is not None:
+                elapsed = max(0, int((now - m.turn_started_at).total_seconds()))
+            if previous_team == "home":
+                m.home_turn_seconds.append(elapsed)
+            else:
+                m.away_turn_seconds.append(elapsed)
+            m.current_team = request.current_team
+            m.turn_started_at = now
+            m.events.append(
+                _evt(
+                    "turn_change",
+                    f"{previous_team} turn ended in {elapsed}s; next: {request.current_team}",
+                )
+            )
+        if request.home_turn is not None:
+            m.home_turn = request.home_turn
+        if request.away_turn is not None:
+            m.away_turn = request.away_turn
         if request.weather is not None and request.weather != m.weather:
             old = m.weather or "—"
             m.weather = request.weather

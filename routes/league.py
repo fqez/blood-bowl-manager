@@ -12,6 +12,7 @@ from exceptions.exceptions import (
 )
 from schemas.league import (
     AddMatchEventRequest,
+    ApplyAftermatchSppRequest,
     CreateLeagueRequest,
     JoinLeagueRequest,
     LeagueByCodePreview,
@@ -321,6 +322,32 @@ async def delete_match_event(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"League '{league_id}' not found",
         )
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post(
+    "/{league_id}/matches/{match_id}/aftermatch/spp",
+    response_model=MatchDetail,
+)
+async def apply_aftermatch_spp(
+    league_id: str,
+    match_id: str,
+    request: ApplyAftermatchSppRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Apply aftermatch SPP/stat gains once."""
+    try:
+        return await LeagueService.apply_aftermatch_spp(
+            league_id, match_id, user_id, request
+        )
+    except LeagueNotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"League '{league_id}' not found",
+        )
+    except TeamNotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except InvalidOperationException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

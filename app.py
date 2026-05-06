@@ -12,6 +12,7 @@ from routes.character import router as CharacterRouter
 from routes.league import router as LeagueRouter
 from routes.perk import router as PerkRouter
 from routes.quick_match import router as QuickMatchRouter
+from routes.rules import router as RulesRouter
 from routes.star_player import router as StarPlayerRouter
 from routes.tactic import router as TacticRouter
 from routes.team import router as TeamRouter
@@ -52,6 +53,7 @@ app.include_router(CharacterRouter, tags=["characters"], prefix="/characters")
 # New routes for the restructured data model (public catalog)
 app.include_router(BaseRosterRouter)
 app.include_router(StarPlayerRouter)
+app.include_router(RulesRouter)
 
 # Protected routes: require valid JWT
 # Note: Don't add dependencies at router level - it blocks CORS preflight OPTIONS requests

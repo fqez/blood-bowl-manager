@@ -360,6 +360,8 @@ class UserTeamService:
                     "Dedicated fans can only change during league play"
                 )
             team.dedicated_fans = request.dedicated_fans
+        if request.treasury is not None:
+            team.treasury = request.treasury
 
         team.treasury -= cost_delta
         team.team_value = await UserTeamService._calculate_team_value(team, roster)

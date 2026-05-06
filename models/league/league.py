@@ -153,6 +153,12 @@ class Match(BaseModel):
     # Live state
     current_half: int = Field(default=0, ge=0, le=2)
     current_turn: int = Field(default=0, ge=0, le=16)
+    current_team: str = Field(default="home", pattern="^(home|away)$")
+    home_turn: int = Field(default=1, ge=1, le=16)
+    away_turn: int = Field(default=1, ge=1, le=16)
+    turn_started_at: Optional[datetime] = None
+    home_turn_seconds: list[int] = Field(default_factory=list)
+    away_turn_seconds: list[int] = Field(default_factory=list)
     rerolls_used_home: int = Field(default=0, ge=0)
     rerolls_used_away: int = Field(default=0, ge=0)
 
@@ -165,6 +171,9 @@ class Match(BaseModel):
 
     # Gate (money from fans)
     gate: int = Field(default=0, ge=0)
+
+    # Post-match persistence guards
+    aftermatch_spp_applied_at: Optional[datetime] = None
 
     # Timing
     started_at: Optional[datetime] = None

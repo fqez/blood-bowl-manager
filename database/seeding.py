@@ -6,6 +6,12 @@ from pathlib import Path
 
 
 from models.base.roster import BasePerk, BasePlayer, BaseRoster, BaseStats
+from models.base.expensive_mistake import (
+    ExpensiveMistakeBand,
+    ExpensiveMistakeEffect,
+    ExpensiveMistakesRules,
+    LocalizedText,
+)
 from models.base.skill_family import SkillFamily
 from models.base.star_player import SpecialAbility, StarPlayer, StarPlayerStats
 from models.team.perk import Perk
@@ -403,6 +409,131 @@ async def seed_star_players(star_players_data: list):
     logger.info(f"Seeded {len(star_players_data)} star players")
 
 
+async def seed_expensive_mistakes_rules():
+    """Seed the Expensive Mistakes table from the core rules."""
+    rules = ExpensiveMistakesRules(
+        id="expensive_mistakes",
+        min_treasury=100_000,
+        bands=[
+            ExpensiveMistakeBand(
+                min_treasury=100_000,
+                max_treasury=195_000,
+                results=[
+                    "minor_incident",
+                    "crisis_avoided",
+                    "crisis_avoided",
+                    "crisis_avoided",
+                    "crisis_avoided",
+                    "crisis_avoided",
+                ],
+            ),
+            ExpensiveMistakeBand(
+                min_treasury=200_000,
+                max_treasury=295_000,
+                results=[
+                    "minor_incident",
+                    "minor_incident",
+                    "crisis_avoided",
+                    "crisis_avoided",
+                    "crisis_avoided",
+                    "crisis_avoided",
+                ],
+            ),
+            ExpensiveMistakeBand(
+                min_treasury=300_000,
+                max_treasury=395_000,
+                results=[
+                    "major_incident",
+                    "minor_incident",
+                    "minor_incident",
+                    "crisis_avoided",
+                    "crisis_avoided",
+                    "crisis_avoided",
+                ],
+            ),
+            ExpensiveMistakeBand(
+                min_treasury=400_000,
+                max_treasury=495_000,
+                results=[
+                    "major_incident",
+                    "major_incident",
+                    "minor_incident",
+                    "minor_incident",
+                    "crisis_avoided",
+                    "crisis_avoided",
+                ],
+            ),
+            ExpensiveMistakeBand(
+                min_treasury=500_000,
+                max_treasury=595_000,
+                results=[
+                    "catastrophe",
+                    "major_incident",
+                    "major_incident",
+                    "minor_incident",
+                    "minor_incident",
+                    "crisis_avoided",
+                ],
+            ),
+            ExpensiveMistakeBand(
+                min_treasury=600_000,
+                max_treasury=None,
+                results=[
+                    "catastrophe",
+                    "catastrophe",
+                    "major_incident",
+                    "major_incident",
+                    "minor_incident",
+                    "minor_incident",
+                ],
+            ),
+        ],
+        effects=[
+            ExpensiveMistakeEffect(
+                code="crisis_avoided",
+                label=LocalizedText(en="Crisis Averted", es="Crisis evitada"),
+                description=LocalizedText(
+                    en="No treasury is lost.", es="No se pierde tesorería."
+                ),
+                calculation="none",
+                required_dice=[],
+            ),
+            ExpensiveMistakeEffect(
+                code="minor_incident",
+                label=LocalizedText(en="Minor Incident", es="Incidente menor"),
+                description=LocalizedText(
+                    en="Lose 1D3 × 10,000 gp.",
+                    es="Pierdes 1D3 × 10.000 mo.",
+                ),
+                calculation="lose_d3_x_10000",
+                required_dice=["d3"],
+            ),
+            ExpensiveMistakeEffect(
+                code="major_incident",
+                label=LocalizedText(en="Major Incident", es="Incidente mayor"),
+                description=LocalizedText(
+                    en="Lose half your treasury, rounded down to the nearest 5,000 gp.",
+                    es="Pierdes la mitad de tu tesorería, redondeando hacia abajo a las 5.000 mo más cercanas.",
+                ),
+                calculation="lose_half_round_down_5000",
+                required_dice=[],
+            ),
+            ExpensiveMistakeEffect(
+                code="catastrophe",
+                label=LocalizedText(en="Catastrophe", es="Catástrofe"),
+                description=LocalizedText(
+                    en="Your treasury is emptied except 2D6 × 10,000 gp.",
+                    es="Tu tesorería queda vacía salvo 2D6 × 10.000 mo.",
+                ),
+                calculation="keep_2d6_x_10000",
+                required_dice=["d6", "d6"],
+            ),
+        ],
+    )
+    await upsert_catalog_document(ExpensiveMistakesRules, rules)
+    logger.info("Upserted expensive mistakes rules")
+
+
 async def auto_seed_database():
     """Auto-seed database with base catalogs if empty."""
     try:
@@ -434,6 +565,7 @@ async def auto_seed_database():
         perk_lookup = await seed_perks(skills_data)
         await seed_base_rosters(teams_data, perk_lookup)
         await seed_star_players(star_players_data)
+        await seed_expensive_mistakes_rules()
 
         logger.info("Catalog reconciliation completed successfully")
 

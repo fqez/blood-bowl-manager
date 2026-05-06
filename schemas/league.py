@@ -122,12 +122,19 @@ class MatchDetail(BaseModel):
     away_squad: list[str] = []
     current_half: int = 0
     current_turn: int = 0
+    current_team: str = "home"
+    home_turn: int = 1
+    away_turn: int = 1
+    turn_started_at: Optional[datetime] = None
+    home_turn_seconds: list[int] = Field(default_factory=list)
+    away_turn_seconds: list[int] = Field(default_factory=list)
     rerolls_used_home: int = 0
     rerolls_used_away: int = 0
     events: list[MatchEventResponse]
     mvp_home: Optional[str] = None
     mvp_away: Optional[str] = None
     gate: int
+    aftermatch_spp_applied_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     scheduled_at: Optional[datetime] = None
     played_at: Optional[datetime] = None
@@ -160,6 +167,27 @@ class MatchEventRequest(BaseModel):
     turn: int = Field(default=1, ge=0, le=16)
 
 
+class AftermatchPlayerSppDelta(BaseModel):
+    """SPP/stat delta to apply to one team player after a match."""
+
+    player_id: str
+    spp: int = Field(default=0, ge=0)
+    completions: int = Field(default=0, ge=0)
+    touchdowns: int = Field(default=0, ge=0)
+    casualties: int = Field(default=0, ge=0)
+    interceptions: int = Field(default=0, ge=0)
+    mvp: bool = False
+    bonus_spp: int = Field(default=0, ge=0)
+
+
+class ApplyAftermatchSppRequest(BaseModel):
+    """Persist post-match SPP/stat gains once."""
+
+    home: list[AftermatchPlayerSppDelta] = Field(default_factory=list)
+    away: list[AftermatchPlayerSppDelta] = Field(default_factory=list)
+    post_match_events: list[MatchEventRequest] = Field(default_factory=list)
+
+
 class AddMatchEventRequest(BaseModel):
     """Request to add a single event to a live match."""
 
@@ -186,6 +214,9 @@ class UpdateMatchStateRequest(BaseModel):
     score_away: Optional[int] = Field(None, ge=0)
     current_half: Optional[int] = Field(None, ge=0, le=2)
     current_turn: Optional[int] = Field(None, ge=0, le=16)
+    current_team: Optional[str] = Field(None, pattern="^(home|away)$")
+    home_turn: Optional[int] = Field(None, ge=1, le=16)
+    away_turn: Optional[int] = Field(None, ge=1, le=16)
     weather: Optional[str] = None
     kickoff_event: Optional[str] = None
     home_ready: Optional[bool] = None

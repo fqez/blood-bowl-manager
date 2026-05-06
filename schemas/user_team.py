@@ -134,6 +134,7 @@ class UpdateTeamRequest(BaseModel):
     apothecary: Optional[bool] = None
     fan_factor: Optional[int] = Field(None, ge=0, le=9)
     dedicated_fans: Optional[int] = Field(None, ge=1, le=7)
+    treasury: Optional[int] = Field(None, ge=0)
 
 
 class TeamLeagueMembership(BaseModel):

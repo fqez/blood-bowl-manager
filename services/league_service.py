@@ -27,6 +27,8 @@ from models.user.user import User
 from models.user_team.team import UserTeam
 from schemas.league import (
     AddMatchEventRequest,
+    ApplyAftermatchSppRequest,
+    AftermatchPlayerSppDelta,
     CreateLeagueRequest,
     LeagueByCodePreview,
     LeagueDetail,
@@ -187,14 +189,18 @@ class LeagueService:
     async def get_league_detail(league_id: str) -> Optional[LeagueDetail]:
         """Get full league detail."""
         from bson import ObjectId
-        
+
         # Try to convert to ObjectId if it's a valid MongoDB id
         try:
             league = await League.get(ObjectId(league_id))
         except Exception:
             # If not a valid ObjectId, try finding by custom id field
-            league = await League.find_one(League.id == league_id) if hasattr(League, 'id') else None
-        
+            league = (
+                await League.find_one(League.id == league_id)
+                if hasattr(League, "id")
+                else None
+            )
+
         if not league:
             return None
 
@@ -260,6 +266,12 @@ class LeagueService:
                 kickoff_event=m.kickoff_event,
                 current_half=m.current_half,
                 current_turn=m.current_turn,
+                current_team=m.current_team,
+                home_turn=m.home_turn,
+                away_turn=m.away_turn,
+                turn_started_at=m.turn_started_at,
+                home_turn_seconds=m.home_turn_seconds,
+                away_turn_seconds=m.away_turn_seconds,
                 started_at=m.started_at,
                 scheduled_at=m.scheduled_at,
                 played_at=m.played_at,
@@ -313,6 +325,10 @@ class LeagueService:
 
         if team.user_id != user_id:
             raise InvalidOperationException("Cannot join with another user's team")
+
+        existing_league = await League.find_one({"teams.team_id": team_id})
+        if existing_league and str(existing_league.id) != league_id:
+            raise InvalidOperationException("Este equipo ya está inscrito en otra liga")
 
         can_join, reason = league.can_join(team_id, user_id)
         if not can_join:
@@ -618,6 +634,12 @@ class LeagueService:
                     kickoff_event=m.kickoff_event,
                     current_half=m.current_half,
                     current_turn=m.current_turn,
+                    current_team=m.current_team,
+                    home_turn=m.home_turn,
+                    away_turn=m.away_turn,
+                    turn_started_at=m.turn_started_at,
+                    home_turn_seconds=m.home_turn_seconds,
+                    away_turn_seconds=m.away_turn_seconds,
                     rerolls_used_home=m.rerolls_used_home,
                     rerolls_used_away=m.rerolls_used_away,
                     events=[
@@ -642,6 +664,7 @@ class LeagueService:
                     mvp_home=m.mvp_home,
                     mvp_away=m.mvp_away,
                     gate=m.gate,
+                    aftermatch_spp_applied_at=m.aftermatch_spp_applied_at,
                     started_at=m.started_at,
                     scheduled_at=m.scheduled_at,
                     played_at=m.played_at,
@@ -740,9 +763,16 @@ class LeagueService:
             raise InvalidOperationException("Match is already in progress")
 
         match.status = MatchStatus.IN_PROGRESS
-        match.started_at = datetime.utcnow()
+        now = datetime.utcnow()
+        match.started_at = now
         match.current_half = 1
         match.current_turn = 1
+        match.current_team = "home"
+        match.home_turn = 1
+        match.away_turn = 1
+        match.turn_started_at = now
+        match.home_turn_seconds = []
+        match.away_turn_seconds = []
 
         await league.save()
         logger.info(f"Match {match_id} started by user {user_id}")
@@ -841,6 +871,87 @@ class LeagueService:
         return await LeagueService.get_match_detail(league_id, match_id)
 
     @staticmethod
+    async def apply_aftermatch_spp(
+        league_id: str,
+        match_id: str,
+        user_id: str,
+        request: ApplyAftermatchSppRequest,
+    ) -> MatchDetail:
+        """Apply SPP/stat gains from the aftermatch report exactly once."""
+        league, match = await LeagueService._get_league_and_match(league_id, match_id)
+
+        if match.status != MatchStatus.COMPLETED:
+            raise InvalidOperationException("Match is not completed")
+
+        if not LeagueService._user_can_manage_match(league, match, user_id):
+            raise InvalidOperationException(
+                "Only match participants or the league owner can submit aftermatch SPP"
+            )
+
+        if match.aftermatch_spp_applied_at is not None:
+            raise InvalidOperationException("SPP already applied for this match")
+
+        home_team = await UserTeam.get(match.home.team_id)
+        away_team = await UserTeam.get(match.away.team_id)
+        if not home_team:
+            raise TeamNotFoundException(match.home.team_id)
+        if not away_team:
+            raise TeamNotFoundException(match.away.team_id)
+
+        def _apply_delta(team: UserTeam, delta: AftermatchPlayerSppDelta) -> None:
+            player = next((p for p in team.players if p.id == delta.player_id), None)
+            if not player:
+                raise InvalidOperationException(
+                    f"Player '{delta.player_id}' not found in team '{team.name}'"
+                )
+            player.spp += delta.spp
+            player.career.completions += delta.completions
+            player.career.touchdowns += delta.touchdowns
+            player.career.casualties += delta.casualties
+            player.career.interceptions += delta.interceptions
+            if delta.mvp:
+                player.career.mvp_awards += 1
+
+        for delta in request.home:
+            _apply_delta(home_team, delta)
+        for delta in request.away:
+            _apply_delta(away_team, delta)
+
+        user = await User.get(user_id)
+        username = user.username if user else "unknown"
+        for event_request in request.post_match_events:
+            match.events.append(
+                MatchEvent(
+                    id=str(uuid.uuid4()),
+                    type=event_request.type,
+                    team=event_request.team,
+                    player_id=event_request.player_id,
+                    player_name=event_request.player_name,
+                    victim_id=event_request.victim_id,
+                    victim_name=event_request.victim_name,
+                    injury=event_request.injury,
+                    detail=event_request.detail,
+                    half=event_request.half,
+                    turn=event_request.turn,
+                    timestamp=datetime.utcnow(),
+                    created_by=user_id,
+                    created_by_name=username,
+                )
+            )
+
+        now = datetime.utcnow()
+        home_team.updated_at = now
+        away_team.updated_at = now
+        match.aftermatch_spp_applied_at = now
+
+        await home_team.save()
+        await away_team.save()
+        await league.save()
+
+        logger.info(f"Aftermatch SPP applied for match {match_id} by user {user_id}")
+        return await LeagueService.get_match_detail(league_id, match_id)
+
+    @staticmethod
     async def update_match_state(
         league_id: str,
         match_id: str,
@@ -865,6 +976,9 @@ class LeagueService:
                 request.score_away,
                 request.current_half,
                 request.current_turn,
+                request.current_team,
+                request.home_turn,
+                request.away_turn,
                 request.rerolls_used_home,
                 request.rerolls_used_away,
                 request.mvp_home,
@@ -872,7 +986,37 @@ class LeagueService:
                 request.gate,
             ]
         )
-        if match.status != MatchStatus.IN_PROGRESS and not _pre_match_only:
+        # Post-match report is opened after live match completion, but it still
+        # needs to persist MVPs and gate. Keep score/turn/event edits protected.
+        _post_match_report_only = (
+            request.mvp_home is not None
+            or request.mvp_away is not None
+            or request.gate is not None
+        ) and all(
+            v is None
+            for v in [
+                request.score_home,
+                request.score_away,
+                request.current_half,
+                request.current_turn,
+                request.current_team,
+                request.home_turn,
+                request.away_turn,
+                request.weather,
+                request.kickoff_event,
+                request.home_ready,
+                request.away_ready,
+                request.home_squad,
+                request.away_squad,
+                request.rerolls_used_home,
+                request.rerolls_used_away,
+            ]
+        )
+        if (
+            match.status != MatchStatus.IN_PROGRESS
+            and not _pre_match_only
+            and not (match.status == MatchStatus.COMPLETED and _post_match_report_only)
+        ):
             raise InvalidOperationException("Match is not in progress")
 
         if not LeagueService._user_can_manage_match(league, match, user_id):
@@ -926,6 +1070,31 @@ class LeagueService:
             old, new = match.current_turn, request.current_turn
             match.current_turn = new
             match.events.append(_make_event("turn_change", f"Turn: {old} → {new}"))
+        if (
+            request.current_team is not None
+            and request.current_team != match.current_team
+        ):
+            previous_team = match.current_team
+            now = datetime.utcnow()
+            elapsed = 0
+            if match.turn_started_at is not None:
+                elapsed = max(0, int((now - match.turn_started_at).total_seconds()))
+            if previous_team == "home":
+                match.home_turn_seconds.append(elapsed)
+            else:
+                match.away_turn_seconds.append(elapsed)
+            match.current_team = request.current_team
+            match.turn_started_at = now
+            match.events.append(
+                _make_event(
+                    "turn_change",
+                    f"{previous_team} turn ended in {elapsed}s; next: {request.current_team}",
+                )
+            )
+        if request.home_turn is not None:
+            match.home_turn = request.home_turn
+        if request.away_turn is not None:
+            match.away_turn = request.away_turn
         if request.weather is not None and request.weather != match.weather:
             old = match.weather or "—"
             match.weather = request.weather

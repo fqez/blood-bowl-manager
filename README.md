@@ -184,6 +184,115 @@ match_events.team_id
 4. Add schema validation or versioned migrations before changing the league/match model.
 5. Split `league_matches` and `match_events` before the live match/post-match feature becomes complex.
 
+## Blood Bowl rules to move into backend
+
+The backend should own every rule that is persistent, calculable, auditable or shared by more than one frontend view. The frontend can keep visual helpers, but game-state authority should live in the API.
+
+### Already moved
+
+- [X] Expensive Mistakes / Errores costosos
+  - Database-backed rules in `rules_catalog`.
+  - API endpoint: `/rules/expensive-mistakes`.
+  - Seeded at startup from `database/seeding.py`.
+
+### High priority
+
+1. **SPP / PX rules**
+  - Store reward values in backend: completion `1`, interception `2`, casualty `2`, touchdown `3`, MVP `4`.
+  - Define which event types award SPP and which do not.
+  - Validate that the credited player belongs to the correct team.
+  - Apply real SPP to embedded `UserTeam.players` when closing the post-match report.
+
+2. **Lasting injuries / serious injuries**
+  - Move injury and casualty tables to `rules_catalog`.
+  - Apply `Badly Hurt`, `Miss Next Game`, `Niggling Injury`, stat decreases and death from backend.
+  - Prevent the frontend from inventing invalid player statuses.
+
+3. **Winnings**
+  - Move winnings formula to backend.
+  - Use `dedicated_fans`, touchdowns and stalling/no-stalling bonus.
+  - Persist treasury changes from backend rather than trusting frontend calculations.
+
+4. **Dedicated Fans post-match changes**
+  - Validate D6 rolls in backend.
+  - Apply win/loss rules and limits `1–7`.
+  - Keep draw as no change.
+
+5. **Single post-match close endpoint**
+  - Add an endpoint such as `POST /leagues/{league_id}/matches/{match_id}/aftermatch`.
+  - Payload should include added events, MVPs, winnings data, fan rolls, expensive mistakes, injuries and temporary player decisions.
+  - Backend should apply all changes in one logical operation instead of multiple independent `PATCH` calls.
+
+6. **Journeymen / temporary substitutes**
+  - Track players hired only for one match.
+  - Store whether a player is `temporary_for_match`.
+  - At post-match, allow release or permanent incorporation.
+  - Validate treasury, team value and roster limits.
+
+7. **Inducements**
+  - Move inducement catalogue to backend.
+  - Include cost, restrictions and duration.
+  - Important cases: star players, bribes, apothecaries and mercenaries.
+
+8. **Weather table**
+  - Store the 2D6 weather table in backend.
+  - Persist the selected weather result on the match.
+  - Frontend may display effects, but the canonical table should come from backend.
+
+9. **Kick-off event table**
+  - Store the 2D6 kick-off table in backend.
+  - Persist the result and any selected manual effects.
+  - Keep the frontend as UI only.
+
+10. **Player advancements / level-ups**
+   - Validate SPP cost for improvements.
+   - Support primary/secondary skill rules.
+   - Support random or selected improvements.
+   - Recalculate team value after every advancement.
+
+### Medium priority
+
+11. **Team value calculation**
+   - Centralize current and full team value in backend.
+   - Include players, permanent injuries, gained skills, rerolls and staff.
+   - Treasury should not count as team value.
+
+12. **Player availability maintenance**
+   - Apply `Miss Next Game` and automatically clear it after the next match.
+   - Prevent dead players from being selected.
+   - Remove temporary star players after the match unless rules say otherwise.
+
+13. **Redraft / end-of-season rules**
+   - Redraft budget.
+   - Re-hiring players.
+   - Agent fees / season count if implemented later.
+
+14. **Generic rules catalogue**
+   - Keep simple dice semantics such as D3, D6 and 2D6 in code/helpers.
+   - Store actual game tables in backend: casualty, injury, weather, kick-off, prayers to Nuffle, expensive mistakes, inducements and advancements.
+
+### Suggested backend structure
+
+```text
+rules_catalog
+  expensive_mistakes
+  spp_rewards
+  injury_table
+  casualty_table
+  weather_table
+  kickoff_table
+  inducements
+  advancement_rules
+
+services
+  RulesService
+  AftermatchService
+  PlayerProgressionService
+  TreasuryService
+```
+
+Recommended next implementation: **SPP + injuries + single post-match close endpoint**. This would make the backend the real authority for post-match results.
+
 ## TODO
 
 ### Database (5/9)

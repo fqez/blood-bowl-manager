@@ -1,5 +1,6 @@
 # Legacy models (kept for backwards compatibility)
 # New models for restructured data
+from models.base.expensive_mistake import ExpensiveMistakesRules
 from models.base.roster import BaseRoster
 from models.base.skill_family import SkillFamily
 from models.base.star_player import StarPlayer
@@ -28,4 +29,5 @@ __all__ = [
     StarPlayer,
     SkillFamily,
     Tactic,
+    ExpensiveMistakesRules,
 ]
