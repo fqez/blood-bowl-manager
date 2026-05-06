@@ -134,6 +134,15 @@ class UpdateTeamRequest(BaseModel):
     fan_factor: Optional[int] = Field(None, ge=0, le=9)
 
 
+class TeamLeagueMembership(BaseModel):
+    """League where a user team is enrolled."""
+
+    id: str
+    name: str
+    status: str
+    season: int
+
+
 class UserTeamSummary(BaseModel):
     """Summary for team list."""
 
@@ -143,6 +152,8 @@ class UserTeamSummary(BaseModel):
     team_value: int
     treasury: int
     player_count: int
+    can_manage_roster: bool = True
+    league_memberships: list[TeamLeagueMembership] = Field(default_factory=list)
     icon: Optional[str] = None
     created_at: datetime
 
@@ -167,6 +178,8 @@ class UserTeamDetail(BaseModel):
     apothecary: bool
     apothecary_allowed: bool  # From base roster
     dedicated_fans: int
+    can_manage_roster: bool = True
+    league_memberships: list[TeamLeagueMembership] = Field(default_factory=list)
 
     icon: Optional[str] = None
     wallpaper: Optional[str] = None

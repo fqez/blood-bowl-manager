@@ -13,6 +13,7 @@ from exceptions.exceptions import (
 )
 from models.base.roster import BasePlayer, BaseRoster
 from models.base.star_player import StarPlayer
+from models.league.league import League, LeagueStatus
 from models.user.user import User
 from models.user_team.team import PlayerPerk, PlayerStats, UserPlayer, UserTeam
 from schemas.user_team import (
@@ -23,6 +24,7 @@ from schemas.user_team import (
     PlayerCareerResponse,
     PlayerPerkResponse,
     PlayerStatsResponse,
+    TeamLeagueMembership,
     UpdatePlayerRequest,
     UpdateTeamRequest,
     UserPlayerResponse,
@@ -37,6 +39,63 @@ class UserTeamService:
     """Service for managing user teams."""
 
     # ============== Team Operations ==============
+
+    @staticmethod
+    async def _is_in_active_league(team_id: str) -> bool:
+        league = await League.find_one(
+            {"status": LeagueStatus.ACTIVE.value, "teams.team_id": team_id}
+        )
+        return league is not None
+
+    @staticmethod
+    async def _league_memberships_by_team_ids(
+        team_ids: list[str],
+    ) -> dict[str, list[TeamLeagueMembership]]:
+        memberships: dict[str, list[TeamLeagueMembership]] = {
+            team_id: [] for team_id in team_ids
+        }
+        if not team_ids:
+            return memberships
+
+        leagues = await League.find({"teams.team_id": {"$in": team_ids}}).to_list()
+        team_id_set = set(team_ids)
+        for league in leagues:
+            membership = TeamLeagueMembership(
+                id=str(league.id),
+                name=league.name,
+                status=(
+                    league.status.value
+                    if hasattr(league.status, "value")
+                    else league.status
+                ),
+                season=league.season,
+            )
+            for team in league.teams:
+                if team.team_id in team_id_set:
+                    memberships.setdefault(team.team_id, []).append(membership)
+
+        return memberships
+
+    @staticmethod
+    async def _league_memberships(team_id: str) -> list[TeamLeagueMembership]:
+        return (await UserTeamService._league_memberships_by_team_ids([team_id])).get(
+            team_id, []
+        )
+
+    @staticmethod
+    async def _ensure_roster_can_be_managed(team_id: str) -> None:
+        if await UserTeamService._is_in_active_league(team_id):
+            raise InvalidOperationException(
+                "Team roster cannot be changed while registered in an active league"
+            )
+
+    @staticmethod
+    async def _ensure_team_can_be_deleted(team_id: str) -> None:
+        league = await League.find_one({"teams.team_id": team_id})
+        if league:
+            raise InvalidOperationException(
+                "Team cannot be deleted while registered in a league"
+            )
 
     @staticmethod
     async def create_team(user_id: str, request: CreateTeamRequest) -> UserTeam:
@@ -123,6 +182,8 @@ class UserTeamService:
     async def get_teams_by_user(user_id: str) -> list[UserTeamSummary]:
         """Get all teams owned by a user."""
         teams = await UserTeam.find(UserTeam.user_id == user_id).to_list()
+        team_ids = [str(team.id) for team in teams]
+        memberships = await UserTeamService._league_memberships_by_team_ids(team_ids)
 
         return [
             UserTeamSummary(
@@ -132,6 +193,10 @@ class UserTeamService:
                 team_value=t.team_value,
                 treasury=t.treasury,
                 player_count=len(t.players),
+                can_manage_roster=not await UserTeamService._is_in_active_league(
+                    str(t.id)
+                ),
+                league_memberships=memberships.get(str(t.id), []),
                 icon=t.icon,
                 created_at=t.created_at,
             )
@@ -165,6 +230,8 @@ class UserTeamService:
             apothecary=team.apothecary,
             apothecary_allowed=roster.apothecary_allowed if roster else True,
             dedicated_fans=team.dedicated_fans,
+            can_manage_roster=not await UserTeamService._is_in_active_league(team_id),
+            league_memberships=await UserTeamService._league_memberships(team_id),
             icon=team.icon,
             wallpaper=team.wallpaper,
             created_at=team.created_at,
@@ -177,6 +244,9 @@ class UserTeamService:
         team = await UserTeam.get(team_id)
         if not team:
             raise TeamNotFoundException(team_id)
+
+        if request.name is not None:
+            await UserTeamService._ensure_roster_can_be_managed(team_id)
 
         # Load base roster for costs
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
@@ -232,6 +302,8 @@ class UserTeamService:
         if team.user_id != user_id:
             raise InvalidOperationException("Cannot delete another user's team")
 
+        await UserTeamService._ensure_team_can_be_deleted(team_id)
+
         await team.delete()
 
         # Remove from user's team list
@@ -253,6 +325,8 @@ class UserTeamService:
         team = await UserTeam.get(team_id)
         if not team:
             raise TeamNotFoundException(team_id)
+
+        await UserTeamService._ensure_roster_can_be_managed(team_id)
 
         # Get base roster and player type
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
@@ -285,7 +359,9 @@ class UserTeamService:
         team.updated_at = datetime.utcnow()
         await team.save()
 
-        logger.info(f"Hired player '{name}' ({request.base_type}) for team {team_id}")
+        logger.info(
+            f"Hired player '{new_player.name}' ({request.base_type}) for team {team_id}"
+        )
 
         return HirePlayerResponse(
             player=UserTeamService._player_to_response(new_player),
@@ -301,6 +377,8 @@ class UserTeamService:
         team = await UserTeam.get(team_id)
         if not team:
             raise TeamNotFoundException(team_id)
+
+        await UserTeamService._ensure_roster_can_be_managed(team_id)
 
         # Fetch star player
         star = await StarPlayer.find_one(StarPlayer.id == request.star_player_id)
