@@ -48,6 +48,58 @@ class UserTeamService:
         return league is not None
 
     @staticmethod
+    async def _is_in_league(team_id: str) -> bool:
+        league = await League.find_one({"teams.team_id": team_id})
+        return league is not None
+
+    @staticmethod
+    async def _calculate_team_value(
+        team: UserTeam, roster: Optional[BaseRoster] = None
+    ) -> int:
+        if roster is None:
+            roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
+
+        reroll_cost = roster.reroll_cost if roster else 0
+        return team.calculate_team_value(reroll_cost=reroll_cost)
+
+    @staticmethod
+    async def _calculate_current_team_value(
+        team: UserTeam, roster: Optional[BaseRoster] = None
+    ) -> int:
+        team_value = await UserTeamService._calculate_team_value(team, roster)
+        unavailable_value = sum(
+            player.current_value
+            for player in team.players
+            if player.status != "healthy"
+        )
+        return max(0, team_value - unavailable_value)
+
+    @staticmethod
+    async def _sync_team_value(
+        team: UserTeam, roster: Optional[BaseRoster] = None
+    ) -> int:
+        normalized = False
+        if team.cheerleaders > 6:
+            team.cheerleaders = 6
+            normalized = True
+        if team.assistant_coaches > 6:
+            team.assistant_coaches = 6
+            normalized = True
+        if team.dedicated_fans < 1:
+            team.dedicated_fans = 1
+            normalized = True
+        if team.dedicated_fans > 7:
+            team.dedicated_fans = 7
+            normalized = True
+
+        team_value = await UserTeamService._calculate_team_value(team, roster)
+        if normalized or team.team_value != team_value:
+            team.team_value = team_value
+            team.updated_at = datetime.utcnow()
+            await team.save()
+        return team_value
+
+    @staticmethod
     async def _league_memberships_by_team_ids(
         team_ids: list[str],
     ) -> dict[str, list[TeamLeagueMembership]]:
@@ -151,6 +203,7 @@ class UserTeamService:
             if not roster.apothecary_allowed:
                 raise InvalidOperationException("Apothecary is not allowed")
             cost_delta += 50000
+        cost_delta += (request.dedicated_fans - 1) * 5000
 
         if cost_delta > team.treasury:
             raise InvalidOperationException("Not enough treasury")
@@ -159,8 +212,9 @@ class UserTeamService:
         team.cheerleaders = request.cheerleaders
         team.assistant_coaches = request.assistant_coaches
         team.apothecary = request.apothecary
+        team.dedicated_fans = request.dedicated_fans
         team.treasury -= cost_delta
-        team.team_value = team.calculate_team_value()
+        team.team_value = await UserTeamService._calculate_team_value(team, roster)
 
         await team.insert()
 
@@ -185,23 +239,27 @@ class UserTeamService:
         team_ids = [str(team.id) for team in teams]
         memberships = await UserTeamService._league_memberships_by_team_ids(team_ids)
 
-        return [
-            UserTeamSummary(
-                id=str(t.id),
-                name=t.name,
-                base_roster_id=t.base_roster_id,
-                team_value=t.team_value,
-                treasury=t.treasury,
-                player_count=len(t.players),
-                can_manage_roster=not await UserTeamService._is_in_active_league(
-                    str(t.id)
-                ),
-                league_memberships=memberships.get(str(t.id), []),
-                icon=t.icon,
-                created_at=t.created_at,
+        summaries: list[UserTeamSummary] = []
+        for t in teams:
+            team_id = str(t.id)
+            team_value = await UserTeamService._sync_team_value(t)
+            summaries.append(
+                UserTeamSummary(
+                    id=str(t.id),
+                    name=t.name,
+                    base_roster_id=t.base_roster_id,
+                    team_value=team_value,
+                    treasury=t.treasury,
+                    player_count=len(t.players),
+                    can_manage_roster=not await UserTeamService._is_in_active_league(
+                        team_id
+                    ),
+                    league_memberships=memberships.get(team_id, []),
+                    icon=t.icon,
+                    created_at=t.created_at,
+                )
             )
-            for t in teams
-        ]
+        return summaries
 
     @staticmethod
     async def get_team_detail(team_id: str) -> Optional[UserTeamDetail]:
@@ -211,6 +269,7 @@ class UserTeamService:
             return None
 
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
+        team_value = await UserTeamService._sync_team_value(team, roster)
 
         players = [UserTeamService._player_to_response(p) for p in team.players]
 
@@ -221,7 +280,10 @@ class UserTeamService:
             name=team.name,
             players=players,
             treasury=team.treasury,
-            team_value=team.team_value,
+            team_value=team_value,
+            current_team_value=await UserTeamService._calculate_current_team_value(
+                team, roster
+            ),
             rerolls=team.rerolls,
             reroll_cost=roster.reroll_cost if roster else 0,
             fan_factor=team.fan_factor,
@@ -251,12 +313,17 @@ class UserTeamService:
         # Load base roster for costs
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
         reroll_cost = roster.reroll_cost if roster else 60000
+        reroll_purchase_cost = (
+            reroll_cost * 2
+            if await UserTeamService._is_in_league(team_id)
+            else reroll_cost
+        )
 
         # Calculate treasury delta for staff changes
         cost_delta = 0
         if request.rerolls is not None:
             diff = request.rerolls - team.rerolls
-            cost_delta += diff * reroll_cost
+            cost_delta += diff * (reroll_purchase_cost if diff > 0 else reroll_cost)
         if request.cheerleaders is not None:
             diff = request.cheerleaders - team.cheerleaders
             cost_delta += diff * 10000
@@ -265,6 +332,8 @@ class UserTeamService:
             cost_delta += diff * 10000
         if request.apothecary is not None:
             if request.apothecary and not team.apothecary:
+                if roster and not roster.apothecary_allowed:
+                    raise InvalidOperationException("Apothecary is not allowed")
                 cost_delta += 50000
             elif not request.apothecary and team.apothecary:
                 cost_delta -= 50000
@@ -285,8 +354,15 @@ class UserTeamService:
             team.apothecary = request.apothecary
         if request.fan_factor is not None:
             team.fan_factor = request.fan_factor
+        if request.dedicated_fans is not None:
+            if not await UserTeamService._is_in_league(team_id):
+                raise InvalidOperationException(
+                    "Dedicated fans can only change during league play"
+                )
+            team.dedicated_fans = request.dedicated_fans
 
         team.treasury -= cost_delta
+        team.team_value = await UserTeamService._calculate_team_value(team, roster)
         team.updated_at = datetime.utcnow()
         await team.save()
 
@@ -321,12 +397,14 @@ class UserTeamService:
     async def hire_player(
         team_id: str, request: HirePlayerRequest
     ) -> HirePlayerResponse:
-        """Hire a new player for a team."""
+        """Hire a new player for a team.
+
+        Player hiring is allowed for teams registered in active leagues; other
+        roster management actions remain locked by _ensure_roster_can_be_managed.
+        """
         team = await UserTeam.get(team_id)
         if not team:
             raise TeamNotFoundException(team_id)
-
-        await UserTeamService._ensure_roster_can_be_managed(team_id)
 
         # Get base roster and player type
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
@@ -355,7 +433,7 @@ class UserTeamService:
         # Update team
         team.players.append(new_player)
         team.treasury -= base_player.cost
-        team.team_value = team.calculate_team_value()
+        team.team_value = await UserTeamService._calculate_team_value(team, roster)
         team.updated_at = datetime.utcnow()
         await team.save()
 
@@ -434,7 +512,7 @@ class UserTeamService:
 
         team.players.append(new_player)
         team.treasury -= star.cost
-        team.team_value = team.calculate_team_value()
+        team.team_value = await UserTeamService._calculate_team_value(team)
         team.updated_at = datetime.utcnow()
         await team.save()
 
@@ -465,7 +543,7 @@ class UserTeamService:
             raise PlayerNotFoundException(player_id)
 
         removed = team.players.pop(player_idx)
-        team.team_value = team.calculate_team_value()
+        team.team_value = await UserTeamService._calculate_team_value(team)
         team.updated_at = datetime.utcnow()
         await team.save()
 
@@ -497,7 +575,7 @@ class UserTeamService:
         player.perks.append(PlayerPerk(id=perk_id, name=perk_name, category=category))
         # Increase player value (simplified: +20k per skill)
         player.current_value += 20000
-        team.team_value = team.calculate_team_value()
+        team.team_value = await UserTeamService._calculate_team_value(team)
         team.updated_at = datetime.utcnow()
         await team.save()
 

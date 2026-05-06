@@ -30,7 +30,7 @@ class CreateTeam(BaseModel):
         default=0, ge=0, le=MAX_REROLLS, description="Number of rerolls"
     )
     cheerleaders: int = Field(
-        default=0, ge=0, le=12, description="Number of cheerleaders"
+        default=0, ge=0, le=6, description="Number of cheerleaders"
     )
     assistant_coaches: int = Field(
         default=0, ge=0, le=6, description="Number of assistant coaches"
@@ -78,7 +78,7 @@ class UpdateTeam(BaseModel):
 
     name: Optional[str] = Field(default=None, min_length=1, max_length=50)
     rerolls: Optional[int] = Field(default=None, ge=0, le=MAX_REROLLS)
-    cheerleaders: Optional[int] = Field(default=None, ge=0, le=12)
+    cheerleaders: Optional[int] = Field(default=None, ge=0, le=6)
     assistant_coaches: Optional[int] = Field(default=None, ge=0, le=6)
     apothecary: Optional[bool] = None
     fan_factor: Optional[int] = Field(default=None, ge=0, le=MAX_FAN_FACTOR)

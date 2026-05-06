@@ -13,8 +13,8 @@ class Team(Document):
     roster: list[str] = Field(default_factory=list, description="List of character IDs")
     reroll_cost: int = Field(..., gt=0, description="Cost per reroll in gold")
     rerolls: int = Field(default=0, ge=0)
-    cheerleaders: int = Field(default=0, ge=0)
-    assistant_coaches: int = Field(default=0, ge=0)
+    cheerleaders: int = Field(default=0, ge=0, le=6)
+    assistant_coaches: int = Field(default=0, ge=0, le=6)
     apothecary: bool = False
     fan_factor: int = Field(default=0, ge=0)
     treasury: int = Field(default=1_000_000, ge=0)

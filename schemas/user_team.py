@@ -118,9 +118,10 @@ class CreateTeamRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=50)
     players: list[CreateTeamPlayerRequest] = Field(default_factory=list, max_length=16)
     rerolls: int = Field(default=0, ge=0, le=8)
-    cheerleaders: int = Field(default=0, ge=0, le=12)
+    cheerleaders: int = Field(default=0, ge=0, le=6)
     assistant_coaches: int = Field(default=0, ge=0, le=6)
     apothecary: bool = False
+    dedicated_fans: int = Field(default=1, ge=1, le=3)
 
 
 class UpdateTeamRequest(BaseModel):
@@ -128,10 +129,11 @@ class UpdateTeamRequest(BaseModel):
 
     name: Optional[str] = Field(None, max_length=50)
     rerolls: Optional[int] = Field(None, ge=0, le=8)
-    cheerleaders: Optional[int] = Field(None, ge=0, le=12)
+    cheerleaders: Optional[int] = Field(None, ge=0, le=6)
     assistant_coaches: Optional[int] = Field(None, ge=0, le=6)
     apothecary: Optional[bool] = None
     fan_factor: Optional[int] = Field(None, ge=0, le=9)
+    dedicated_fans: Optional[int] = Field(None, ge=1, le=7)
 
 
 class TeamLeagueMembership(BaseModel):
@@ -170,6 +172,7 @@ class UserTeamDetail(BaseModel):
 
     treasury: int
     team_value: int
+    current_team_value: int
     rerolls: int
     reroll_cost: int  # From base roster
     fan_factor: int

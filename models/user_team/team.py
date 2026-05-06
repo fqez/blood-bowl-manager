@@ -112,12 +112,12 @@ class UserTeam(Document):
     # Staff & extras
     rerolls: int = Field(default=0, ge=0, le=8)
     fan_factor: int = Field(default=0, ge=0, le=9)
-    cheerleaders: int = Field(default=0, ge=0, le=12)
+    cheerleaders: int = Field(default=0, ge=0)
     assistant_coaches: int = Field(default=0, ge=0, le=6)
     apothecary: bool = Field(default=False)
 
     # Dedicated fans (for league play)
-    dedicated_fans: int = Field(default=1, ge=1, le=6)
+    dedicated_fans: int = Field(default=1, ge=0)
 
     # Visual customization
     icon: Optional[str] = None
@@ -130,11 +130,14 @@ class UserTeam(Document):
     class Settings:
         name = "user_teams"
 
-    def calculate_team_value(self) -> int:
+    def calculate_team_value(self, reroll_cost: int = 0) -> int:
         """Calculate total team value from players and extras."""
         player_value = sum(p.current_value for p in self.players)
-        # Note: rerolls counted at current cost (double during season)
-        return player_value
+        staff_value = (self.rerolls * reroll_cost) + (self.assistant_coaches * 10000)
+        staff_value += self.cheerleaders * 10000
+        if self.apothecary:
+            staff_value += 50000
+        return player_value + staff_value
 
     def get_player_count_by_type(self, base_type: str) -> int:
         """Count how many players of a specific type are hired."""
