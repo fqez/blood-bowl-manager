@@ -52,6 +52,9 @@ class UserPlayerResponse(BaseModel):
     spp: int
     status: str
     career: PlayerCareerResponse
+    temporary_for_match: bool = False
+    temporary_match_id: Optional[str] = None
+    journeyman: bool = False
     image: Optional[str] = None
 
 
@@ -65,6 +68,8 @@ class HirePlayerRequest(BaseModel):
     number: Optional[int] = Field(
         None, ge=1, le=99, description="Jersey number (auto-assigned if not provided)"
     )
+    temporary_for_match: bool = Field(default=False)
+    temporary_match_id: Optional[str] = Field(default=None)
 
 
 class CreateTeamPlayerRequest(HirePlayerRequest):

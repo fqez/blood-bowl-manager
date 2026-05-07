@@ -63,6 +63,11 @@ class UserTeamService:
         return team.calculate_team_value(reroll_cost=reroll_cost)
 
     @staticmethod
+    def _eligible_player_count(team: UserTeam) -> int:
+        """Count players able to play the next game."""
+        return sum(1 for player in team.players if player.status == "healthy")
+
+    @staticmethod
     async def _calculate_current_team_value(
         team: UserTeam, roster: Optional[BaseRoster] = None
     ) -> int:
@@ -415,14 +420,24 @@ class UserTeamService:
 
         base_player = UserTeamService._find_base_player(roster, request.base_type)
 
-        # Validate hiring
-        can_hire, reason = team.can_hire_player(
-            base_type=request.base_type,
-            max_allowed=base_player.max,
-            cost=base_player.cost,
-        )
-        if not can_hire:
-            raise InvalidOperationException(reason)
+        if request.temporary_for_match:
+            if base_player.position.lower() != "lineman" or base_player.max != 16:
+                raise InvalidOperationException(
+                    "Journeymen must be Lineman position players with QTY 0-16"
+                )
+            if UserTeamService._eligible_player_count(team) >= 11:
+                raise InvalidOperationException(
+                    "Journeymen cannot take eligible players above 11"
+                )
+        else:
+            # Validate permanent hiring
+            can_hire, reason = team.can_hire_player(
+                base_type=request.base_type,
+                max_allowed=base_player.max,
+                cost=base_player.cost,
+            )
+            if not can_hire:
+                raise InvalidOperationException(reason)
 
         new_player = UserTeamService._build_user_player(
             team=team,
@@ -431,16 +446,25 @@ class UserTeamService:
             name=request.name,
             number=request.number,
         )
+        if request.temporary_for_match:
+            new_player.temporary_for_match = True
+            new_player.temporary_match_id = request.temporary_match_id
+            new_player.journeyman = True
+            if not any(perk.id == "loner" for perk in new_player.perks):
+                new_player.perks.append(
+                    PlayerPerk(id="loner", name="Loner (4+)", category="T")
+                )
 
         # Update team
         team.players.append(new_player)
-        team.treasury -= base_player.cost
+        if not request.temporary_for_match:
+            team.treasury -= base_player.cost
         team.team_value = await UserTeamService._calculate_team_value(team, roster)
         team.updated_at = datetime.utcnow()
         await team.save()
 
         logger.info(
-            f"Hired player '{new_player.name}' ({request.base_type}) for team {team_id}"
+            f"Hired {'temporary ' if request.temporary_for_match else ''}player '{new_player.name}' ({request.base_type}) for team {team_id}"
         )
 
         return HirePlayerResponse(
@@ -720,5 +744,8 @@ class UserTeamService:
                 completions=player.career.completions,
                 mvp_awards=player.career.mvp_awards,
             ),
+            temporary_for_match=player.temporary_for_match,
+            temporary_match_id=player.temporary_match_id,
+            journeyman=player.journeyman,
             image=player.image,
         )

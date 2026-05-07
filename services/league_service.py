@@ -23,12 +23,17 @@ from models.league.league import (
     MatchStatus,
     MatchTeamInfo,
 )
+from models.base.dedicated_fans import DedicatedFansRules
+from models.base.expensive_mistake import ExpensiveMistakesRules
+from models.base.injury import InjuryRules
+from models.base.roster import BaseRoster
+from models.base.spp import SppRewardsRules
+from models.base.winnings import WinningsRules
 from models.user.user import User
-from models.user_team.team import UserTeam
+from models.user_team.team import PlayerStatus, UserTeam
 from schemas.league import (
     AddMatchEventRequest,
     ApplyAftermatchSppRequest,
-    AftermatchPlayerSppDelta,
     CreateLeagueRequest,
     LeagueByCodePreview,
     LeagueDetail,
@@ -665,6 +670,7 @@ class LeagueService:
                     mvp_away=m.mvp_away,
                     gate=m.gate,
                     aftermatch_spp_applied_at=m.aftermatch_spp_applied_at,
+                    aftermatch_winnings_applied_at=m.aftermatch_winnings_applied_at,
                     started_at=m.started_at,
                     scheduled_at=m.scheduled_at,
                     played_at=m.played_at,
@@ -877,7 +883,7 @@ class LeagueService:
         user_id: str,
         request: ApplyAftermatchSppRequest,
     ) -> MatchDetail:
-        """Apply SPP/stat gains from the aftermatch report exactly once."""
+        """Apply the complete post-match report from backend-owned rules once."""
         league, match = await LeagueService._get_league_and_match(league_id, match_id)
 
         if match.status != MatchStatus.COMPLETED:
@@ -891,6 +897,31 @@ class LeagueService:
         if match.aftermatch_spp_applied_at is not None:
             raise InvalidOperationException("SPP already applied for this match")
 
+        rules = await SppRewardsRules.get("spp_rewards")
+        if not rules:
+            raise InvalidOperationException("SPP reward rules are not available")
+        injury_rules = await InjuryRules.get("injury_rules")
+        if not injury_rules:
+            raise InvalidOperationException("Injury rules are not available")
+        winnings_rules = None
+        expensive_rules = None
+        if request.winnings:
+            winnings_rules = await WinningsRules.get("winnings")
+            if not winnings_rules:
+                raise InvalidOperationException("Winnings rules are not available")
+            expensive_rules = await ExpensiveMistakesRules.get("expensive_mistakes")
+            if not expensive_rules:
+                raise InvalidOperationException(
+                    "Expensive Mistakes rules are not available"
+                )
+        dedicated_fans_rules = None
+        if request.dedicated_fans:
+            dedicated_fans_rules = await DedicatedFansRules.get("dedicated_fans")
+            if not dedicated_fans_rules:
+                raise InvalidOperationException(
+                    "Dedicated Fans rules are not available"
+                )
+
         home_team = await UserTeam.get(match.home.team_id)
         away_team = await UserTeam.get(match.away.team_id)
         if not home_team:
@@ -898,51 +929,525 @@ class LeagueService:
         if not away_team:
             raise TeamNotFoundException(match.away.team_id)
 
-        def _apply_delta(team: UserTeam, delta: AftermatchPlayerSppDelta) -> None:
-            player = next((p for p in team.players if p.id == delta.player_id), None)
+        teams_by_side = {"home": home_team, "away": away_team}
+        event_rewards = {r.event_type: r for r in rules.event_rewards}
+        spp_deltas: dict[str, dict[str, dict[str, int | bool]]] = {
+            "home": {},
+            "away": {},
+        }
+
+        def _get_player(team: UserTeam, player_id: str):
+            player = next((p for p in team.players if p.id == player_id), None)
             if not player:
                 raise InvalidOperationException(
-                    f"Player '{delta.player_id}' not found in team '{team.name}'"
+                    f"Player '{player_id}' not found in team '{team.name}'"
                 )
-            player.spp += delta.spp
-            player.career.completions += delta.completions
-            player.career.touchdowns += delta.touchdowns
-            player.career.casualties += delta.casualties
-            player.career.interceptions += delta.interceptions
-            if delta.mvp:
-                player.career.mvp_awards += 1
+            return player
 
-        for delta in request.home:
-            _apply_delta(home_team, delta)
-        for delta in request.away:
-            _apply_delta(away_team, delta)
+        def _player_generates_spp(team: UserTeam, player_id: str) -> bool:
+            player = _get_player(team, player_id)
+            return not player.base_type.startswith("star_")
+
+        def _delta(team_side: str, player_id: str) -> dict[str, int | bool]:
+            team = teams_by_side[team_side]
+            _get_player(team, player_id)
+            return spp_deltas[team_side].setdefault(
+                player_id,
+                {
+                    "spp": 0,
+                    "completions": 0,
+                    "touchdowns": 0,
+                    "casualties": 0,
+                    "interceptions": 0,
+                    "mvp": False,
+                },
+            )
+
+        def _add_spp(
+            team_side: str,
+            player_id: str | None,
+            amount: int,
+            career_stat: str | None = None,
+        ) -> None:
+            if amount <= 0:
+                return
+            if not player_id:
+                raise InvalidOperationException(
+                    f"SPP event for {team_side} is missing credited player"
+                )
+            if team_side not in teams_by_side:
+                raise InvalidOperationException(
+                    f"SPP event has invalid team '{team_side}'"
+                )
+            if not _player_generates_spp(teams_by_side[team_side], player_id):
+                return
+            delta = _delta(team_side, player_id)
+            delta["spp"] = int(delta["spp"]) + amount
+            if career_stat:
+                delta[career_stat] = int(delta[career_stat]) + 1
+
+        def _detail_has_yes(detail: str | None, label: str) -> bool:
+            normalized = (detail or "").lower()
+            return (
+                f"{label}: sí" in normalized
+                or f"{label}: si" in normalized
+                or f"{label}=true" in normalized
+                or f"{label}=1" in normalized
+            )
+
+        def _score_event(event: MatchEvent) -> None:
+            if event.type in event_rewards:
+                reward = event_rewards[event.type]
+                if reward.requires_player and not event.player_id:
+                    raise InvalidOperationException(
+                        f"Event '{event.type}' is missing credited player"
+                    )
+                if event.player_id:
+                    _add_spp(
+                        event.team, event.player_id, reward.spp, reward.career_stat
+                    )
+                return
+
+            if event.type == rules.throw_teammate.event_type:
+                landed = _detail_has_yes(event.detail, "cae de pie") or _detail_has_yes(
+                    event.detail, "landed"
+                )
+                if not landed:
+                    return
+                _add_spp(
+                    event.team,
+                    event.victim_id,
+                    rules.throw_teammate.thrown_player_landed_spp,
+                )
+                superb = _detail_has_yes(event.detail, "soberbio") or _detail_has_yes(
+                    event.detail, "superb"
+                )
+                if superb:
+                    _add_spp(
+                        event.team,
+                        event.player_id,
+                        rules.throw_teammate.superb_thrower_spp,
+                    )
 
         user = await User.get(user_id)
         username = user.username if user else "unknown"
+        if request.mvp_home is not None:
+            match.mvp_home = request.mvp_home
+        if request.mvp_away is not None:
+            match.mvp_away = request.mvp_away
+        if request.gate is not None:
+            match.gate = request.gate
+
+        post_match_events: list[MatchEvent] = []
         for event_request in request.post_match_events:
+            event = MatchEvent(
+                id=str(uuid.uuid4()),
+                type=event_request.type,
+                team=event_request.team,
+                player_id=event_request.player_id,
+                player_name=event_request.player_name,
+                victim_id=event_request.victim_id,
+                victim_name=event_request.victim_name,
+                injury=event_request.injury,
+                detail=event_request.detail,
+                half=event_request.half,
+                turn=event_request.turn,
+                timestamp=datetime.utcnow(),
+                created_by=user_id,
+                created_by_name=username,
+            )
+            post_match_events.append(event)
+
+        for event in [*match.events, *post_match_events]:
+            _score_event(event)
+
+        for team_side, player_id in [
+            ("home", match.mvp_home),
+            ("away", match.mvp_away),
+        ]:
+            if player_id:
+                if not _player_generates_spp(teams_by_side[team_side], player_id):
+                    continue
+                delta = _delta(team_side, player_id)
+                delta["spp"] = int(delta["spp"]) + rules.mvp_spp
+                delta["mvp"] = True
+
+        def _apply_delta(
+            team_side: str, player_id: str, delta: dict[str, int | bool]
+        ) -> None:
+            player = _get_player(teams_by_side[team_side], player_id)
+            player.spp += int(delta["spp"])
+            player.career.completions += int(delta["completions"])
+            player.career.touchdowns += int(delta["touchdowns"])
+            player.career.casualties += int(delta["casualties"])
+            player.career.interceptions += int(delta["interceptions"])
+            if bool(delta["mvp"]):
+                player.career.mvp_awards += 1
+
+        for team_side, player_deltas in spp_deltas.items():
+            for player_id, delta in player_deltas.items():
+                _apply_delta(team_side, player_id, delta)
+
+        def _casualty_result(roll: int):
+            for result in injury_rules.casualty_table:
+                if result.min_roll <= roll <= result.max_roll:
+                    return result
+            raise InvalidOperationException(f"Invalid casualty roll '{roll}'")
+
+        def _lasting_injury_result(roll: int):
+            for result in injury_rules.lasting_injury_table:
+                if result.min_roll <= roll <= result.max_roll:
+                    return result
+            raise InvalidOperationException(f"Invalid lasting injury roll '{roll}'")
+
+        def _apply_stat_reduction(player, stat: str) -> None:
+            if stat == "MA":
+                player.stats.MA = max(1, player.stats.MA - 1)
+            elif stat == "ST":
+                player.stats.ST = max(1, player.stats.ST - 1)
+            elif stat == "AV":
+                player.stats.AV = max(3, player.stats.AV - 1)
+            elif stat == "AG":
+                player.stats.AG = min(7, player.stats.AG + 1)
+            elif stat == "PA" and player.stats.PA is not None:
+                player.stats.PA = min(7, player.stats.PA + 1)
+
+        def _apply_injury(injury_request) -> None:
+            team = teams_by_side[injury_request.team]
+            player = _get_player(team, injury_request.player_id)
+            casualty = _casualty_result(injury_request.casualty_roll)
+            lasting = None
+            if casualty.requires_lasting_injury_roll:
+                if injury_request.lasting_injury_roll is None:
+                    raise InvalidOperationException(
+                        "Lasting Injury result requires a lasting injury D6 roll"
+                    )
+                lasting = _lasting_injury_result(injury_request.lasting_injury_roll)
+                _apply_stat_reduction(player, lasting.stat)
+                player.injuries.append(lasting.code)
+
+            for injury_code in casualty.injury_codes:
+                player.injuries.append(injury_code)
+
+            player.status = PlayerStatus(casualty.player_status)
+            detail = f"Casualty D16 {injury_request.casualty_roll}: {casualty.code}"
+            if lasting:
+                detail += (
+                    f" · Lasting D6 {injury_request.lasting_injury_roll}: "
+                    f"{lasting.code} ({lasting.reduction_label})"
+                )
             match.events.append(
                 MatchEvent(
                     id=str(uuid.uuid4()),
-                    type=event_request.type,
-                    team=event_request.team,
-                    player_id=event_request.player_id,
-                    player_name=event_request.player_name,
-                    victim_id=event_request.victim_id,
-                    victim_name=event_request.victim_name,
-                    injury=event_request.injury,
-                    detail=event_request.detail,
-                    half=event_request.half,
-                    turn=event_request.turn,
+                    type=casualty.code,
+                    team=injury_request.team,
+                    player_id=injury_request.player_id,
+                    player_name=player.name,
+                    injury=lasting.code if lasting else casualty.code,
+                    detail=detail,
+                    half=0,
+                    turn=0,
                     timestamp=datetime.utcnow(),
                     created_by=user_id,
                     created_by_name=username,
                 )
             )
 
+        for injury_request in request.injuries:
+            _apply_injury(injury_request)
+
+        def _calculate_winnings(
+            team: UserTeam, opponent: UserTeam, touchdowns: int, stalling: bool
+        ) -> int:
+            fan_attendance = team.dedicated_fans + opponent.dedicated_fans
+            fan_base = fan_attendance / winnings_rules.fan_attendance_divisor
+            no_stalling_bonus = 0 if stalling else winnings_rules.no_stalling_bonus
+            return int(
+                (fan_base + touchdowns + no_stalling_bonus)
+                * winnings_rules.gold_multiplier
+            )
+
+        def _expensive_result_code(treasury: int, roll: int) -> str:
+            for band in expensive_rules.bands:
+                if treasury >= band.min_treasury and (
+                    band.max_treasury is None or treasury <= band.max_treasury
+                ):
+                    return band.results[roll - 1]
+            raise InvalidOperationException(
+                f"No Expensive Mistakes band found for treasury '{treasury}'"
+            )
+
+        def _apply_expensive_mistakes(treasury: int, dice) -> tuple[int, str | None]:
+            if treasury < expensive_rules.min_treasury:
+                return treasury, None
+            if dice.roll is None:
+                raise InvalidOperationException(
+                    "Expensive Mistakes D6 roll is required for treasury 100,000+"
+                )
+
+            result_code = _expensive_result_code(treasury, dice.roll)
+            effect = next(
+                (
+                    effect
+                    for effect in expensive_rules.effects
+                    if effect.code == result_code
+                ),
+                None,
+            )
+            calculation = effect.calculation if effect else "none"
+            if calculation == "lose_d3_x_10000":
+                if dice.d3 is None:
+                    raise InvalidOperationException(
+                        "Minor Incident requires an Expensive Mistakes D3 roll"
+                    )
+                return max(0, treasury - (dice.d3 * 10_000)), result_code
+            if calculation == "lose_half_round_down_5000":
+                loss = int((treasury / 2) // 5_000) * 5_000
+                return max(0, treasury - loss), result_code
+            if calculation == "keep_2d6_x_10000":
+                if dice.catastrophe_d6_a is None or dice.catastrophe_d6_b is None:
+                    raise InvalidOperationException(
+                        "Catastrophe requires two Expensive Mistakes D6 rolls"
+                    )
+                kept = (dice.catastrophe_d6_a + dice.catastrophe_d6_b) * 10_000
+                return min(treasury, kept), result_code
+            return treasury, result_code
+
+        def _apply_winnings() -> None:
+            if not request.winnings:
+                return
+
+            home_winnings = _calculate_winnings(
+                home_team,
+                away_team,
+                request.winnings.home_touchdowns,
+                request.winnings.home_stalling,
+            )
+            away_winnings = _calculate_winnings(
+                away_team,
+                home_team,
+                request.winnings.away_touchdowns,
+                request.winnings.away_stalling,
+            )
+
+            home_before_expensive = home_team.treasury + home_winnings
+            away_before_expensive = away_team.treasury + away_winnings
+            home_final, home_expensive = _apply_expensive_mistakes(
+                home_before_expensive, request.winnings.home_expensive_mistakes
+            )
+            away_final, away_expensive = _apply_expensive_mistakes(
+                away_before_expensive, request.winnings.away_expensive_mistakes
+            )
+
+            home_team.treasury = home_final
+            away_team.treasury = away_final
+            match.events.extend(
+                [
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="winnings",
+                        team="home",
+                        detail=(
+                            f"Winnings: {home_winnings}; treasury before Expensive "
+                            f"Mistakes: {home_before_expensive}; result: {home_expensive or 'not_required'}; final treasury: {home_final}"
+                        ),
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    ),
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="winnings",
+                        team="away",
+                        detail=(
+                            f"Winnings: {away_winnings}; treasury before Expensive "
+                            f"Mistakes: {away_before_expensive}; result: {away_expensive or 'not_required'}; final treasury: {away_final}"
+                        ),
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    ),
+                ]
+            )
+
+        _apply_winnings()
+
+        def _next_dedicated_fans(
+            current: int, roll: int | None, won: bool, lost: bool
+        ) -> int:
+            current = max(
+                dedicated_fans_rules.min_value,
+                min(dedicated_fans_rules.max_value, current),
+            )
+            if won:
+                if roll is None:
+                    raise InvalidOperationException(
+                        "Winning team requires a Dedicated Fans D6 roll"
+                    )
+                if roll >= current:
+                    return min(dedicated_fans_rules.max_value, current + 1)
+            elif lost:
+                if roll is None:
+                    raise InvalidOperationException(
+                        "Losing team requires a Dedicated Fans D6 roll"
+                    )
+                if roll < current:
+                    return max(dedicated_fans_rules.min_value, current - 1)
+            return current
+
+        def _apply_dedicated_fans() -> None:
+            if not request.dedicated_fans:
+                return
+
+            home_before = home_team.dedicated_fans
+            away_before = away_team.dedicated_fans
+            home_touchdowns = (
+                request.winnings.home_touchdowns
+                if request.winnings
+                else match.score_home
+            )
+            away_touchdowns = (
+                request.winnings.away_touchdowns
+                if request.winnings
+                else match.score_away
+            )
+            home_team.dedicated_fans = _next_dedicated_fans(
+                home_before,
+                request.dedicated_fans.home_roll,
+                home_touchdowns > away_touchdowns,
+                home_touchdowns < away_touchdowns,
+            )
+            away_team.dedicated_fans = _next_dedicated_fans(
+                away_before,
+                request.dedicated_fans.away_roll,
+                away_touchdowns > home_touchdowns,
+                away_touchdowns < home_touchdowns,
+            )
+            match.events.extend(
+                [
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="dedicated_fans",
+                        team="home",
+                        detail=(
+                            f"Dedicated Fans: {home_before} → {home_team.dedicated_fans}; "
+                            f"roll: {request.dedicated_fans.home_roll or 'not_required'}"
+                        ),
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    ),
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="dedicated_fans",
+                        team="away",
+                        detail=(
+                            f"Dedicated Fans: {away_before} → {away_team.dedicated_fans}; "
+                            f"roll: {request.dedicated_fans.away_roll or 'not_required'}"
+                        ),
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    ),
+                ]
+            )
+
+        _apply_dedicated_fans()
+
+        def _apply_temporary_players() -> None:
+            for temp_request in request.temporary_players:
+                team = teams_by_side[temp_request.team]
+                player = _get_player(team, temp_request.player_id)
+                if not player.temporary_for_match:
+                    raise InvalidOperationException(
+                        f"Player '{player.name}' is not a temporary player"
+                    )
+
+                if temp_request.decision == "release":
+                    team.players = [p for p in team.players if p.id != player.id]
+                    match.events.append(
+                        MatchEvent(
+                            id=str(uuid.uuid4()),
+                            type="temporary_player_release",
+                            team=temp_request.team,
+                            player_id=player.id,
+                            player_name=player.name,
+                            detail=f"Temporary player released: {player.name}",
+                            half=0,
+                            turn=0,
+                            timestamp=datetime.utcnow(),
+                            created_by=user_id,
+                            created_by_name=username,
+                        )
+                    )
+                    continue
+
+                permanent_count = sum(
+                    1
+                    for team_player in team.players
+                    if not team_player.temporary_for_match
+                )
+                if permanent_count >= 16:
+                    raise InvalidOperationException(
+                        f"Cannot keep '{player.name}': roster is full (max 16 players)"
+                    )
+                if team.treasury < player.current_value:
+                    raise InvalidOperationException(
+                        f"Cannot keep '{player.name}': insufficient treasury ({team.treasury} < {player.current_value})"
+                    )
+
+                team.treasury -= player.current_value
+                player.temporary_for_match = False
+                player.temporary_match_id = None
+                if player.journeyman:
+                    player.perks = [perk for perk in player.perks if perk.id != "loner"]
+                player.journeyman = False
+                match.events.append(
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="temporary_player_keep",
+                        team=temp_request.team,
+                        player_id=player.id,
+                        player_name=player.name,
+                        detail=(
+                            f"Temporary player kept: {player.name}; cost: {player.current_value}; "
+                            f"treasury: {team.treasury}"
+                        ),
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    )
+                )
+
+        _apply_temporary_players()
+
+        async def _refresh_team_value(team: UserTeam) -> None:
+            roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
+            team.team_value = team.calculate_team_value(
+                reroll_cost=roster.reroll_cost if roster else 0
+            )
+
+        await _refresh_team_value(home_team)
+        await _refresh_team_value(away_team)
+
+        match.events.extend(post_match_events)
+
         now = datetime.utcnow()
         home_team.updated_at = now
         away_team.updated_at = now
         match.aftermatch_spp_applied_at = now
+        if request.winnings:
+            match.aftermatch_winnings_applied_at = now
 
         await home_team.save()
         await away_team.save()

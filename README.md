@@ -1,6 +1,6 @@
 # Contexto para Claude
 
-vale, la idea con esta aplicación es que pueda gestionar ligas con ella además de consultar habilidades, perks, leaderboards, etc. Mi idea inicial era tener una base de datos con los equipos, jugadores y perks por defecto (cada personaje tiene unas habilidades y stats basicos que se pueden ir modificando a lo largo de la liga). Con esta aplicación el usuario debería poder seleccionar uno de los equipos que existen en el juego (no muertos, orcos, humanos, etc) y poder seleccionar jugadores para formar su equipo en base a un presupuesto.
+la idea con esta aplicación es que pueda gestionar ligas con ella además de consultar habilidades, perks, leaderboards, etc. Mi idea inicial era tener una base de datos con los equipos, jugadores y perks por defecto (cada personaje tiene unas habilidades y stats basicos que se pueden ir modificando a lo largo de la liga). Con esta aplicación el usuario debería poder seleccionar uno de los equipos que existen en el juego (no muertos, orcos, humanos, etc) y poder seleccionar jugadores para formar su equipo en base a un presupuesto.
 
 Frontend
 
@@ -194,82 +194,76 @@ The backend should own every rule that is persistent, calculable, auditable or s
   - Database-backed rules in `rules_catalog`.
   - API endpoint: `/rules/expensive-mistakes`.
   - Seeded at startup from `database/seeding.py`.
+- [X] SPP / PX rules [DONE]
+  - Database-backed rewards in `rules_catalog`.
+  - API endpoint: `/rules/spp-rewards`.
+  - The aftermatch SPP endpoint validates team/player ownership and applies official SPP to embedded `UserTeam.players`.
+- [X] Lasting injuries / serious injuries [DONE]
+  - Database-backed injury, casualty and lasting injury tables in `rules_catalog`.
+  - API endpoint: `/rules/injuries`.
+  - The aftermatch endpoint accepts official D16/D6 rolls, validates team/player ownership and applies statuses, Niggling Injuries, stat decreases and death from backend rules.
+- [X] Winnings [DONE]
+  - Database-backed winnings formula in `rules_catalog`.
+  - API endpoint: `/rules/winnings`.
+  - The aftermatch endpoint accepts touchdowns, stalling flags and Expensive Mistakes dice, then applies official winnings and treasury changes in the backend.
+- [X] Dedicated Fans post-match changes [DONE]
+  - Database-backed Dedicated Fans update rules in `rules_catalog`.
+  - API endpoint: `/rules/dedicated-fans`.
+  - The aftermatch endpoint validates D6 rolls, applies win/loss/draw rules and enforces limits `1–7` from the backend.
+- [X] Single post-match close endpoint [DONE]
+  - API endpoint: `POST /leagues/{league_id}/matches/{match_id}/aftermatch`.
+  - Payload includes MVPs, gate, added events, injuries, winnings data, Expensive Mistakes dice and Dedicated Fans rolls.
+  - Frontend submits the post-match report in one backend call instead of patching match state separately.
+- [X] Journeymen / temporary substitutes [DONE]
+  - Temporary match-day players are stored with `temporary_for_match`, `temporary_match_id` and `journeyman` flags.
+  - Temporary Linemen can be hired before a match without treasury cost, gain Loner (4+) and can take the roster above 16 while active players stay capped at 11.
+  - The aftermatch endpoint accepts keep/release decisions, validates treasury and permanent roster limits, removes Loner when kept and refreshes team value.
+- [X] Inducements [DONE]
+  - Database-backed inducement catalog in `rules_catalog`.
+  - API endpoint: `/rules/inducements`.
+  - Includes League Play Petty Cash rules, common inducement costs/restrictions/durations, variable-price cases and the full D16 Prayers to Nuffle table.
+- [X] Weather table [DONE]
+  - Database-backed 2D6 Weather table in `rules_catalog`.
+  - API endpoint: `/rules/weather`.
+  - The live pre-match selector reads the backend table and falls back to local display data only if the catalog is unavailable.
+- [X] Kick-off event table [DONE]
+  - Database-backed 2D6 Kick-off Event table in `rules_catalog`.
+  - API endpoint: `/rules/kickoff-events`.
+  - The live pre-match selector reads the backend table and persists the selected result on the match through the existing match state endpoint.
 
 ### High priority
 
-1. **SPP / PX rules**
-  - Store reward values in backend: completion `1`, interception `2`, casualty `2`, touchdown `3`, MVP `4`.
-  - Define which event types award SPP and which do not.
-  - Validate that the credited player belongs to the correct team.
-  - Apply real SPP to embedded `UserTeam.players` when closing the post-match report.
-
-2. **Lasting injuries / serious injuries**
-  - Move injury and casualty tables to `rules_catalog`.
-  - Apply `Badly Hurt`, `Miss Next Game`, `Niggling Injury`, stat decreases and death from backend.
-  - Prevent the frontend from inventing invalid player statuses.
-
-3. **Winnings**
-  - Move winnings formula to backend.
-  - Use `dedicated_fans`, touchdowns and stalling/no-stalling bonus.
-  - Persist treasury changes from backend rather than trusting frontend calculations.
-
-4. **Dedicated Fans post-match changes**
-  - Validate D6 rolls in backend.
-  - Apply win/loss rules and limits `1–7`.
-  - Keep draw as no change.
-
-5. **Single post-match close endpoint**
-  - Add an endpoint such as `POST /leagues/{league_id}/matches/{match_id}/aftermatch`.
-  - Payload should include added events, MVPs, winnings data, fan rolls, expensive mistakes, injuries and temporary player decisions.
-  - Backend should apply all changes in one logical operation instead of multiple independent `PATCH` calls.
-
-6. **Journeymen / temporary substitutes**
-  - Track players hired only for one match.
-  - Store whether a player is `temporary_for_match`.
-  - At post-match, allow release or permanent incorporation.
-  - Validate treasury, team value and roster limits.
-
-7. **Inducements**
-  - Move inducement catalogue to backend.
-  - Include cost, restrictions and duration.
-  - Important cases: star players, bribes, apothecaries and mercenaries.
-
-8. **Weather table**
-  - Store the 2D6 weather table in backend.
-  - Persist the selected weather result on the match.
-  - Frontend may display effects, but the canonical table should come from backend.
-
-9. **Kick-off event table**
-  - Store the 2D6 kick-off table in backend.
-  - Persist the result and any selected manual effects.
-  - Keep the frontend as UI only.
-
 10. **Player advancements / level-ups**
-   - Validate SPP cost for improvements.
-   - Support primary/secondary skill rules.
-   - Support random or selected improvements.
-   - Recalculate team value after every advancement.
+
+- Validate SPP cost for improvements.
+- Support primary/secondary skill rules.
+- Support random or selected improvements.
+- Recalculate team value after every advancement.
 
 ### Medium priority
 
 11. **Team value calculation**
-   - Centralize current and full team value in backend.
-   - Include players, permanent injuries, gained skills, rerolls and staff.
-   - Treasury should not count as team value.
+
+- Centralize current and full team value in backend.
+- Include players, permanent injuries, gained skills, rerolls and staff.
+- Treasury should not count as team value.
 
 12. **Player availability maintenance**
-   - Apply `Miss Next Game` and automatically clear it after the next match.
-   - Prevent dead players from being selected.
-   - Remove temporary star players after the match unless rules say otherwise.
+
+- Apply `Miss Next Game` and automatically clear it after the next match.
+- Prevent dead players from being selected.
+- Remove temporary star players after the match unless rules say otherwise.
 
 13. **Redraft / end-of-season rules**
-   - Redraft budget.
-   - Re-hiring players.
-   - Agent fees / season count if implemented later.
+
+- Redraft budget.
+- Re-hiring players.
+- Agent fees / season count if implemented later.
 
 14. **Generic rules catalogue**
-   - Keep simple dice semantics such as D3, D6 and 2D6 in code/helpers.
-   - Store actual game tables in backend: casualty, injury, weather, kick-off, prayers to Nuffle, expensive mistakes, inducements and advancements.
+
+- Keep simple dice semantics such as D3, D6 and 2D6 in code/helpers.
+- Store actual game tables in backend: casualty, injury, weather, kick-off, prayers to Nuffle, expensive mistakes, inducements and advancements.
 
 ### Suggested backend structure
 
@@ -292,157 +286,3 @@ services
 ```
 
 Recommended next implementation: **SPP + injuries + single post-match close endpoint**. This would make the backend the real authority for post-match results.
-
-## TODO
-
-### Database (5/9)
-
-![](https://progress-bar.dev/55)
-
-- [X] Create Base Teams collection
-- [X] Create Teams collection
-- [X] Create Players collection
-- [X] Create Matches collection
-- [X] Create Perks collection
-- [ ] Create Tournaments collection
-- [ ] Create Leaderboards collection
-- [ ] Create Match Results collection
-- [ ] Create Users collection
-
-### API (24/48)
-
-![](https://progress-bar.dev/50)
-
-- [X] Create a FastAPI project
-- [X] Create a MongoDB connection
-- [X] JWT Authentication
-
-#### Teams (8/15)
-
-- [ ] CRUD for Base Teams
-  - [ ] Create a new Base Team
-  - [ ] Get a Base Team
-  - [ ] Edit a Base Team
-  - [ ] Delete a Base Team
-  - [ ] Get all Base Teams
-
-- [-] CRUD for Teams
-  - [X] Team schemas
-  - [X] Create a new Team
-    - [X] Create the roster for the Team
-  - [X] Get Teams
-    - [X] Project characters into Team response
-  - [X] Edit a Team (not players, just team info)
-  - [X] Delete a Team
-    - [X] Delete all Players in a Team
-    - [ ] Delete Team from Leaderboard
-  - [ ] Get all Teams in a Tournament
-
-#### Players (8/8)
-
-- [X] CRUD for Players
-  - [X] Player schemas
-  - [X] Create a new Player
-    - [X] Create a new Player in a Team
-  - [X] Get Players
-    - [X] Project perks into Player response
-  - [X] Edit a Player
-  - [X] Delete a Player
-    - [X] Delete a Player from a Team
-
-#### Perks (5/5)
-
-- [-] CRUD for Perks
-  - [X] Perk schemas
-  - [X] Create a new Perk
-  - [X] Get Perks
-  - [X] Edit a Perk
-  - [X] Delete a Perk
-
-#### Matches (0/6)
-
-- [ ] CRUD for Matches
-  - [ ] Match schemas
-  - [ ] Create a new Match
-  - [ ] Get a Match
-  - [ ] Edit a Match
-  - [ ] Delete a Match
-  - [ ] Get all Matches
-
-#### Tournaments (0/5)
-
-- [ ] CRUD for Tournaments
-  - [ ] Tournament schemas
-  - [ ] Create a new Tournament
-  - [ ] Get Tournaments
-  - [ ] Edit a Tournament
-  - [ ] Delete a Tournament
-
-#### Leaderboards (0/6)
-
-- [ ] CRUD for Leaderboards
-  - [ ] Leaderboard schemas
-  - [ ] Create a new Leaderboard
-  - [ ] Get a Leaderboard
-  - [ ] Edit a Leaderboard
-  - [ ] Delete a Leaderboard
-  - [ ] Get all Leaderboards for a User
-
-### Domain Models (5/11)
-
-![](https://progress-bar.dev/45)
-
-- [ ] Create a Domain Model for Base Teams
-
-- [-] Create a Domain Model for Teams
-  - [ ] Add Team stats
-
-- [X] Create a Domain Model for Players
-- [X] Create a Domain Model for Perks
-- [ ] Create a Domain Model for Matches
-- [ ] Create a Domain Model for Tournaments
-- [ ] Create a Domain Model for Leaderboards
-- [ ] Create a Domain Model for Match Results
-- [ ] Create a Domain Model for Users
-- [X] Dependency Injection for database
-- [X] FastAPI exception handling
-
-### Testing (0/20)
-
-![](https://progress-bar.dev/0)
-
-- [ ] Unit tests for Teams
-- [ ] Unit tests for Players
-- [ ] Unit tests for Perks
-- [ ] Unit tests for Matches
-- [ ] Unit tests for Tournaments
-- [ ] Unit tests for Leaderboards
-- [ ] Unit tests for Match Results
-- [ ] Unit tests for Users
-- [ ] Integration tests for Teams
-- [ ] Integration tests for Players
-- [ ] Integration tests for Perks
-- [ ] Integration tests for Matches
-- [ ] Integration tests for Tournaments
-- [ ] Integration tests for Leaderboards
-- [ ] Integration tests for Match Results
-- [ ] Integration tests for Users
-- [ ] End-to-end tests
-- [ ] Security tests
-- [ ] Regression tests
-- [ ] Code coverage
-
-### Infrastructure (4/9)
-
-![](https://progress-bar.dev/44)
-
-- [X] Configure a MongoDB database
-- [X] Create a docker-compose file for database
-- [X] Create a Dockerfile for backend
-- [X] Create a docker-compose file for backend [DONE]
-- [ ] Study deployment options
-  - [ ] Database deployment (MongoDB Atlas?)
-  - [ ] API deployment (Heroku? AWS? Azure? Google Cloud? Cloudflare? Free hosting?)
-  - [ ] Create a CI/CD pipeline (GitHub Actions)
-    - [ ] PR workflow
-    - [ ] Merge workflow

@@ -135,6 +135,7 @@ class MatchDetail(BaseModel):
     mvp_away: Optional[str] = None
     gate: int
     aftermatch_spp_applied_at: Optional[datetime] = None
+    aftermatch_winnings_applied_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     scheduled_at: Optional[datetime] = None
     played_at: Optional[datetime] = None
@@ -167,25 +168,67 @@ class MatchEventRequest(BaseModel):
     turn: int = Field(default=1, ge=0, le=16)
 
 
-class AftermatchPlayerSppDelta(BaseModel):
-    """SPP/stat delta to apply to one team player after a match."""
+class AftermatchInjuryRequest(BaseModel):
+    """Casualty roll to validate and apply after a match."""
 
+    team: str = Field(..., pattern="^(home|away)$")
     player_id: str
-    spp: int = Field(default=0, ge=0)
-    completions: int = Field(default=0, ge=0)
-    touchdowns: int = Field(default=0, ge=0)
-    casualties: int = Field(default=0, ge=0)
-    interceptions: int = Field(default=0, ge=0)
-    mvp: bool = False
-    bonus_spp: int = Field(default=0, ge=0)
+    casualty_roll: int = Field(..., ge=1, le=16)
+    lasting_injury_roll: Optional[int] = Field(default=None, ge=1, le=6)
+
+
+class AftermatchExpensiveMistakesRequest(BaseModel):
+    """Expensive Mistakes dice needed after winnings are added."""
+
+    roll: Optional[int] = Field(default=None, ge=1, le=6)
+    d3: Optional[int] = Field(default=None, ge=1, le=3)
+    catastrophe_d6_a: Optional[int] = Field(default=None, ge=1, le=6)
+    catastrophe_d6_b: Optional[int] = Field(default=None, ge=1, le=6)
+
+
+class AftermatchWinningsRequest(BaseModel):
+    """Inputs for backend-owned winnings and treasury persistence."""
+
+    home_touchdowns: int = Field(default=0, ge=0)
+    away_touchdowns: int = Field(default=0, ge=0)
+    home_stalling: bool = False
+    away_stalling: bool = False
+    home_expensive_mistakes: AftermatchExpensiveMistakesRequest = Field(
+        default_factory=AftermatchExpensiveMistakesRequest
+    )
+    away_expensive_mistakes: AftermatchExpensiveMistakesRequest = Field(
+        default_factory=AftermatchExpensiveMistakesRequest
+    )
+
+
+class AftermatchDedicatedFansRequest(BaseModel):
+    """D6 rolls for backend-owned Dedicated Fans update."""
+
+    home_roll: Optional[int] = Field(default=None, ge=1, le=6)
+    away_roll: Optional[int] = Field(default=None, ge=1, le=6)
+
+
+class AftermatchTemporaryPlayerDecision(BaseModel):
+    """Keep or release a temporary player after the match."""
+
+    team: str = Field(..., pattern="^(home|away)$")
+    player_id: str
+    decision: str = Field(..., pattern="^(keep|release)$")
 
 
 class ApplyAftermatchSppRequest(BaseModel):
-    """Persist post-match SPP/stat gains once."""
+    """Persist post-match events and let the backend calculate SPP/injuries once."""
 
-    home: list[AftermatchPlayerSppDelta] = Field(default_factory=list)
-    away: list[AftermatchPlayerSppDelta] = Field(default_factory=list)
+    mvp_home: Optional[str] = None
+    mvp_away: Optional[str] = None
+    gate: Optional[int] = Field(default=None, ge=0)
     post_match_events: list[MatchEventRequest] = Field(default_factory=list)
+    injuries: list[AftermatchInjuryRequest] = Field(default_factory=list)
+    winnings: Optional[AftermatchWinningsRequest] = None
+    dedicated_fans: Optional[AftermatchDedicatedFansRequest] = None
+    temporary_players: list[AftermatchTemporaryPlayerDecision] = Field(
+        default_factory=list
+    )
 
 
 class AddMatchEventRequest(BaseModel):

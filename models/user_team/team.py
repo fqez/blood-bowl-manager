@@ -32,8 +32,8 @@ class PlayerStats(BaseModel):
 
     MA: int = Field(..., ge=1, le=10)
     ST: int = Field(..., ge=1, le=8)
-    AG: int = Field(..., ge=1, le=6)
-    PA: Optional[int] = Field(None, ge=1, le=6)
+    AG: int = Field(..., ge=1, le=7)
+    PA: Optional[int] = Field(None, ge=1, le=7)
     AV: int = Field(..., ge=3, le=12)
 
 
@@ -77,6 +77,11 @@ class UserPlayer(BaseModel):
     status: PlayerStatus = Field(default=PlayerStatus.HEALTHY)
     career: PlayerCareer = Field(default_factory=PlayerCareer)
 
+    # Temporary match-day players / Journeymen
+    temporary_for_match: bool = Field(default=False)
+    temporary_match_id: Optional[str] = None
+    journeyman: bool = Field(default=False)
+
     # Visual
     image: Optional[str] = None
     tag_image: Optional[str] = None
@@ -102,7 +107,8 @@ class UserTeam(Document):
 
     # Roster (embedded, max 16)
     players: list[UserPlayer] = Field(
-        default_factory=list, max_length=16, description="Hired players"
+        default_factory=list,
+        description="Hired players and temporary match-day players",
     )
 
     # Team resources
@@ -139,6 +145,10 @@ class UserTeam(Document):
             staff_value += 50000
         return player_value + staff_value
 
+    def permanent_player_count(self) -> int:
+        """Count non-temporary players on the Team Draft List."""
+        return sum(1 for p in self.players if not p.temporary_for_match)
+
     def get_player_count_by_type(self, base_type: str) -> int:
         """Count how many players of a specific type are hired."""
         return sum(1 for p in self.players if p.base_type == base_type)
@@ -147,7 +157,7 @@ class UserTeam(Document):
         self, base_type: str, max_allowed: int, cost: int
     ) -> tuple[bool, str]:
         """Check if a player type can be hired."""
-        if len(self.players) >= 16:
+        if self.permanent_player_count() >= 16:
             return False, "Roster is full (max 16 players)"
 
         current_count = self.get_player_count_by_type(base_type)

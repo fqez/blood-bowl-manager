@@ -326,17 +326,12 @@ async def delete_match_event(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.post(
-    "/{league_id}/matches/{match_id}/aftermatch/spp",
-    response_model=MatchDetail,
-)
-async def apply_aftermatch_spp(
+async def _apply_aftermatch_report(
     league_id: str,
     match_id: str,
     request: ApplyAftermatchSppRequest,
-    user_id: str = Depends(get_current_user),
+    user_id: str,
 ):
-    """Apply aftermatch SPP/stat gains once."""
     try:
         return await LeagueService.apply_aftermatch_spp(
             league_id, match_id, user_id, request
@@ -350,6 +345,34 @@ async def apply_aftermatch_spp(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except InvalidOperationException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post(
+    "/{league_id}/matches/{match_id}/aftermatch",
+    response_model=MatchDetail,
+)
+async def apply_aftermatch(
+    league_id: str,
+    match_id: str,
+    request: ApplyAftermatchSppRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Apply the complete post-match report once."""
+    return await _apply_aftermatch_report(league_id, match_id, request, user_id)
+
+
+@router.post(
+    "/{league_id}/matches/{match_id}/aftermatch/spp",
+    response_model=MatchDetail,
+)
+async def apply_aftermatch_spp(
+    league_id: str,
+    match_id: str,
+    request: ApplyAftermatchSppRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Compatibility alias for older clients; applies the complete report."""
+    return await _apply_aftermatch_report(league_id, match_id, request, user_id)
 
 
 @router.patch("/{league_id}/matches/{match_id}/state", response_model=MatchDetail)

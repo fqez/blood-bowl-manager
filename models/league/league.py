@@ -174,6 +174,7 @@ class Match(BaseModel):
 
     # Post-match persistence guards
     aftermatch_spp_applied_at: Optional[datetime] = None
+    aftermatch_winnings_applied_at: Optional[datetime] = None
 
     # Timing
     started_at: Optional[datetime] = None

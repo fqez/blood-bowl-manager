@@ -5,6 +5,7 @@ import re
 from pathlib import Path
 
 
+from models.base.dedicated_fans import DedicatedFansRules
 from models.base.roster import BasePerk, BasePlayer, BaseRoster, BaseStats
 from models.base.expensive_mistake import (
     ExpensiveMistakeBand,
@@ -12,8 +13,24 @@ from models.base.expensive_mistake import (
     ExpensiveMistakesRules,
     LocalizedText,
 )
+from models.base.inducement import (
+    InducementBudgetRules,
+    InducementCostOption,
+    InducementRule,
+    InducementRules,
+    PrayerToNuffleResult,
+)
+from models.base.injury import (
+    CasualtyTableEntry,
+    DiceTableEntry,
+    InjuryRules,
+    LastingInjuryTableEntry,
+)
+from models.base.pre_match import DiceRangeTableEntry, KickoffEventRules, WeatherRules
 from models.base.skill_family import SkillFamily
+from models.base.spp import SppEventReward, SppRewardsRules, ThrowTeammateReward
 from models.base.star_player import SpecialAbility, StarPlayer, StarPlayerStats
+from models.base.winnings import WinningsRules
 from models.team.perk import Perk
 from utils.logging_config import get_db_logger
 
@@ -534,6 +551,941 @@ async def seed_expensive_mistakes_rules():
     logger.info("Upserted expensive mistakes rules")
 
 
+async def seed_spp_rewards_rules():
+    """Seed SPP reward rules from the core rules."""
+    rules = SppRewardsRules(
+        id="spp_rewards",
+        event_rewards=[
+            SppEventReward(
+                event_type="completion",
+                spp=1,
+                career_stat="completions",
+                description=LocalizedText(
+                    en="A Pass Action that results in an Accurate Pass, and is caught by a team-mate without the ball hitting the ground and Bouncing, awards 1 SPP to the passer.",
+                    es="Una acción de Pase que resulta en Pase Preciso y es atrapada por un compañero sin que el balón toque el suelo ni Rebote otorga 1 PX al lanzador.",
+                ),
+            ),
+            SppEventReward(
+                event_type="interception",
+                spp=2,
+                career_stat="interceptions",
+                description=LocalizedText(
+                    en="Successfully Intercepting an opposition Pass Action awards 2 SPP to the interceptor.",
+                    es="Interceptar con éxito una acción de Pase rival otorga 2 PX al interceptor.",
+                ),
+            ),
+            SppEventReward(
+                event_type="casualty",
+                spp=2,
+                career_stat="casualties",
+                description=LocalizedText(
+                    en="A Casualty caused by a player Knocked Down as a result of a Block Action awards 2 SPP to the player who knocked them down. Casualties from other methods do not generate SPP.",
+                    es="Una Baja causada por un jugador Derribado como resultado de una acción de Placaje otorga 2 PX al jugador que lo derribó. Las bajas por otros métodos no generan PX.",
+                ),
+            ),
+            SppEventReward(
+                event_type="touchdown",
+                spp=3,
+                career_stat="touchdowns",
+                description=LocalizedText(
+                    en="A Touchdown awards 3 SPP to the scorer. Touchdowns awarded because an opponent concedes may be allocated to chosen players on that team.",
+                    es="Un Touchdown otorga 3 PX al anotador. Los touchdowns otorgados porque el rival concede pueden asignarse a jugadores elegidos de ese equipo.",
+                ),
+            ),
+        ],
+        mvp_spp=4,
+        non_spp_event_types=[
+            "badly_hurt",
+            "foul",
+            "kickoff_change",
+            "ko",
+            "reroll_change",
+            "rip",
+            "score_change",
+            "serious_injury",
+            "stall",
+            "stalling",
+            "stun",
+            "turn_change",
+            "weather_change",
+        ],
+        throw_teammate=ThrowTeammateReward(
+            thrown_player_landed_spp=1,
+            superb_thrower_spp=1,
+            description=LocalizedText(
+                en="If the thrown player lands standing, the thrown player gets 1 SPP. If the throw was superb too, the thrower also gets 1 SPP.",
+                es="Si el jugador lanzado cae de pie, gana 1 PX. Si además el lanzamiento fue soberbio, el lanzador también gana 1 PX.",
+            ),
+        ),
+    )
+    await upsert_catalog_document(SppRewardsRules, rules)
+    logger.info("Upserted SPP reward rules")
+
+
+async def seed_injury_rules():
+    """Seed injury and casualty rules from the core rules."""
+    rules = InjuryRules(
+        id="injury_rules",
+        injury_table=[
+            DiceTableEntry(
+                min_roll=2,
+                max_roll=7,
+                code="stunned",
+                label=LocalizedText(en="Stunned", es="Aturdido"),
+                description=LocalizedText(
+                    en="The player is immediately Stunned.",
+                    es="El jugador queda Aturdido inmediatamente.",
+                ),
+            ),
+            DiceTableEntry(
+                min_roll=8,
+                max_roll=9,
+                code="knocked_out",
+                label=LocalizedText(en="Knocked-out", es="Inconsciente"),
+                description=LocalizedText(
+                    en="Remove the player from the pitch and place them in the Knocked-out box.",
+                    es="Retira al jugador del campo y colócalo en la casilla de Inconscientes.",
+                ),
+            ),
+            DiceTableEntry(
+                min_roll=10,
+                max_roll=12,
+                code="casualty",
+                label=LocalizedText(en="Casualty", es="Lesión"),
+                description=LocalizedText(
+                    en="The player suffers a Casualty and a Casualty Roll is made.",
+                    es="El jugador sufre una Lesión y se realiza una Tirada de Lesión Grave.",
+                ),
+            ),
+        ],
+        stunty_injury_table=[
+            DiceTableEntry(
+                min_roll=2,
+                max_roll=6,
+                code="stunned",
+                label=LocalizedText(en="Stunned", es="Aturdido"),
+                description=LocalizedText(
+                    en="The player is immediately Stunned.",
+                    es="El jugador queda Aturdido inmediatamente.",
+                ),
+            ),
+            DiceTableEntry(
+                min_roll=7,
+                max_roll=8,
+                code="knocked_out",
+                label=LocalizedText(en="Knocked-out", es="Inconsciente"),
+                description=LocalizedText(
+                    en="Remove the player from the pitch and place them in the Knocked-out box.",
+                    es="Retira al jugador del campo y colócalo en la casilla de Inconscientes.",
+                ),
+            ),
+            DiceTableEntry(
+                min_roll=9,
+                max_roll=9,
+                code="badly_hurt",
+                label=LocalizedText(en="Badly Hurt", es="Contusión"),
+                description=LocalizedText(
+                    en="In League Play, no Casualty Roll is made; the player automatically suffers Badly Hurt.",
+                    es="En juego de liga no se hace Tirada de Lesión Grave; el jugador sufre Contusión automáticamente.",
+                ),
+            ),
+            DiceTableEntry(
+                min_roll=10,
+                max_roll=12,
+                code="casualty",
+                label=LocalizedText(en="Casualty", es="Lesión"),
+                description=LocalizedText(
+                    en="The player suffers a Casualty and a Casualty Roll is made.",
+                    es="El jugador sufre una Lesión y se realiza una Tirada de Lesión Grave.",
+                ),
+            ),
+        ],
+        casualty_table=[
+            CasualtyTableEntry(
+                min_roll=1,
+                max_roll=8,
+                code="badly_hurt",
+                label=LocalizedText(en="Badly Hurt", es="Contusión"),
+                description=LocalizedText(
+                    en="The player suffers no long term effects.",
+                    es="El jugador no sufre efectos a largo plazo.",
+                ),
+                player_status="badly_hurt",
+            ),
+            CasualtyTableEntry(
+                min_roll=9,
+                max_roll=10,
+                code="seriously_hurt",
+                label=LocalizedText(en="Seriously Hurt", es="Lesión seria"),
+                description=LocalizedText(
+                    en="The player must miss their next game.",
+                    es="El jugador debe perderse su próximo partido.",
+                ),
+                player_status="missing_next_game",
+            ),
+            CasualtyTableEntry(
+                min_roll=11,
+                max_roll=12,
+                code="serious_injury",
+                label=LocalizedText(en="Serious Injury", es="Lesión grave"),
+                description=LocalizedText(
+                    en="The player suffers a Niggling Injury and must miss their next game.",
+                    es="El jugador sufre una Herida Persistente y debe perderse su próximo partido.",
+                ),
+                player_status="missing_next_game",
+                injury_codes=["niggling_injury"],
+            ),
+            CasualtyTableEntry(
+                min_roll=13,
+                max_roll=14,
+                code="lasting_injury",
+                label=LocalizedText(en="Lasting Injury", es="Lesión permanente"),
+                description=LocalizedText(
+                    en="The player suffers a Characteristic reduction and must miss their next game.",
+                    es="El jugador sufre una reducción de Característica y debe perderse su próximo partido.",
+                ),
+                player_status="missing_next_game",
+                requires_lasting_injury_roll=True,
+            ),
+            CasualtyTableEntry(
+                min_roll=15,
+                max_roll=16,
+                code="dead",
+                label=LocalizedText(en="Dead", es="Muerto"),
+                description=LocalizedText(
+                    en="The player is dead.",
+                    es="El jugador está muerto.",
+                ),
+                player_status="dead",
+                injury_codes=["dead"],
+            ),
+        ],
+        lasting_injury_table=[
+            LastingInjuryTableEntry(
+                min_roll=1,
+                max_roll=2,
+                code="head_injury",
+                label=LocalizedText(en="Head Injury", es="Lesión en la cabeza"),
+                description=LocalizedText(en="Reduce AV by 1.", es="Reduce AV en 1."),
+                stat="AV",
+                reduction_label="-1 AV",
+            ),
+            LastingInjuryTableEntry(
+                min_roll=3,
+                max_roll=3,
+                code="smashed_knee",
+                label=LocalizedText(en="Smashed Knee", es="Rodilla destrozada"),
+                description=LocalizedText(en="Reduce MA by 1.", es="Reduce MA en 1."),
+                stat="MA",
+                reduction_label="-1 MA",
+            ),
+            LastingInjuryTableEntry(
+                min_roll=4,
+                max_roll=4,
+                code="broken_arm",
+                label=LocalizedText(en="Broken Arm", es="Brazo roto"),
+                description=LocalizedText(en="Reduce PA by 1.", es="Reduce PA en 1."),
+                stat="PA",
+                reduction_label="-1 PA",
+            ),
+            LastingInjuryTableEntry(
+                min_roll=5,
+                max_roll=5,
+                code="dislocated_hip",
+                label=LocalizedText(en="Dislocated Hip", es="Cadera dislocada"),
+                description=LocalizedText(en="Reduce AG by 1.", es="Reduce AG en 1."),
+                stat="AG",
+                reduction_label="-1 AG",
+            ),
+            LastingInjuryTableEntry(
+                min_roll=6,
+                max_roll=6,
+                code="broken_shoulder",
+                label=LocalizedText(en="Broken Shoulder", es="Hombro roto"),
+                description=LocalizedText(en="Reduce ST by 1.", es="Reduce ST en 1."),
+                stat="ST",
+                reduction_label="-1 ST",
+            ),
+        ],
+    )
+    await upsert_catalog_document(InjuryRules, rules)
+    logger.info("Upserted injury rules")
+
+
+async def seed_winnings_rules():
+    """Seed the post-game winnings formula from the core rules."""
+    rules = WinningsRules(
+        id="winnings",
+        fan_attendance_divisor=2,
+        no_stalling_bonus=1,
+        gold_multiplier=10_000,
+        description=LocalizedText(
+            en="Winnings are (Fan Attendance divided by two + touchdowns scored + 1 if no player on the team was Stalling) × 10,000 gp. Fan Attendance is both teams' Fan Factors added together.",
+            es="Las ganancias son (Asistencia de Aficionados dividida entre dos + touchdowns anotados + 1 si ningún jugador del equipo estuvo Perdiendo Tiempo) × 10.000 mo. La Asistencia es la suma del Factor de Hinchada de ambos equipos.",
+        ),
+    )
+    await upsert_catalog_document(WinningsRules, rules)
+    logger.info("Upserted winnings rules")
+
+
+async def seed_dedicated_fans_rules():
+    """Seed post-game Dedicated Fans update rules from the core rules."""
+    rules = DedicatedFansRules(
+        id="dedicated_fans",
+        min_value=1,
+        max_value=7,
+        win_roll_operator=">=",
+        loss_roll_operator="<",
+        description=LocalizedText(
+            en="After a League Fixture, a winning team increases Dedicated Fans by 1 on a D6 roll equal to or higher than its current Dedicated Fans, to a maximum of 7. A losing team reduces Dedicated Fans by 1 on a D6 roll lower than its current Dedicated Fans, to a minimum of 1. A draw causes no change.",
+            es="Después de un encuentro de liga, un equipo ganador aumenta sus Seguidores Entregados en 1 con una tirada de D6 igual o superior a su valor actual, hasta un máximo de 7. Un equipo perdedor los reduce en 1 con una tirada de D6 inferior a su valor actual, hasta un mínimo de 1. Un empate no cambia el valor.",
+        ),
+    )
+    await upsert_catalog_document(DedicatedFansRules, rules)
+    logger.info("Upserted dedicated fans rules")
+
+
+async def seed_inducement_rules():
+    """Seed inducement catalog and petty cash rules from the core rules."""
+    any_team = LocalizedText(
+        en="Available to any team.", es="Disponible para cualquier equipo."
+    )
+    game = "game"
+    once = "once_per_game"
+    variable = "varies"
+
+    def cost_option(
+        en: str, es: str, cost: int, applies_to: str, max_per_team: int | None = None
+    ):
+        return InducementCostOption(
+            label=LocalizedText(en=en, es=es),
+            cost=cost,
+            applies_to=applies_to,
+            max_per_team=max_per_team,
+        )
+
+    def rule(
+        id: str,
+        en: str,
+        es: str,
+        category: str,
+        max_per_team: int,
+        cost: int | None,
+        duration: str,
+        desc_en: str,
+        desc_es: str,
+        availability: str = "any",
+        required_special_rules: list[str] | None = None,
+        cost_options: list[InducementCostOption] | None = None,
+        notes: list[LocalizedText] | None = None,
+    ):
+        return InducementRule(
+            id=id,
+            name=LocalizedText(en=en, es=es),
+            category=category,
+            max_per_team=max_per_team,
+            cost=cost,
+            cost_options=cost_options or [],
+            availability=availability,
+            required_special_rules=required_special_rules or [],
+            duration=duration,
+            description=LocalizedText(en=desc_en, es=desc_es),
+            notes=notes or [],
+        )
+
+    rules = InducementRules(
+        id="inducements",
+        budget=InducementBudgetRules(
+            petty_cash_top_up_limit=50_000,
+            lower_ctv_receives_difference=True,
+            lower_ctv_receives_opponent_treasury_spend=True,
+            unspent_petty_cash_lost=True,
+            equal_ctv_treasury_spend_allowed=False,
+            description=LocalizedText(
+                en="In League Play, the higher CTV team may first spend Treasury on inducements. The lower CTV team then receives Petty Cash equal to the CTV difference plus the opponent's Treasury spend, may add up to 50,000 gp from its own Treasury, and loses unspent Petty Cash. If CTV is equal, neither team may spend Treasury.",
+                es="En Juego de Liga, el equipo con mayor CTV puede gastar primero Tesorería en incentivos. Después, el equipo con menor CTV recibe Fondo para Gastos igual a la diferencia de CTV más lo gastado por el rival desde Tesorería, puede añadir hasta 50.000 po de su propia Tesorería y pierde el Fondo no gastado. Si el CTV es igual, ningún equipo puede gastar Tesorería.",
+            ),
+        ),
+        inducements=[
+            rule(
+                "prayers_to_nuffle",
+                "Prayers to Nuffle",
+                "Plegarias a Nuffle",
+                "common",
+                3,
+                10_000,
+                game,
+                "Roll one D16 per Prayer, re-rolling duplicate results. Effects last until the end of the game. Star Players cannot be selected for effects requiring player selection.",
+                "Tira un D16 por Plegaria, repitiendo resultados duplicados. Los efectos duran hasta el final del partido. Los Jugadores Estrella no pueden ser seleccionados para efectos que requieran elegir jugadores.",
+            ),
+            rule(
+                "part_time_assistant_coach",
+                "Part-time Assistant Coach",
+                "Entrenador Ayudante a tiempo parcial",
+                "staff",
+                5,
+                20_000,
+                game,
+                "Increase Assistant Coaches by 1 for the duration of the game.",
+                "Aumenta los Entrenadores Ayudantes en 1 durante el partido.",
+            ),
+            rule(
+                "temp_agency_cheerleader",
+                "Temp Agency Cheerleader",
+                "Animadora de agencia temporal",
+                "staff",
+                5,
+                5_000,
+                game,
+                "Increase Cheerleaders by 1 for the duration of the game.",
+                "Aumenta las Animadoras en 1 durante el partido.",
+            ),
+            rule(
+                "team_mascot",
+                "Team Mascot",
+                "Mascota del Equipo",
+                "staff",
+                1,
+                25_000,
+                game,
+                "Gain one extra Team Re-roll each half. On use, roll a D6: 4+ works normally; 1-3 loses it for that half. Also re-roll a natural 1 for Cheering Fans on the Kick-off table.",
+                "Gana una Segunda Oportunidad extra por parte. Al usarla, tira D6: 4+ funciona; 1-3 se pierde esa parte. Además permite repetir un 1 natural en Ánimos del Público.",
+            ),
+            rule(
+                "weather_mage",
+                "Weather Mage",
+                "Mago del Clima",
+                "staff",
+                1,
+                25_000,
+                once,
+                "Once per game, at the start of any of your turns, roll on the Weather Table with a modifier from -2 to +2.",
+                "Una vez por partido, al inicio de uno de tus turnos, tira en la Tabla de Clima con modificador de -2 a +2.",
+            ),
+            rule(
+                "blitzers_best_keg",
+                "Blitzer’s Best Keg",
+                "Barril de la Mejor de Blitzer",
+                "common",
+                2,
+                50_000,
+                game,
+                "Apply +1 to KO recovery rolls for each Keg purchased.",
+                "Aplica +1 a las tiradas de recuperación de KO por cada Barril comprado.",
+            ),
+            rule(
+                "bribe",
+                "Bribe",
+                "Soborno",
+                "common",
+                3,
+                None,
+                game,
+                "When a player is Sent-off, roll a D6. On 2+, the player is not Sent-off and no Turnover is caused; on a natural 1, the Bribe is lost and the player is Sent-off.",
+                "Cuando un jugador sea Expulsado, tira D6. Con 2+, no es expulsado y no hay cambio de turno; con 1 natural, el Soborno se pierde y el jugador es expulsado.",
+                cost_options=[
+                    cost_option("Standard", "Estándar", 100_000, "any", 3),
+                    cost_option(
+                        "Bribery and Corruption",
+                        "Soborno y Corrupción",
+                        50_000,
+                        "special_rule:Bribery and Corruption",
+                        6,
+                    ),
+                ],
+            ),
+            rule(
+                "extra_team_training",
+                "Extra Team Training",
+                "Entrenamiento Extra del Equipo",
+                "common",
+                8,
+                100_000,
+                game,
+                "Each purchase grants one additional Team Re-roll for the duration of the game.",
+                "Cada compra concede una Segunda Oportunidad adicional durante el partido.",
+            ),
+            rule(
+                "mortuary_assistant",
+                "Mortuary Assistant",
+                "Asistente Funerario",
+                "special",
+                1,
+                100_000,
+                once,
+                "Once per game, re-roll a failed Regeneration roll for one of your players.",
+                "Una vez por partido, repite una tirada fallida de Regeneración de uno de tus jugadores.",
+                availability="special_rule",
+                required_special_rules=["Masters of Undeath"],
+            ),
+            rule(
+                "plague_doctor",
+                "Plague Doctor",
+                "Doctor de la Plaga",
+                "special",
+                1,
+                100_000,
+                once,
+                "Once per game, re-roll a failed Regeneration roll or use as an Apothecary.",
+                "Una vez por partido, repite una Regeneración fallida o úsalo como Médico.",
+                availability="special_rule",
+                required_special_rules=["Favoured of Nurgle"],
+            ),
+            rule(
+                "riotous_rookies",
+                "Riotous Rookies",
+                "Novatos Alborotadores",
+                "special",
+                1,
+                150_000,
+                game,
+                "After adding Journeymen needed to reach 11 players, gain 2D3+1 additional Journeymen for the game. They may take the roster above 16 and leave after the game unless hired.",
+                "Después de añadir Jornaleros para llegar a 11 jugadores, gana 2D3+1 Jornaleros adicionales para el partido. Pueden superar 16 jugadores y se marchan al final salvo que sean contratados.",
+                availability="special_rule",
+                required_special_rules=["Low Cost Linemen"],
+            ),
+            rule(
+                "wandering_apothecary",
+                "Wandering Apothecary",
+                "Médico Ambulante",
+                "medical",
+                2,
+                100_000,
+                once,
+                "A team that can hire an Apothecary may use each Wandering Apothecary once per game as a regular Apothecary.",
+                "Un equipo que pueda contratar Médico puede usar cada Médico Ambulante una vez por partido como un Médico normal.",
+                availability="apothecary_allowed",
+            ),
+            rule(
+                "halfling_master_chef",
+                "Halfling Master Chef",
+                "Maestro Chef Halfling",
+                "special",
+                1,
+                None,
+                game,
+                "At the start of each half, roll three D6. For each 4+, gain a Team Re-roll and the opposition loses one. Skill, Trait or special-rule re-rolls cannot be lost this way.",
+                "Al inicio de cada parte, tira tres D6. Por cada 4+, ganas una Segunda Oportunidad y el rival pierde una. No se pueden perder repeticiones de Habilidades, Rasgos o reglas especiales.",
+                cost_options=[
+                    cost_option("Standard", "Estándar", 300_000, "any"),
+                    cost_option(
+                        "Halfling teams", "Equipos Halfling", 100_000, "roster:halfling"
+                    ),
+                ],
+            ),
+            rule(
+                "biased_referee",
+                "Biased Referee",
+                "Árbitro Parcial",
+                "special",
+                1,
+                None,
+                variable,
+                "Named Biased Referees vary in cost and rules. Both teams may hire the same named Biased Referee.",
+                "Los Árbitros Parciales con nombre varían en coste y reglas. Ambos equipos pueden contratar al mismo Árbitro Parcial con nombre.",
+                cost_options=[
+                    cost_option(
+                        "Dodgy League Rep",
+                        "Delegado de Liga Sospechoso",
+                        120_000,
+                        "any",
+                    ),
+                    cost_option(
+                        "Dodgy League Rep: Bribery and Corruption",
+                        "Delegado: Soborno y Corrupción",
+                        80_000,
+                        "special_rule:Bribery and Corruption",
+                    ),
+                ],
+            ),
+            rule(
+                "josef_bugman",
+                "Josef Bugman",
+                "Josef Bugman",
+                "infamous_staff",
+                1,
+                100_000,
+                game,
+                "Cannot also be hired as a Star Player. Gives +1 to KO recovery rolls and once per game can remove D3 players from the pitch and set them up again before Kick-off.",
+                "No puede contratarse también como Jugador Estrella. Da +1 a recuperar KO y una vez por partido permite retirar D3 jugadores del campo y recolocarlos antes de la Patada inicial.",
+            ),
+            rule(
+                "mercenary_player",
+                "Mercenary Player",
+                "Jugador Mercenario",
+                "player",
+                3,
+                None,
+                game,
+                "Hire a player from your Team Roster for its cost +30,000 gp. It gains Loner (4+), counts toward its positional limit, may buy one Primary Skill for +50,000 gp, and cannot be hired in the Post-game Sequence.",
+                "Contrata un jugador de tu Plantilla por su coste +30.000 po. Gana Solitario (4+), cuenta para su límite de posición, puede comprar una Habilidad Primaria por +50.000 po y no puede ser contratado en el Post-partido.",
+                cost_options=[
+                    cost_option(
+                        "Roster player surcharge",
+                        "Recargo sobre jugador de plantilla",
+                        30_000,
+                        "base_player_cost_plus",
+                    ),
+                    cost_option(
+                        "One Primary Skill",
+                        "Una Habilidad Primaria",
+                        50_000,
+                        "optional_primary_skill",
+                    ),
+                ],
+            ),
+            rule(
+                "star_player",
+                "Star Player",
+                "Jugador Estrella",
+                "player",
+                2,
+                None,
+                game,
+                "Hire up to two Star Players for one game, as long as total players do not exceed 16. Star Players cannot earn SPP, receive MVP, gain advancements, and Casualty Rolls against them are waived after the game.",
+                "Contrata hasta dos Jugadores Estrella por un partido, siempre que el total no supere 16 jugadores. No ganan PX, no reciben MVP, no mejoran y las Tiradas de Baja contra ellos se anulan al final.",
+                availability="various_teams",
+            ),
+            rule(
+                "sports_wizard",
+                "Sports-Wizard",
+                "Mago Deportivo",
+                "wizard",
+                1,
+                150_000,
+                once,
+                "Once per game, cast Fireball or Zap!",
+                "Una vez por partido, lanza Bola de Fuego o ¡Zap!",
+            ),
+        ],
+        prayers_to_nuffle=[
+            PrayerToNuffleResult(
+                roll=1,
+                code="treacherous_trapdoor",
+                description=LocalizedText(
+                    en="Each time a player enters a Trapdoor square, roll D6. On 1, they fall through and make an Injury Roll as if Pushed into the Crowd.",
+                    es="Cada vez que un jugador entre en una Trampilla, tira D6. Con 1, cae y realiza Tirada de Herida como si fuera Empujado al Público.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=2,
+                code="friends_with_the_ref",
+                description=LocalizedText(
+                    en="When you Argue the Call, treat rolls of 5 or 6 as a successful 'Well, when you put it like that...'.",
+                    es="Al Protestar al Árbitro, trata 5 o 6 como éxito de 'Bueno, visto así...'.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=3,
+                code="stiletto",
+                description=LocalizedText(
+                    en="Randomly select one player on your team. They gain Stab for the game.",
+                    es="Selecciona aleatoriamente un jugador de tu equipo. Gana Puñalada durante el partido.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=4,
+                code="iron_man",
+                description=LocalizedText(
+                    en="Select one player on your team. They improve AV by 1, to a maximum of 11+, for the game.",
+                    es="Elige un jugador de tu equipo. Mejora AV en 1, máximo 11+, durante el partido.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=5,
+                code="knuckle_dusters",
+                description=LocalizedText(
+                    en="Select one player on your team. They gain Mighty Blow for the game.",
+                    es="Elige un jugador de tu equipo. Gana Golpe Mortífero durante el partido.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=6,
+                code="bad_habits",
+                description=LocalizedText(
+                    en="Randomly select D3 opposition players. They gain Loner (2+) for the game.",
+                    es="Selecciona aleatoriamente D3 jugadores rivales. Ganan Solitario (2+) durante el partido.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=7,
+                code="greasy_cleats",
+                description=LocalizedText(
+                    en="Randomly select one opposition player. Reduce their MA by 1, minimum 1, for the game.",
+                    es="Selecciona aleatoriamente un rival. Reduce su MO en 1, mínimo 1, durante el partido.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=8,
+                code="blessing_of_nuffle",
+                description=LocalizedText(
+                    en="Randomly select one player on your team. They gain Pro for the game.",
+                    es="Selecciona aleatoriamente un jugador de tu equipo. Gana Profesional durante el partido.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=9,
+                code="moles_under_the_pitch",
+                description=LocalizedText(
+                    en="Opposition players apply -1 when attempting to Rush.",
+                    es="Los jugadores rivales aplican -1 al intentar Ir a Por Todas.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=10,
+                code="perfect_passing",
+                description=LocalizedText(
+                    en="Completions by your team earn 2 SPP instead of 1.",
+                    es="Las compleciones de tu equipo ganan 2 PX en lugar de 1.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=11,
+                code="dazzling_catching",
+                description=LocalizedText(
+                    en="Your players earn 1 SPP when they successfully Catch the ball from a Pass Action.",
+                    es="Tus jugadores ganan 1 PX al atrapar con éxito el balón por una Acción de Pase.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=12,
+                code="fan_interaction",
+                description=LocalizedText(
+                    en="If an opposition player suffers a Casualty from being Pushed into the Crowd, the player that pushed them earns 2 SPP.",
+                    es="Si un rival sufre Baja al ser Empujado al Público, el jugador que lo empujó gana 2 PX.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=13,
+                code="fouling_frenzy",
+                description=LocalizedText(
+                    en="Your players earn 2 SPP for causing a Casualty from a Foul Action.",
+                    es="Tus jugadores ganan 2 PX por causar una Baja con una Acción de Falta.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=14,
+                code="throw_a_rock",
+                description=LocalizedText(
+                    en="Once per game, at the start of any of your turns, randomly select one opposition player. On 4+, they are Knocked Down.",
+                    es="Una vez por partido, al inicio de uno de tus turnos, selecciona un rival al azar. Con 4+, es Derribado.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=15,
+                code="under_scrutiny",
+                description=LocalizedText(
+                    en="Opposition players that Foul are automatically Sent-off if they break armour, regardless of doubles.",
+                    es="Los rivales que hagan Falta son Expulsados automáticamente si rompen armadura, sin importar dobles.",
+                ),
+            ),
+            PrayerToNuffleResult(
+                roll=16,
+                code="intensive_training",
+                description=LocalizedText(
+                    en="Randomly select one player on your team. They gain one Primary Skill of your choice for the game.",
+                    es="Selecciona aleatoriamente un jugador de tu equipo. Gana una Habilidad Primaria de tu elección durante el partido.",
+                ),
+            ),
+        ],
+    )
+    await upsert_catalog_document(InducementRules, rules)
+    logger.info("Upserted inducement rules")
+
+
+async def seed_weather_rules():
+    """Seed the official 2D6 Weather table."""
+
+    def entry(
+        min_roll: int,
+        max_roll: int,
+        code: str,
+        en: str,
+        es: str,
+        desc_en: str,
+        desc_es: str,
+    ):
+        return DiceRangeTableEntry(
+            min_roll=min_roll,
+            max_roll=max_roll,
+            code=code,
+            label=LocalizedText(en=en, es=es),
+            description=LocalizedText(en=desc_en, es=desc_es),
+        )
+
+    rules = WeatherRules(
+        id="weather",
+        roll_dice="2D6",
+        description=LocalizedText(
+            en="At the start of the game, each Coach rolls a D6 and adds the two rolls together, then consults the Weather Table.",
+            es="Al comienzo del partido, cada Entrenador lanza un D6 y suma ambos resultados, después consulta la Tabla de Clima.",
+        ),
+        table=[
+            entry(
+                2,
+                2,
+                "sweltering_heat",
+                "Sweltering Heat",
+                "Calor Sofocante",
+                "At the end of each Drive, one Coach rolls a D3 and each Coach randomly selects that many of their players that were on the pitch when the Drive ended. They go to Reserves and cannot be set up for the next Drive.",
+                "Al final de cada Entrada, un Entrenador lanza un D3 y cada Entrenador selecciona al azar esa cantidad de jugadores que estaban en el campo. Van a Reservas y no pueden colocarse en la siguiente Entrada.",
+            ),
+            entry(
+                3,
+                3,
+                "very_sunny",
+                "Very Sunny",
+                "Muy Soleado",
+                "Apply a -1 modifier whenever a player makes a Passing Ability Test.",
+                "Aplica un modificador de -1 siempre que un jugador realice una Prueba de Capacidad de Pase.",
+            ),
+            entry(
+                4,
+                10,
+                "perfect_conditions",
+                "Perfect Conditions",
+                "Condiciones Perfectas",
+                "No additional effect.",
+                "Sin efecto adicional.",
+            ),
+            entry(
+                11,
+                11,
+                "pouring_rain",
+                "Pouring Rain",
+                "Lluvia Torrencial",
+                "Apply a -1 modifier whenever a player attempts to pick up or Catch the ball, or Intercept a Pass Action.",
+                "Aplica un modificador de -1 siempre que un jugador intente recoger o Atrapar el balón, o Interceptar una Acción de Pase.",
+            ),
+            entry(
+                12,
+                12,
+                "blizzard",
+                "Blizzard",
+                "Ventisca",
+                "Apply an additional -1 modifier whenever a player attempts to Rush. Pass Actions may only be Quick Passes or Short Passes.",
+                "Aplica un modificador adicional de -1 siempre que un jugador intente Ir a Por Todas. Las Acciones de Pase solo pueden ser Pase Rápido o Pase Corto.",
+            ),
+        ],
+    )
+    await upsert_catalog_document(WeatherRules, rules)
+    logger.info("Upserted weather rules")
+
+
+async def seed_kickoff_event_rules():
+    """Seed the official 2D6 Kick-off Event table."""
+
+    def entry(roll: int, code: str, en: str, es: str, desc_en: str, desc_es: str):
+        return DiceRangeTableEntry(
+            min_roll=roll,
+            max_roll=roll,
+            code=code,
+            label=LocalizedText(en=en, es=es),
+            description=LocalizedText(en=desc_en, es=desc_es),
+        )
+
+    rules = KickoffEventRules(
+        id="kickoff_events",
+        roll_dice="2D6",
+        description=LocalizedText(
+            en="Immediately after the kick has Deviated, the kicking Coach rolls 2D6 and consults the Kick-off Event Table.",
+            es="Inmediatamente después de que el saque se haya Desviado, el Entrenador que saca lanza 2D6 y consulta la Tabla de Eventos de Saque Inicial.",
+        ),
+        table=[
+            entry(
+                2,
+                "get_the_ref",
+                "Get the Ref",
+                "¡A por el árbitro!",
+                "Each team receives one free Bribe Inducement, which must be used by the end of the game or is lost.",
+                "Cada equipo recibe un Soborno gratuito, que debe usarse antes del final del partido o se pierde.",
+            ),
+            entry(
+                3,
+                "time_out",
+                "Time-out",
+                "Tiempo Muerto",
+                "If the kicking team's Turn Marker is on turn 6, 7 or 8 for the half, move both teams' Turn Marker back one space. Otherwise, move both forwards one space.",
+                "Si el Marcador de Turno del equipo que saca está en 6, 7 u 8 de la parte, retrasa ambos Marcadores un espacio. Si no, avanza ambos un espacio.",
+            ),
+            entry(
+                4,
+                "solid_defence",
+                "Solid Defence",
+                "Defensa Sólida",
+                "The kicking Coach selects up to D3+3 Open players on their team; remove them from the pitch and set them up again following normal restrictions.",
+                "El Entrenador que saca selecciona hasta D3+3 jugadores Libres; los retira del campo y los recoloca siguiendo las restricciones normales.",
+            ),
+            entry(
+                5,
+                "high_kick",
+                "High Kick",
+                "Patada Alta",
+                "One Open player on the receiving team may immediately be placed in the square the ball will land in.",
+                "Un jugador Libre del equipo receptor puede colocarse inmediatamente en la casilla donde aterrizará el balón.",
+            ),
+            entry(
+                6,
+                "cheering_fans",
+                "Cheering Fans",
+                "Aficionados Animando",
+                "Both Coaches roll D6 and add Cheerleaders. The first Block Action in the next Turn of the highest total gets one additional Offensive Assist; ties benefit both.",
+                "Ambos Entrenadores tiran D6 y suman Animadoras. La primera Acción de Placaje del próximo Turno del total más alto recibe un Asistente Ofensivo adicional; los empates benefician a ambos.",
+            ),
+            entry(
+                7,
+                "brilliant_coaching",
+                "Brilliant Coaching",
+                "Entrenamiento Brillante",
+                "Both Coaches roll D6 and add Assistant Coaches. The highest total, or both on a tie, gains a free Team Re-roll for the Drive; unused free Re-rolls are lost at Drive end.",
+                "Ambos Entrenadores tiran D6 y suman Entrenadores Ayudantes. El total más alto, o ambos en empate, gana una Segunda Oportunidad gratuita para la Entrada; si no se usa se pierde al final.",
+            ),
+            entry(
+                8,
+                "changing_weather",
+                "Changing Weather",
+                "Tiempo Cambiante",
+                "Immediately roll again on the Weather Table. If the new result is Perfect Conditions, the ball Scatters (3) in the air before landing.",
+                "Tira inmediatamente de nuevo en la Tabla de Clima. Si el nuevo resultado es Condiciones Perfectas, el balón se Dispersa (3) en el aire antes de aterrizar.",
+            ),
+            entry(
+                9,
+                "quick_snap",
+                "Quick Snap",
+                "Cierre Rápido",
+                "The receiving Coach selects up to D3+3 Open players. They may immediately move one square in any direction, even into the opposition half.",
+                "El Entrenador receptor selecciona hasta D3+3 jugadores Libres. Pueden mover inmediatamente una casilla en cualquier dirección, incluso a la mitad rival.",
+            ),
+            entry(
+                10,
+                "charge",
+                "Charge!",
+                "¡Carga!",
+                "The kicking Coach selects up to D3+3 Open players. They may be activated one at a time for free Move Actions; one may Blitz, one Throw Team-mate and one Kick Team-mate. If one Falls Over or is Knocked Down, Charge ends.",
+                "El Entrenador que saca selecciona hasta D3+3 jugadores Libres. Pueden activarse uno a uno para Movimiento gratis; uno puede hacer Blitz, uno Lanzar Compañero y uno Patear Compañero. Si uno se Cae o es Derribado, la Carga termina.",
+            ),
+            entry(
+                11,
+                "dodgy_snack",
+                "Dodgy Snack",
+                "Aperitivo Sospechoso",
+                "Both Coaches roll D6. The lowest, or both on a tie, randomly selects one player on the pitch and rolls D6. On 2+, reduce MA and AV by 1 for the Drive. On 1, place the player in Reserves for the Drive.",
+                "Ambos Entrenadores tiran D6. El menor, o ambos en empate, elige al azar un jugador en el campo y tira D6. Con 2+, reduce MA y AV en 1 durante la Entrada. Con 1, coloca al jugador en Reservas durante la Entrada.",
+            ),
+            entry(
+                12,
+                "pitch_invasion",
+                "Pitch Invasion",
+                "Invasión de Campo",
+                "Both Coaches roll D6 and add Fan Factor. The lowest, or both on a tie, randomly selects D3 of their players on the pitch; selected players are Placed Prone and become Stunned.",
+                "Ambos Entrenadores tiran D6 y suman Factor de Hinchada. El menor, o ambos en empate, selecciona al azar D3 jugadores en el campo; quedan Cuerpo a Tierra y Aturdidos.",
+            ),
+        ],
+    )
+    await upsert_catalog_document(KickoffEventRules, rules)
+    logger.info("Upserted kick-off event rules")
+
+
 async def auto_seed_database():
     """Auto-seed database with base catalogs if empty."""
     try:
@@ -566,6 +1518,13 @@ async def auto_seed_database():
         await seed_base_rosters(teams_data, perk_lookup)
         await seed_star_players(star_players_data)
         await seed_expensive_mistakes_rules()
+        await seed_spp_rewards_rules()
+        await seed_injury_rules()
+        await seed_winnings_rules()
+        await seed_dedicated_fans_rules()
+        await seed_inducement_rules()
+        await seed_weather_rules()
+        await seed_kickoff_event_rules()
 
         logger.info("Catalog reconciliation completed successfully")
 
