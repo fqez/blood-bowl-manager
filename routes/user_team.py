@@ -10,6 +10,7 @@ from exceptions.exceptions import (
 )
 from schemas.user_team import (
     AddPerkRequest,
+    ApplyPlayerAdvancementRequest,
     CreateTeamRequest,
     HirePlayerRequest,
     HirePlayerResponse,
@@ -186,6 +187,30 @@ async def add_perk_to_player(team_id: str, player_id: str, request: AddPerkReque
         await UserTeamService.add_perk_to_player(
             team_id, player_id, request.perk_id, request.perk_name, request.category
         )
+        return await UserTeamService.get_team_detail(team_id)
+    except TeamNotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Team '{team_id}' not found",
+        )
+    except PlayerNotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Player '{player_id}' not found",
+        )
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post(
+    "/{team_id}/players/{player_id}/advancements", response_model=UserTeamDetail
+)
+async def apply_player_advancement(
+    team_id: str, player_id: str, request: ApplyPlayerAdvancementRequest
+):
+    """Spend SPP on an official player advancement."""
+    try:
+        await UserTeamService.apply_player_advancement(team_id, player_id, request)
         return await UserTeamService.get_team_detail(team_id)
     except TeamNotFoundException:
         raise HTTPException(

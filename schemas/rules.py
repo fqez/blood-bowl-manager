@@ -1,6 +1,6 @@
 """Schemas for rules catalog endpoints."""
 
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
@@ -10,6 +10,33 @@ class LocalizedTextResponse(BaseModel):
 
     en: str
     es: str
+
+
+class RuleCatalogEntryResponse(BaseModel):
+    """One database-backed rules document exposed by the rules catalogue."""
+
+    id: str
+    name: LocalizedTextResponse
+    category: str
+    endpoint: str
+    dice: list[str]
+    table_fields: list[str]
+    available: bool
+    description: Optional[LocalizedTextResponse] = None
+
+
+class RuleCatalogResponse(BaseModel):
+    """Index of backend-owned rules documents."""
+
+    id: str
+    rules: list[RuleCatalogEntryResponse]
+
+
+class RuleCatalogDocumentResponse(BaseModel):
+    """Raw rules document fetched from the generic catalogue."""
+
+    id: str
+    document: dict[str, Any]
 
 
 class ExpensiveMistakeBandResponse(BaseModel):
@@ -66,6 +93,56 @@ class SppRewardsRulesResponse(BaseModel):
     mvp_spp: int
     non_spp_event_types: list[str]
     throw_teammate: ThrowTeammateRewardResponse
+
+
+class AdvancementCostRowResponse(BaseModel):
+    """SPP costs for one advancement rank."""
+
+    advancement_number: int
+    level_name: LocalizedTextResponse
+    random_primary_skill: int
+    choose_primary_skill: int
+    choose_secondary_skill: int
+    characteristic_improvement: int
+
+
+class CharacteristicImprovementResultResponse(BaseModel):
+    """D8 characteristic improvement result."""
+
+    min_roll: int
+    max_roll: int
+    choices: list[str]
+    description: LocalizedTextResponse
+
+
+class AdvancementValueIncreaseResponse(BaseModel):
+    """Team value increase for one advancement type."""
+
+    advancement_type: str
+    value: int
+
+
+class SkillCategoryRuleResponse(BaseModel):
+    """Official skill category shorthand."""
+
+    symbol: str
+    family: str
+    name: LocalizedTextResponse
+
+
+class AdvancementRulesResponse(BaseModel):
+    """Database-backed player advancement rules."""
+
+    id: str
+    max_advancements: int
+    max_characteristic_improvements_per_stat: int
+    cost_table: list[AdvancementCostRowResponse]
+    characteristic_table: list[CharacteristicImprovementResultResponse]
+    value_increases: list[AdvancementValueIncreaseResponse]
+    skill_categories: list[SkillCategoryRuleResponse]
+    random_skill_rolls: int
+    random_skill_dice: str
+    description: LocalizedTextResponse
 
 
 class DiceTableEntryResponse(BaseModel):

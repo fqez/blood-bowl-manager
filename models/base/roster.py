@@ -23,6 +23,9 @@ class BasePerk(BaseModel):
 
     id: str = Field(..., description="Perk identifier")
     name: str = Field(..., description="Display name")
+    parameter: Optional[str] = Field(
+        None, description="Optional numeric trait parameter, e.g. '2+' for Bloodlust"
+    )
     category: str = Field(
         ...,
         pattern="^[GASPMDT]$",
@@ -67,7 +70,7 @@ class BaseRoster(Document):
     apothecary_allowed: bool = Field(
         default=True, description="Whether team can hire an apothecary"
     )
-    tier: int = Field(..., ge=1, le=3, description="Tier rating (1=top, 3=lowest)")
+    tier: int = Field(..., ge=1, le=4, description="Tier rating (1=top, 4=lowest)")
     special_rules: list[str] = Field(
         default_factory=list, description="Team special rules"
     )

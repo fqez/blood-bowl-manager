@@ -26,6 +26,7 @@ class BasePerkResponse(BaseModel):
 
     id: str
     name: str
+    parameter: Optional[str] = None
     category: str
 
 

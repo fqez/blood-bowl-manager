@@ -1,6 +1,7 @@
 # Legacy models (kept for backwards compatibility)
 # New models for restructured data
 from models.base.dedicated_fans import DedicatedFansRules
+from models.base.advancement import AdvancementRules
 from models.base.expensive_mistake import ExpensiveMistakesRules
 from models.base.inducement import InducementRules
 from models.base.injury import InjuryRules
@@ -35,6 +36,7 @@ __all__ = [
     StarPlayer,
     SkillFamily,
     Tactic,
+    AdvancementRules,
     DedicatedFansRules,
     ExpensiveMistakesRules,
     InducementRules,

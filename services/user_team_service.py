@@ -2,6 +2,7 @@
 
 import logging
 import random
+import re
 import uuid
 from datetime import datetime
 from typing import Optional
@@ -11,12 +12,21 @@ from exceptions.exceptions import (
     PlayerNotFoundException,
     TeamNotFoundException,
 )
+from models.base.advancement import AdvancementRules
 from models.base.roster import BasePlayer, BaseRoster
 from models.base.star_player import StarPlayer
 from models.league.league import League, LeagueStatus
 from models.user.user import User
-from models.user_team.team import PlayerPerk, PlayerStats, UserPlayer, UserTeam
+from models.user_team.team import (
+    PlayerPerk,
+    PlayerStats,
+    TeamValueBreakdown,
+    UserPlayer,
+    UserTeam,
+)
+from models.team.perk import Perk
 from schemas.user_team import (
+    ApplyPlayerAdvancementRequest,
     CreateTeamRequest,
     HirePlayerRequest,
     HirePlayerResponse,
@@ -24,6 +34,7 @@ from schemas.user_team import (
     PlayerCareerResponse,
     PlayerPerkResponse,
     PlayerStatsResponse,
+    TeamValueBreakdownResponse,
     TeamLeagueMembership,
     UpdatePlayerRequest,
     UpdateTeamRequest,
@@ -37,6 +48,18 @@ logger = logging.getLogger(__name__)
 
 class UserTeamService:
     """Service for managing user teams."""
+
+    JOURNEYMAN_LONER_ID = "loner"
+    JOURNEYMAN_LONER_PARAMETER = "4+"
+
+    FAMILY_TO_SYMBOL = {
+        "agility": "A",
+        "devious": "D",
+        "general": "G",
+        "mutation": "M",
+        "passing": "P",
+        "strength": "S",
+    }
 
     # ============== Team Operations ==============
 
@@ -56,11 +79,19 @@ class UserTeamService:
     async def _calculate_team_value(
         team: UserTeam, roster: Optional[BaseRoster] = None
     ) -> int:
+        return (
+            await UserTeamService._calculate_team_value_breakdown(team, roster)
+        ).team_value
+
+    @staticmethod
+    async def _calculate_team_value_breakdown(
+        team: UserTeam, roster: Optional[BaseRoster] = None
+    ) -> TeamValueBreakdown:
         if roster is None:
             roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
 
         reroll_cost = roster.reroll_cost if roster else 0
-        return team.calculate_team_value(reroll_cost=reroll_cost)
+        return team.calculate_team_value_breakdown(reroll_cost=reroll_cost)
 
     @staticmethod
     def _eligible_player_count(team: UserTeam) -> int:
@@ -71,13 +102,9 @@ class UserTeamService:
     async def _calculate_current_team_value(
         team: UserTeam, roster: Optional[BaseRoster] = None
     ) -> int:
-        team_value = await UserTeamService._calculate_team_value(team, roster)
-        unavailable_value = sum(
-            player.current_value
-            for player in team.players
-            if player.status != "healthy"
-        )
-        return max(0, team_value - unavailable_value)
+        return (
+            await UserTeamService._calculate_team_value_breakdown(team, roster)
+        ).current_team_value
 
     @staticmethod
     async def _sync_team_value(
@@ -97,12 +124,12 @@ class UserTeamService:
             team.dedicated_fans = 7
             normalized = True
 
-        team_value = await UserTeamService._calculate_team_value(team, roster)
-        if normalized or team.team_value != team_value:
-            team.team_value = team_value
+        breakdown = await UserTeamService._calculate_team_value_breakdown(team, roster)
+        if normalized or team.team_value != breakdown.team_value:
+            team.team_value = breakdown.team_value
             team.updated_at = datetime.utcnow()
             await team.save()
-        return team_value
+        return breakdown.team_value
 
     @staticmethod
     async def _league_memberships_by_team_ids(
@@ -247,13 +274,18 @@ class UserTeamService:
         summaries: list[UserTeamSummary] = []
         for t in teams:
             team_id = str(t.id)
-            team_value = await UserTeamService._sync_team_value(t)
+            roster = await BaseRoster.find_one(BaseRoster.id == t.base_roster_id)
+            await UserTeamService._sync_team_value(t, roster)
+            value_breakdown = await UserTeamService._calculate_team_value_breakdown(
+                t, roster
+            )
             summaries.append(
                 UserTeamSummary(
                     id=str(t.id),
                     name=t.name,
                     base_roster_id=t.base_roster_id,
-                    team_value=team_value,
+                    team_value=value_breakdown.team_value,
+                    current_team_value=value_breakdown.current_team_value,
                     treasury=t.treasury,
                     player_count=len(t.players),
                     can_manage_roster=not await UserTeamService._is_in_active_league(
@@ -274,7 +306,10 @@ class UserTeamService:
             return None
 
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
-        team_value = await UserTeamService._sync_team_value(team, roster)
+        await UserTeamService._sync_team_value(team, roster)
+        value_breakdown = await UserTeamService._calculate_team_value_breakdown(
+            team, roster
+        )
 
         players = [UserTeamService._player_to_response(p) for p in team.players]
 
@@ -285,9 +320,10 @@ class UserTeamService:
             name=team.name,
             players=players,
             treasury=team.treasury,
-            team_value=team_value,
-            current_team_value=await UserTeamService._calculate_current_team_value(
-                team, roster
+            team_value=value_breakdown.team_value,
+            current_team_value=value_breakdown.current_team_value,
+            team_value_breakdown=TeamValueBreakdownResponse(
+                **value_breakdown.model_dump()
             ),
             rerolls=team.rerolls,
             reroll_cost=roster.reroll_cost if roster else 0,
@@ -450,10 +486,8 @@ class UserTeamService:
             new_player.temporary_for_match = True
             new_player.temporary_match_id = request.temporary_match_id
             new_player.journeyman = True
-            if not any(perk.id == "loner" for perk in new_player.perks):
-                new_player.perks.append(
-                    PlayerPerk(id="loner", name="Loner (4+)", category="T")
-                )
+            if not UserTeamService._has_loner_perk(new_player.perks):
+                new_player.perks.append(UserTeamService._journeyman_loner_perk())
 
         # Update team
         team.players.append(new_player)
@@ -482,7 +516,8 @@ class UserTeamService:
         if not team:
             raise TeamNotFoundException(team_id)
 
-        await UserTeamService._ensure_roster_can_be_managed(team_id)
+        if not request.temporary_for_match:
+            await UserTeamService._ensure_roster_can_be_managed(team_id)
 
         # Fetch star player
         star = await StarPlayer.find_one(StarPlayer.id == request.star_player_id)
@@ -531,10 +566,18 @@ class UserTeamService:
                 AV=star.stats.AV,
             ),
             perks=[
-                PlayerPerk(id=s.lower().replace(" ", "_"), name=s) for s in star.skills
+                PlayerPerk(
+                    id=UserTeamService._normal_key(s),
+                    name=UserTeamService._strip_perk_parameter(s),
+                    parameter=UserTeamService._extract_perk_parameter(s),
+                )
+                for s in star.skills
             ],
             image=star.image,
         )
+        if request.temporary_for_match:
+            new_player.temporary_for_match = True
+            new_player.temporary_match_id = request.temporary_match_id
 
         team.players.append(new_player)
         team.treasury -= star.cost
@@ -580,32 +623,178 @@ class UserTeamService:
     async def add_perk_to_player(
         team_id: str, player_id: str, perk_id: str, perk_name: str, category: str = None
     ) -> UserTeam:
-        """Add a skill/perk to a player."""
+        """Spend SPP to add a chosen Primary skill to a player."""
+        return await UserTeamService.apply_player_advancement(
+            team_id,
+            player_id,
+            ApplyPlayerAdvancementRequest(
+                advancement_type="choose_primary_skill",
+                perk_id=perk_id,
+            ),
+        )
+
+    @staticmethod
+    async def apply_player_advancement(
+        team_id: str, player_id: str, request: ApplyPlayerAdvancementRequest
+    ) -> UserTeam:
+        """Spend SPP on an official player advancement."""
         team = await UserTeam.get(team_id)
         if not team:
             raise TeamNotFoundException(team_id)
 
-        player = None
-        for p in team.players:
-            if p.id == player_id:
-                player = p
-                break
+        roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
+        if not roster:
+            raise InvalidOperationException("Team roster not found")
 
-        if not player:
-            raise PlayerNotFoundException(player_id)
+        player = UserTeamService._find_team_player(team, player_id)
+        base_player = UserTeamService._find_base_player(roster, player.base_type)
 
-        # Check if player already has this perk
-        if any(pk.id == perk_id for pk in player.perks):
-            raise InvalidOperationException(f"Player already has perk '{perk_name}'")
+        if player.base_type.startswith("star_"):
+            raise InvalidOperationException("Star Players cannot gain advancements")
+        if player.status == "dead":
+            raise InvalidOperationException("Dead players cannot gain advancements")
 
-        player.perks.append(PlayerPerk(id=perk_id, name=perk_name, category=category))
-        # Increase player value (simplified: +20k per skill)
-        player.current_value += 20000
-        team.team_value = await UserTeamService._calculate_team_value(team)
+        rules = await AdvancementRules.get("advancement_rules")
+        if not rules:
+            raise InvalidOperationException("Advancement rules not found")
+
+        advancement_count = UserTeamService._player_advancement_count(
+            player, base_player
+        )
+        if advancement_count >= rules.max_advancements:
+            raise InvalidOperationException("Player has reached maximum advancements")
+
+        cost_row = rules.cost_table[advancement_count]
+        spp_cost = getattr(cost_row, request.advancement_type)
+        if player.spp < spp_cost:
+            raise InvalidOperationException(
+                f"Not enough SPP ({player.spp} < {spp_cost})"
+            )
+
+        value_increase = 0
+        if request.advancement_type == "characteristic_improvement":
+            value_increase = UserTeamService._apply_characteristic_advancement(
+                player, request, rules
+            )
+        else:
+            value_increase = await UserTeamService._apply_skill_advancement(
+                player, base_player, request, rules
+            )
+
+        player.spp -= spp_cost
+        player.current_value += value_increase
+        player.advancements = advancement_count + 1
+        team.team_value = await UserTeamService._calculate_team_value(team, roster)
         team.updated_at = datetime.utcnow()
         await team.save()
 
         return team
+
+    @staticmethod
+    async def _apply_skill_advancement(
+        player: UserPlayer,
+        base_player: BasePlayer,
+        request: ApplyPlayerAdvancementRequest,
+        rules: AdvancementRules,
+    ) -> int:
+        if not request.perk_id:
+            raise InvalidOperationException("Skill advancement requires perk_id")
+
+        perk = await UserTeamService._find_advancement_perk(request.perk_id)
+        if not perk:
+            raise InvalidOperationException(f"Perk '{request.perk_id}' not found")
+
+        stored_perk_id = str(perk.id)
+        if (perk.kind or "").lower() != "skill":
+            raise InvalidOperationException(
+                "Traits cannot be acquired as skill advancements"
+            )
+
+        normalized_perk_id = UserTeamService._normal_key(stored_perk_id)
+        if any(
+            UserTeamService._normal_key(pk.id) == normalized_perk_id
+            for pk in player.perks
+        ):
+            raise InvalidOperationException("Player already has this skill")
+
+        family = perk.family
+        symbol = UserTeamService._family_symbol(family)
+        if not symbol:
+            raise InvalidOperationException("Only skill categories can be advanced")
+
+        if request.advancement_type in {"random_primary_skill", "choose_primary_skill"}:
+            if symbol not in base_player.primary_access:
+                raise InvalidOperationException(
+                    f"Skill family '{symbol}' is not Primary for this player"
+                )
+            value_key = "primary_skill"
+        elif request.advancement_type == "choose_secondary_skill":
+            if symbol not in base_player.secondary_access:
+                raise InvalidOperationException(
+                    f"Skill family '{symbol}' is not Secondary for this player"
+                )
+            value_key = "secondary_skill"
+        else:
+            raise InvalidOperationException("Invalid skill advancement type")
+
+        name = UserTeamService._localized_name(perk.name, stored_perk_id)
+        player.perks.append(PlayerPerk(id=stored_perk_id, name=name, category=family))
+        return UserTeamService._value_increase(rules, value_key)
+
+    @staticmethod
+    def _apply_characteristic_advancement(
+        player: UserPlayer,
+        request: ApplyPlayerAdvancementRequest,
+        rules: AdvancementRules,
+    ) -> int:
+        if not request.characteristic or request.characteristic_roll is None:
+            raise InvalidOperationException(
+                "Characteristic advancement requires characteristic and characteristic_roll"
+            )
+
+        result = next(
+            (
+                entry
+                for entry in rules.characteristic_table
+                if entry.min_roll <= request.characteristic_roll <= entry.max_roll
+            ),
+            None,
+        )
+        if not result or request.characteristic not in result.choices:
+            raise InvalidOperationException(
+                "Characteristic is not allowed for this D8 improvement roll"
+            )
+
+        current_increases = player.stat_increases.get(request.characteristic, 0)
+        if current_increases >= rules.max_characteristic_improvements_per_stat:
+            raise InvalidOperationException(
+                "Characteristic cannot be improved more than twice"
+            )
+
+        if request.characteristic == "MA":
+            player.stats.MA += 1
+        elif request.characteristic == "ST":
+            player.stats.ST += 1
+        elif request.characteristic == "AG":
+            player.stats.AG -= 1
+        elif request.characteristic == "PA":
+            if player.stats.PA is None:
+                raise InvalidOperationException("Player cannot improve PA")
+            player.stats.PA -= 1
+        elif request.characteristic == "AV":
+            player.stats.AV += 1
+
+        player.stat_increases[request.characteristic] = current_increases + 1
+        return UserTeamService._value_increase(rules, request.characteristic)
+
+    @staticmethod
+    def _value_increase(rules: AdvancementRules, advancement_type: str) -> int:
+        for increase in rules.value_increases:
+            if increase.advancement_type == advancement_type:
+                return increase.value
+        raise InvalidOperationException(
+            f"Value increase for '{advancement_type}' not found"
+        )
 
     @staticmethod
     async def update_player(
@@ -667,6 +856,102 @@ class UserTeamService:
         )
 
     @staticmethod
+    def _find_team_player(team: UserTeam, player_id: str) -> UserPlayer:
+        for player in team.players:
+            if player.id == player_id:
+                return player
+        raise PlayerNotFoundException(player_id)
+
+    @staticmethod
+    def _player_advancement_count(player: UserPlayer, base_player: BasePlayer) -> int:
+        starting_keys = {
+            UserTeamService._normal_key(perk.id) for perk in base_player.perks
+        } | {UserTeamService._normal_key(perk.name) for perk in base_player.perks}
+        acquired_skills = sum(
+            1
+            for perk in player.perks
+            if UserTeamService._normal_key(perk.id) not in starting_keys
+            and UserTeamService._normal_key(perk.name) not in starting_keys
+            and (perk.category or "").lower() not in {"t", "trait"}
+            and UserTeamService._normal_key(perk.id) != "loner"
+        )
+        stat_advancements = sum(player.stat_increases.values())
+        return max(player.advancements, acquired_skills + stat_advancements)
+
+    @staticmethod
+    def _normal_key(value: str) -> str:
+        stripped = UserTeamService._strip_perk_parameter(value)
+        normalized = re.sub(r"[^a-z0-9]+", "-", stripped.lower().strip())
+        return normalized.strip("-").replace("perk-", "")
+
+    @staticmethod
+    def _is_loner_perk(perk: PlayerPerk) -> bool:
+        return (
+            UserTeamService._normal_key(perk.id) == UserTeamService.JOURNEYMAN_LONER_ID
+            or UserTeamService._normal_key(perk.name)
+            == UserTeamService.JOURNEYMAN_LONER_ID
+        )
+
+    @staticmethod
+    def _has_loner_perk(perks: list[PlayerPerk]) -> bool:
+        return any(UserTeamService._is_loner_perk(perk) for perk in perks)
+
+    @staticmethod
+    def _is_journeyman_loner_perk(perk: PlayerPerk) -> bool:
+        return (
+            UserTeamService._is_loner_perk(perk)
+            and perk.parameter == UserTeamService.JOURNEYMAN_LONER_PARAMETER
+        )
+
+    @staticmethod
+    def _journeyman_loner_perk() -> PlayerPerk:
+        return PlayerPerk(
+            id=UserTeamService.JOURNEYMAN_LONER_ID,
+            name="Loner",
+            parameter=UserTeamService.JOURNEYMAN_LONER_PARAMETER,
+            category="T",
+        )
+
+    @staticmethod
+    def _extract_perk_parameter(value: str) -> str | None:
+        match = re.search(r"\(([^)]+)\)", value or "")
+        if not match:
+            return None
+        parameter = match.group(1).strip()
+        return parameter or None
+
+    @staticmethod
+    def _strip_perk_parameter(value: str) -> str:
+        return re.sub(r"\s*\([^)]*\)", "", value or "").strip()
+
+    @staticmethod
+    def _family_symbol(family: str | None) -> str | None:
+        if not family:
+            return None
+        value = family.strip()
+        if value in {"A", "D", "G", "M", "P", "S"}:
+            return value
+        return UserTeamService.FAMILY_TO_SYMBOL.get(value.lower())
+
+    @staticmethod
+    async def _find_advancement_perk(perk_id: str) -> Perk | None:
+        perk = await Perk.get(perk_id)
+        if perk:
+            return perk
+
+        if perk_id.startswith("perk-"):
+            normalized_id = perk_id.removeprefix("perk-").replace("-", "_")
+            return await Perk.get(normalized_id)
+
+        return None
+
+    @staticmethod
+    def _localized_name(name: dict | None, fallback: str) -> str:
+        if not name:
+            return fallback
+        return name.get("en") or name.get("es") or fallback
+
+    @staticmethod
     def _build_user_player(
         team: UserTeam,
         base_player: BasePlayer,
@@ -698,7 +983,12 @@ class UserTeamService:
                 AV=base_player.stats.AV,
             ),
             perks=[
-                PlayerPerk(id=pk.id, name=pk.name, category=pk.category)
+                PlayerPerk(
+                    id=pk.id,
+                    name=pk.name,
+                    parameter=pk.parameter,
+                    category=pk.category,
+                )
                 for pk in base_player.perks
             ],
             image=base_player.image,
@@ -729,10 +1019,17 @@ class UserTeamService:
                 AV=f"{player.stats.AV}+",
             ),
             perks=[
-                PlayerPerkResponse(id=pk.id, name=pk.name, category=pk.category)
+                PlayerPerkResponse(
+                    id=pk.id,
+                    name=pk.name,
+                    parameter=pk.parameter,
+                    category=pk.category,
+                )
                 for pk in player.perks
             ],
             stat_increases=player.stat_increases,
+            advancements=player.advancements,
+            level=player.advancements + 1,
             injuries=player.injuries,
             spp=player.spp,
             status=player.status,

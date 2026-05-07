@@ -58,7 +58,12 @@ class BaseRosterService:
                     av=p.stats.AV,
                 ),
                 perks=[
-                    BasePerkResponse(id=pk.id, name=pk.name, category=pk.category)
+                    BasePerkResponse(
+                        id=pk.id,
+                        name=pk.name,
+                        parameter=pk.parameter,
+                        category=pk.category,
+                    )
                     for pk in p.perks
                 ],
                 primary_access=p.primary_access,

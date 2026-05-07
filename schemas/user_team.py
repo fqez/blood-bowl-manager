@@ -1,7 +1,7 @@
 """Schemas for user team endpoints."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -13,6 +13,7 @@ class PlayerPerkResponse(BaseModel):
 
     id: str
     name: str
+    parameter: Optional[str] = None
     category: Optional[str] = None
 
 
@@ -48,6 +49,8 @@ class UserPlayerResponse(BaseModel):
     stats: PlayerStatsResponse
     perks: list[PlayerPerkResponse]
     stat_increases: dict[str, int]
+    advancements: int
+    level: int
     injuries: list[str]
     spp: int
     status: str
@@ -88,6 +91,8 @@ class HireStarPlayerRequest(BaseModel):
     number: Optional[int] = Field(
         None, ge=1, le=99, description="Jersey number (auto-assigned if not provided)"
     )
+    temporary_for_match: bool = Field(default=False)
+    temporary_match_id: Optional[str] = Field(default=None)
 
 
 class HirePlayerResponse(BaseModel):
@@ -111,6 +116,20 @@ class AddPerkRequest(BaseModel):
     perk_id: str
     perk_name: str
     category: Optional[str] = None
+
+
+class ApplyPlayerAdvancementRequest(BaseModel):
+    """Request to spend SPP on an official player advancement."""
+
+    advancement_type: Literal[
+        "random_primary_skill",
+        "choose_primary_skill",
+        "choose_secondary_skill",
+        "characteristic_improvement",
+    ]
+    perk_id: Optional[str] = None
+    characteristic: Optional[Literal["MA", "ST", "AG", "PA", "AV"]] = None
+    characteristic_roll: Optional[int] = Field(None, ge=1, le=8)
 
 
 # ============== Team Schemas ==============
@@ -151,6 +170,22 @@ class TeamLeagueMembership(BaseModel):
     season: int
 
 
+class TeamValueBreakdownResponse(BaseModel):
+    """Official Team Value and Current Team Value components."""
+
+    player_value: int
+    unavailable_player_value: int
+    reroll_value: int
+    assistant_coach_value: int
+    cheerleader_value: int
+    apothecary_value: int
+    sideline_staff_value: int
+    treasury_value: int
+    dedicated_fans_value: int
+    team_value: int
+    current_team_value: int
+
+
 class UserTeamSummary(BaseModel):
     """Summary for team list."""
 
@@ -158,6 +193,7 @@ class UserTeamSummary(BaseModel):
     name: str
     base_roster_id: str
     team_value: int
+    current_team_value: int
     treasury: int
     player_count: int
     can_manage_roster: bool = True
@@ -179,6 +215,7 @@ class UserTeamDetail(BaseModel):
     treasury: int
     team_value: int
     current_team_value: int
+    team_value_breakdown: TeamValueBreakdownResponse
     rerolls: int
     reroll_cost: int  # From base roster
     fan_factor: int

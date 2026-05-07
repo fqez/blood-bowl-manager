@@ -42,6 +42,7 @@ from schemas.league import (
     LeagueSummary,
     LeagueTeamResponse,
     MatchDetail,
+    MatchEventRequest,
     MatchEventResponse,
     MatchSummary,
     MatchTeamResponse,
@@ -49,6 +50,7 @@ from schemas.league import (
     UpdateLeagueRequest,
     UpdateMatchStateRequest,
 )
+from services.user_team_service import UserTeamService
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +66,53 @@ async def _get_league(league_id: str) -> Optional[League]:
 
 class LeagueService:
     """Service for managing leagues."""
+
+    @staticmethod
+    def _player_status_value(player) -> str:
+        status = player.status
+        return status.value if isinstance(status, PlayerStatus) else str(status)
+
+    @staticmethod
+    def _is_player_available_for_match(player) -> bool:
+        return LeagueService._player_status_value(player) == PlayerStatus.HEALTHY.value
+
+    @staticmethod
+    def _player_by_id(team: UserTeam, player_id: str):
+        return next((player for player in team.players if player.id == player_id), None)
+
+    @staticmethod
+    def _validate_match_squad(team: UserTeam, squad: list[str], label: str) -> None:
+        if len(squad) > 11:
+            raise InvalidOperationException(f"{label} squad cannot exceed 11 players")
+        if len(squad) != len(set(squad)):
+            raise InvalidOperationException(f"{label} squad contains duplicate players")
+
+        for player_id in squad:
+            player = LeagueService._player_by_id(team, player_id)
+            if not player:
+                raise InvalidOperationException(
+                    f"Player '{player_id}' not found in {label} team"
+                )
+            if not LeagueService._is_player_available_for_match(player):
+                raise InvalidOperationException(
+                    f"Player '{player.name}' is not available for this match"
+                )
+
+    @staticmethod
+    def _validate_match_player_reference(
+        team: UserTeam, player_id: str | None, field_name: str
+    ) -> None:
+        if not player_id:
+            return
+        player = LeagueService._player_by_id(team, player_id)
+        if not player:
+            raise InvalidOperationException(
+                f"{field_name} player '{player_id}' not found"
+            )
+        if not LeagueService._is_player_available_for_match(player):
+            raise InvalidOperationException(
+                f"{field_name} player '{player.name}' is not available for this match"
+            )
 
     # ============== League CRUD ==============
 
@@ -768,12 +817,20 @@ class LeagueService:
         if match.status == MatchStatus.IN_PROGRESS:
             raise InvalidOperationException("Match is already in progress")
 
+        home_team = await UserTeam.get(match.home.team_id)
+        away_team = await UserTeam.get(match.away.team_id)
+        if not home_team:
+            raise TeamNotFoundException(match.home.team_id)
+        if not away_team:
+            raise TeamNotFoundException(match.away.team_id)
+        LeagueService._validate_match_squad(home_team, match.home_squad, "home")
+        LeagueService._validate_match_squad(away_team, match.away_squad, "away")
+
         match.status = MatchStatus.IN_PROGRESS
         now = datetime.utcnow()
         match.started_at = now
         match.current_half = 1
         match.current_turn = 1
-        match.current_team = "home"
         match.home_turn = 1
         match.away_turn = 1
         match.turn_started_at = now
@@ -801,6 +858,45 @@ class LeagueService:
             raise InvalidOperationException(
                 "Only match participants or the league owner can add events"
             )
+
+        home_team = await UserTeam.get(match.home.team_id)
+        away_team = await UserTeam.get(match.away.team_id)
+        if not home_team:
+            raise TeamNotFoundException(match.home.team_id)
+        if not away_team:
+            raise TeamNotFoundException(match.away.team_id)
+        teams_by_side = {"home": home_team, "away": away_team}
+        squads_by_side = {
+            "home": set(match.home_squad),
+            "away": set(match.away_squad),
+        }
+
+        def _validate_live_player(team_side: str, player_id: str | None) -> None:
+            if not player_id:
+                return
+            team = teams_by_side[team_side]
+            player = LeagueService._player_by_id(team, player_id)
+            if not player:
+                raise InvalidOperationException(
+                    f"Player '{player_id}' not found in {team_side} team"
+                )
+            squad = squads_by_side[team_side]
+            if squad and player_id not in squad:
+                raise InvalidOperationException(
+                    f"Player '{player.name}' was not selected for this match"
+                )
+            if not LeagueService._is_player_available_for_match(player):
+                raise InvalidOperationException(
+                    f"Player '{player.name}' is not available for this match"
+                )
+
+        _validate_live_player(request.team, request.player_id)
+        victim_side = (
+            request.team
+            if request.type == "throw_teammate"
+            else "away" if request.team == "home" else "home"
+        )
+        _validate_live_player(victim_side, request.victim_id)
 
         # Resolve username for audit trail
         user = await User.get(user_id)
@@ -930,6 +1026,18 @@ class LeagueService:
             raise TeamNotFoundException(match.away.team_id)
 
         teams_by_side = {"home": home_team, "away": away_team}
+        rosters_by_side = {}
+        for team_side, team in teams_by_side.items():
+            roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
+            if not roster:
+                raise InvalidOperationException(
+                    f"Base roster '{team.base_roster_id}' not found for {team_side} team"
+                )
+            rosters_by_side[team_side] = roster
+        squads_by_side = {
+            "home": set(match.home_squad),
+            "away": set(match.away_squad),
+        }
         event_rewards = {r.event_type: r for r in rules.event_rewards}
         spp_deltas: dict[str, dict[str, dict[str, int | bool]]] = {
             "home": {},
@@ -947,6 +1055,60 @@ class LeagueService:
         def _player_generates_spp(team: UserTeam, player_id: str) -> bool:
             player = _get_player(team, player_id)
             return not player.base_type.startswith("star_")
+
+        def _validate_played_player(team_side: str, player_id: str | None) -> None:
+            if not player_id:
+                return
+            player = _get_player(teams_by_side[team_side], player_id)
+            squad = squads_by_side[team_side]
+            if squad and player_id not in squad:
+                raise InvalidOperationException(
+                    f"Player '{player.name}' was not selected for this match"
+                )
+            if not LeagueService._is_player_available_for_match(player):
+                raise InvalidOperationException(
+                    f"Player '{player.name}' was not available for this match"
+                )
+
+        def _validate_match_event_reference(event_request: MatchEventRequest) -> None:
+            _validate_played_player(event_request.team, event_request.player_id)
+            if event_request.victim_id:
+                victim_side = (
+                    event_request.team
+                    if event_request.type == "throw_teammate"
+                    else "away" if event_request.team == "home" else "home"
+                )
+                _validate_played_player(victim_side, event_request.victim_id)
+
+        def _recover_players_who_missed_match() -> None:
+            for team_side, team in teams_by_side.items():
+                squad = squads_by_side[team_side]
+                recovered = []
+                for player in team.players:
+                    if (
+                        LeagueService._player_status_value(player)
+                        == PlayerStatus.MISSING_NEXT_GAME.value
+                        and player.id not in squad
+                    ):
+                        player.status = PlayerStatus.HEALTHY
+                        recovered.append(player.name)
+                if recovered:
+                    match.events.append(
+                        MatchEvent(
+                            id=str(uuid.uuid4()),
+                            type="player_recovery",
+                            team=team_side,
+                            detail=(
+                                "Players recovered after missing the fixture: "
+                                + ", ".join(recovered)
+                            ),
+                            half=0,
+                            turn=0,
+                            timestamp=datetime.utcnow(),
+                            created_by=user_id,
+                            created_by_name=username,
+                        )
+                    )
 
         def _delta(team_side: str, player_id: str) -> dict[str, int | bool]:
             team = teams_by_side[team_side]
@@ -1032,14 +1194,33 @@ class LeagueService:
         user = await User.get(user_id)
         username = user.username if user else "unknown"
         if request.mvp_home is not None:
+            home_team = await UserTeam.get(match.home.team_id)
+            if not home_team:
+                raise TeamNotFoundException(match.home.team_id)
+            LeagueService._validate_match_player_reference(
+                home_team, request.mvp_home, "MVP"
+            )
+            player = LeagueService._player_by_id(home_team, request.mvp_home)
+            if player and player.base_type.startswith("star_"):
+                raise InvalidOperationException("Star Players cannot be MVP")
             match.mvp_home = request.mvp_home
         if request.mvp_away is not None:
+            away_team = await UserTeam.get(match.away.team_id)
+            if not away_team:
+                raise TeamNotFoundException(match.away.team_id)
+            LeagueService._validate_match_player_reference(
+                away_team, request.mvp_away, "MVP"
+            )
+            player = LeagueService._player_by_id(away_team, request.mvp_away)
+            if player and player.base_type.startswith("star_"):
+                raise InvalidOperationException("Star Players cannot be MVP")
             match.mvp_away = request.mvp_away
         if request.gate is not None:
             match.gate = request.gate
 
         post_match_events: list[MatchEvent] = []
         for event_request in request.post_match_events:
+            _validate_match_event_reference(event_request)
             event = MatchEvent(
                 id=str(uuid.uuid4()),
                 type=event_request.type,
@@ -1066,8 +1247,9 @@ class LeagueService:
             ("away", match.mvp_away),
         ]:
             if player_id:
+                _validate_played_player(team_side, player_id)
                 if not _player_generates_spp(teams_by_side[team_side], player_id):
-                    continue
+                    raise InvalidOperationException("Star Players cannot be MVP")
                 delta = _delta(team_side, player_id)
                 delta["spp"] = int(delta["spp"]) + rules.mvp_spp
                 delta["mvp"] = True
@@ -1153,7 +1335,10 @@ class LeagueService:
                 )
             )
 
+        _recover_players_who_missed_match()
+
         for injury_request in request.injuries:
+            _validate_played_player(injury_request.team, injury_request.player_id)
             _apply_injury(injury_request)
 
         def _calculate_winnings(
@@ -1363,6 +1548,39 @@ class LeagueService:
         _apply_dedicated_fans()
 
         def _apply_temporary_players() -> None:
+            processed_player_ids = set()
+
+            def _release_temporary_player(
+                team_side: str, team: UserTeam, player
+            ) -> None:
+                team.players = [p for p in team.players if p.id != player.id]
+                match.events.append(
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="temporary_player_release",
+                        team=team_side,
+                        player_id=player.id,
+                        player_name=player.name,
+                        detail=f"Temporary player released: {player.name}",
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    )
+                )
+
+            def _base_player_has_loner(team_side: str, player) -> bool:
+                roster = rosters_by_side[team_side]
+                base_player = next(
+                    (p for p in roster.players if p.type == player.base_type), None
+                )
+                if not base_player:
+                    return False
+                return any(
+                    UserTeamService._is_loner_perk(perk) for perk in base_player.perks
+                )
+
             for temp_request in request.temporary_players:
                 team = teams_by_side[temp_request.team]
                 player = _get_player(team, temp_request.player_id)
@@ -1371,23 +1589,11 @@ class LeagueService:
                         f"Player '{player.name}' is not a temporary player"
                     )
 
-                if temp_request.decision == "release":
-                    team.players = [p for p in team.players if p.id != player.id]
-                    match.events.append(
-                        MatchEvent(
-                            id=str(uuid.uuid4()),
-                            type="temporary_player_release",
-                            team=temp_request.team,
-                            player_id=player.id,
-                            player_name=player.name,
-                            detail=f"Temporary player released: {player.name}",
-                            half=0,
-                            turn=0,
-                            timestamp=datetime.utcnow(),
-                            created_by=user_id,
-                            created_by_name=username,
-                        )
-                    )
+                processed_player_ids.add(player.id)
+                if temp_request.decision == "release" or player.base_type.startswith(
+                    "star_"
+                ):
+                    _release_temporary_player(temp_request.team, team, player)
                     continue
 
                 permanent_count = sum(
@@ -1407,8 +1613,14 @@ class LeagueService:
                 team.treasury -= player.current_value
                 player.temporary_for_match = False
                 player.temporary_match_id = None
-                if player.journeyman:
-                    player.perks = [perk for perk in player.perks if perk.id != "loner"]
+                if player.journeyman and not _base_player_has_loner(
+                    temp_request.team, player
+                ):
+                    player.perks = [
+                        perk
+                        for perk in player.perks
+                        if not UserTeamService._is_journeyman_loner_perk(perk)
+                    ]
                 player.journeyman = False
                 match.events.append(
                     MatchEvent(
@@ -1429,13 +1641,28 @@ class LeagueService:
                     )
                 )
 
+            for team_side, team in teams_by_side.items():
+                for player in list(team.players):
+                    if (
+                        player.temporary_for_match
+                        and player.base_type.startswith("star_")
+                        and player.id not in processed_player_ids
+                        and player.temporary_match_id == match.id
+                    ):
+                        _release_temporary_player(team_side, team, player)
+
         _apply_temporary_players()
 
         async def _refresh_team_value(team: UserTeam) -> None:
-            roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
-            team.team_value = team.calculate_team_value(
-                reroll_cost=roster.reroll_cost if roster else 0
+            roster = next(
+                (
+                    roster
+                    for side, roster in rosters_by_side.items()
+                    if teams_by_side[side].id == team.id
+                ),
+                None,
             )
+            team.team_value = await UserTeamService._calculate_team_value(team, roster)
 
         await _refresh_team_value(home_team)
         await _refresh_team_value(away_team)
@@ -1466,10 +1693,11 @@ class LeagueService:
         """Update live match state (score, half, turn, weather, etc.)."""
         league, match = await LeagueService._get_league_and_match(league_id, match_id)
 
-        # Allow weather / kickoff / ready changes before the match starts (pre-match ceremony)
+        # Allow ceremony state before match starts.
         _pre_match_only = (
             request.weather is not None
             or request.kickoff_event is not None
+            or request.current_team is not None
             or request.home_ready is not None
             or request.away_ready is not None
             or request.home_squad is not None
@@ -1481,7 +1709,6 @@ class LeagueService:
                 request.score_away,
                 request.current_half,
                 request.current_turn,
-                request.current_team,
                 request.home_turn,
                 request.away_turn,
                 request.rerolls_used_home,
@@ -1580,22 +1807,31 @@ class LeagueService:
             and request.current_team != match.current_team
         ):
             previous_team = match.current_team
-            now = datetime.utcnow()
-            elapsed = 0
-            if match.turn_started_at is not None:
-                elapsed = max(0, int((now - match.turn_started_at).total_seconds()))
-            if previous_team == "home":
-                match.home_turn_seconds.append(elapsed)
-            else:
-                match.away_turn_seconds.append(elapsed)
-            match.current_team = request.current_team
-            match.turn_started_at = now
-            match.events.append(
-                _make_event(
-                    "turn_change",
-                    f"{previous_team} turn ended in {elapsed}s; next: {request.current_team}",
+            if match.status == MatchStatus.IN_PROGRESS:
+                now = datetime.utcnow()
+                elapsed = 0
+                if match.turn_started_at is not None:
+                    elapsed = max(0, int((now - match.turn_started_at).total_seconds()))
+                if previous_team == "home":
+                    match.home_turn_seconds.append(elapsed)
+                else:
+                    match.away_turn_seconds.append(elapsed)
+                match.current_team = request.current_team
+                match.turn_started_at = now
+                match.events.append(
+                    _make_event(
+                        "turn_change",
+                        f"{previous_team} turn ended in {elapsed}s; next: {request.current_team}",
+                    )
                 )
-            )
+            else:
+                match.current_team = request.current_team
+                match.events.append(
+                    _make_event(
+                        "receiving_team_change",
+                        f"Receiving team: {previous_team} -> {request.current_team}",
+                    )
+                )
         if request.home_turn is not None:
             match.home_turn = request.home_turn
         if request.away_turn is not None:
@@ -1648,8 +1884,16 @@ class LeagueService:
         if request.away_ready is not None:
             match.away_ready = request.away_ready
         if request.home_squad is not None:
+            home_team = await UserTeam.get(match.home.team_id)
+            if not home_team:
+                raise TeamNotFoundException(match.home.team_id)
+            LeagueService._validate_match_squad(home_team, request.home_squad, "home")
             match.home_squad = request.home_squad
         if request.away_squad is not None:
+            away_team = await UserTeam.get(match.away.team_id)
+            if not away_team:
+                raise TeamNotFoundException(match.away.team_id)
+            LeagueService._validate_match_squad(away_team, request.away_squad, "away")
             match.away_squad = request.away_squad
         if request.mvp_home is not None:
             match.mvp_home = request.mvp_home

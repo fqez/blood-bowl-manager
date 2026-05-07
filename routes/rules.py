@@ -3,11 +3,14 @@
 from fastapi import APIRouter, HTTPException, status
 
 from schemas.rules import (
+    AdvancementRulesResponse,
     DedicatedFansRulesResponse,
     ExpensiveMistakesRulesResponse,
     InducementRulesResponse,
     InjuryRulesResponse,
     KickoffEventRulesResponse,
+    RuleCatalogDocumentResponse,
+    RuleCatalogResponse,
     SppRewardsRulesResponse,
     WeatherRulesResponse,
     WinningsRulesResponse,
@@ -15,6 +18,24 @@ from schemas.rules import (
 from services.rules_service import RulesService
 
 router = APIRouter(prefix="/rules", tags=["Rules"])
+
+
+@router.get("/catalogue", response_model=RuleCatalogResponse)
+async def get_rules_catalogue():
+    """Get the generic backend-owned rules catalogue index."""
+    return await RulesService.get_rules_catalogue()
+
+
+@router.get("/catalogue/{rule_id}", response_model=RuleCatalogDocumentResponse)
+async def get_catalogue_document(rule_id: str):
+    """Get one raw rules document from the generic catalogue."""
+    document = await RulesService.get_catalogue_document(rule_id)
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Rules document '{rule_id}' not found",
+        )
+    return document
 
 
 @router.get("/expensive-mistakes", response_model=ExpensiveMistakesRulesResponse)
@@ -37,6 +58,18 @@ async def get_spp_rewards_rules():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="SPP reward rules not found",
+        )
+    return rules
+
+
+@router.get("/advancements", response_model=AdvancementRulesResponse)
+async def get_advancement_rules():
+    """Get the player advancement cost and value tables."""
+    rules = await RulesService.get_advancement_rules()
+    if not rules:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Advancement rules not found",
         )
     return rules
 

@@ -14,6 +14,35 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from config.config import Settings
 from models.base.roster import BasePerk, BasePlayer, BaseRoster, BaseStats
 
+FAMILY_TO_SYMBOL = {
+    "agility": "A",
+    "devious": "D",
+    "general": "G",
+    "mutation": "M",
+    "passing": "P",
+    "strength": "S",
+    "trait": "T",
+}
+
+
+def build_perks_lookup(skills_data: dict) -> dict:
+    """Build perk lookup aliases from the canonical skills catalog."""
+    lookup = {}
+    for skill in skills_data.get("skills", []):
+        skill_id = skill.get("_id")
+        if not skill_id:
+            continue
+
+        family = skill.get("family", "general").lower()
+        perk_data = {
+            "name": skill.get("name", skill_id),
+            "category": FAMILY_TO_SYMBOL.get(family, "G"),
+        }
+        lookup[skill_id] = perk_data
+        lookup[f"perk-{skill_id.replace('_', '-')}"] = perk_data
+
+    return lookup
+
 
 def parse_stat_value(value: str) -> int | None:
     """Parse stat value from string format (e.g., '4+', '5', '-')."""
@@ -126,16 +155,46 @@ def is_undead_team(team_id: str) -> bool:
 
 def determine_tier(team_id: str) -> int:
     """Determine team tier."""
-    tier1 = ["orcs", "humans", "skaven", "dwarfs", "dark-elves", "lizardmen"]
-    tier3 = ["ogres", "goblins", "halflings", "snotlings"]
-
-    for t in tier1:
-        if t in team_id:
-            return 1
-    for t in tier3:
-        if t in team_id:
-            return 3
-    return 2
+    normalized_team_id = team_id.replace("-", "_")
+    tiers = {
+        "amazon": 1,
+        "chaos_dwarf": 1,
+        "dark_elf": 1,
+        "dwarf": 1,
+        "high_elf": 1,
+        "lizardmen": 1,
+        "norse": 1,
+        "old_world_alliance": 1,
+        "underworld_denizens": 1,
+        "wood_elf": 1,
+        "bretonnian": 2,
+        "elven_union": 2,
+        "human": 2,
+        "imperial_nobility": 2,
+        "necromantic_horror": 2,
+        "orc": 2,
+        "shambling_undead": 2,
+        "skaven": 2,
+        "tomb_kings": 2,
+        "vampire": 2,
+        "black_orc": 3,
+        "chaos_chosen": 3,
+        "chaos_renegades": 3,
+        "khorne": 3,
+        "nurgle": 3,
+        "gnome": 4,
+        "goblin": 4,
+        "halfling": 4,
+        "ogre": 4,
+        "snotling": 4,
+        "dark_elves": 1,
+        "dwarfs": 1,
+        "humans": 2,
+        "ogres": 4,
+        "orcs": 2,
+        "snotlings": 4,
+    }
+    return tiers.get(normalized_team_id, 2)
 
 
 async def seed_base_rosters():
@@ -158,9 +217,10 @@ async def seed_base_rosters():
     ) as f:
         teams_data = json.load(f)
 
-    with open(os.path.join(base_dir, "config", "perks.json"), encoding="utf-8") as f:
-        perks_list = json.load(f)
-        perks_data = {p["_id"]: p for p in perks_list}
+    with open(
+        os.path.join(base_dir, "config", "skills.json"), encoding="utf-8-sig"
+    ) as f:
+        perks_data = build_perks_lookup(json.load(f))
 
     # Clear existing data
     await BaseRoster.delete_all()

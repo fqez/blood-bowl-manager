@@ -177,17 +177,40 @@ def is_undead_team(team_id: str) -> bool:
 
 
 def determine_tier(team_id: str) -> int:
-    """Determine team tier (simplified)."""
-    tier1 = ["orc", "human", "skaven", "dwarf", "dark_elf", "lizardmen", "wood_elf"]
-    tier3 = ["ogre", "goblin", "halfling", "snotling", "gnome"]
-
-    for t in tier1:
-        if t in team_id:
-            return 1
-    for t in tier3:
-        if t in team_id:
-            return 3
-    return 2
+    """Determine team tier."""
+    tiers = {
+        "amazon": 1,
+        "chaos_dwarf": 1,
+        "dark_elf": 1,
+        "dwarf": 1,
+        "high_elf": 1,
+        "lizardmen": 1,
+        "norse": 1,
+        "old_world_alliance": 1,
+        "underworld_denizens": 1,
+        "wood_elf": 1,
+        "bretonnian": 2,
+        "elven_union": 2,
+        "human": 2,
+        "imperial_nobility": 2,
+        "necromantic_horror": 2,
+        "orc": 2,
+        "shambling_undead": 2,
+        "skaven": 2,
+        "tomb_kings": 2,
+        "vampire": 2,
+        "black_orc": 3,
+        "chaos_chosen": 3,
+        "chaos_renegades": 3,
+        "khorne": 3,
+        "nurgle": 3,
+        "gnome": 4,
+        "goblin": 4,
+        "halfling": 4,
+        "ogre": 4,
+        "snotling": 4,
+    }
+    return tiers.get(team_id, 2)
 
 
 def convert_team_to_roster(team_data: dict, perk_lookup: dict) -> BaseRoster:

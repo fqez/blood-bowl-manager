@@ -6,6 +6,13 @@ from pathlib import Path
 
 
 from models.base.dedicated_fans import DedicatedFansRules
+from models.base.advancement import (
+    AdvancementCostRow,
+    AdvancementRules,
+    AdvancementValueIncrease,
+    CharacteristicImprovementResult,
+    SkillCategoryRule,
+)
 from models.base.roster import BasePerk, BasePlayer, BaseRoster, BaseStats
 from models.base.expensive_mistake import (
     ExpensiveMistakeBand,
@@ -93,6 +100,15 @@ def slugify(value: str) -> str:
     value = re.sub(r"\([^)]*\)", "", get_english_text(value))
     value = value.replace("'", "").replace("’", "")
     return re.sub(r"_+", "_", re.sub(r"[^A-Za-z0-9]+", "_", value).strip("_").lower())
+
+
+def extract_perk_parameter(value: str) -> str | None:
+    """Extract roster-specific values from perks like 'Bloodlust (2+)'."""
+    match = re.search(r"\(([^)]+)\)", get_english_text(value))
+    if not match:
+        return None
+    parameter = match.group(1).strip()
+    return parameter or None
 
 
 def parse_max_quantity(value) -> int:
@@ -184,16 +200,39 @@ def is_undead_team(team_id: str) -> bool:
 
 def determine_tier(team_id: str) -> int:
     """Determine team tier."""
-    tier1 = ["orc", "human", "skaven", "dwarf", "dark_elf", "lizardmen", "wood_elf"]
-    tier3 = ["ogre", "goblin", "halfling", "snotling", "gnome"]
-
-    for t in tier1:
-        if t in team_id:
-            return 1
-    for t in tier3:
-        if t in team_id:
-            return 3
-    return 2
+    tiers = {
+        "amazon": 1,
+        "chaos_dwarf": 1,
+        "dark_elf": 1,
+        "dwarf": 1,
+        "high_elf": 1,
+        "lizardmen": 1,
+        "norse": 1,
+        "old_world_alliance": 1,
+        "underworld_denizens": 1,
+        "wood_elf": 1,
+        "bretonnian": 2,
+        "elven_union": 2,
+        "human": 2,
+        "imperial_nobility": 2,
+        "necromantic_horror": 2,
+        "orc": 2,
+        "shambling_undead": 2,
+        "skaven": 2,
+        "tomb_kings": 2,
+        "vampire": 2,
+        "black_orc": 3,
+        "chaos_chosen": 3,
+        "chaos_renegades": 3,
+        "khorne": 3,
+        "nurgle": 3,
+        "gnome": 4,
+        "goblin": 4,
+        "halfling": 4,
+        "ogre": 4,
+        "snotling": 4,
+    }
+    return tiers.get(team_id, 2)
 
 
 def convert_front_team_to_roster(team_data: dict, perk_lookup: dict) -> BaseRoster:
@@ -210,11 +249,13 @@ def convert_front_team_to_roster(team_data: dict, perk_lookup: dict) -> BaseRost
             if not perk_name or perk_name.lower() == "none":
                 continue
             perk_id = slugify(perk_name)
+            perk_parameter = extract_perk_parameter(perk_name)
             perk_info = perk_lookup.get(perk_id, {})
             player_perks.append(
                 BasePerk(
                     id=perk_id,
                     name=perk_info.get("name", perk_name),
+                    parameter=perk_parameter,
                     category=perk_info.get("category", "G"),
                 )
             )
@@ -285,19 +326,25 @@ async def seed_perks(skills_data: dict) -> dict[str, dict]:
     """Seed perks collection."""
     skills = skills_data.get("skills", [])
     perk_lookup = {}
+    canonical_ids = {skill["_id"] for skill in skills if skill.get("_id")}
 
     for skill in skills:
+        family = skill.get("family", "general").lower()
+        kind = skill.get("kind") or ("trait" if family == "trait" else "skill")
         perk = Perk(
             id=skill["_id"],
             name=skill.get("name"),
             description=skill.get("description"),
-            family=skill.get("family", "general"),
+            family=family,
+            kind=kind,
+            use=skill.get("use") or skill.get("type"),
+            required=skill.get("required", skill.get("mandatory", False)),
+            elite=skill.get("elite", kind == "trait"),
             modifier=skill.get("modifier"),
         )
         await upsert_catalog_document(Perk, perk)
 
-        family = skill.get("family", "general")
-        perk_lookup[skill["_id"]] = {
+        lookup_data = {
             "name": (
                 skill.get("name", {}).get("en", skill["_id"])
                 if isinstance(skill.get("name"), dict)
@@ -305,6 +352,11 @@ async def seed_perks(skills_data: dict) -> dict[str, dict]:
             ),
             "category": FAMILY_TO_SYMBOL.get(family, "G"),
         }
+        perk_lookup[skill["_id"]] = lookup_data
+        perk_lookup[f"perk-{skill['_id'].replace('_', '-')}"] = lookup_data
+
+    if canonical_ids:
+        await Perk.find({"_id": {"$nin": list(canonical_ids)}}).delete()
 
     logger.info(f"Upserted {len(skills)} perks")
     return perk_lookup
@@ -316,13 +368,15 @@ def convert_team_to_roster(team_data: dict, perk_lookup: dict) -> BaseRoster:
     for char in team_data.get("characters", []):
         char_perks = []
         for perk_name in char.get("perks", []):
-            perk_id = normalize_perk_name_to_id(perk_name)
+            perk_id = slugify(perk_name)
+            perk_parameter = extract_perk_parameter(perk_name)
             perk_info = perk_lookup.get(perk_id, {})
 
             char_perks.append(
                 BasePerk(
                     id=perk_id,
                     name=perk_info.get("name", perk_name),
+                    parameter=perk_parameter,
                     category=perk_info.get("category", "G"),
                 )
             )
@@ -620,6 +674,128 @@ async def seed_spp_rewards_rules():
     )
     await upsert_catalog_document(SppRewardsRules, rules)
     logger.info("Upserted SPP reward rules")
+
+
+async def seed_advancement_rules():
+    """Seed player advancement rules from the core rules."""
+
+    def level(number: int, en: str, es: str, costs: tuple[int, int, int, int]):
+        random_primary, choose_primary, choose_secondary, characteristic = costs
+        return AdvancementCostRow(
+            advancement_number=number,
+            level_name=LocalizedText(en=en, es=es),
+            random_primary_skill=random_primary,
+            choose_primary_skill=choose_primary,
+            choose_secondary_skill=choose_secondary,
+            characteristic_improvement=characteristic,
+        )
+
+    def characteristic(
+        min_roll: int, max_roll: int, choices: list[str], en: str, es: str
+    ):
+        return CharacteristicImprovementResult(
+            min_roll=min_roll,
+            max_roll=max_roll,
+            choices=choices,
+            description=LocalizedText(en=en, es=es),
+        )
+
+    def category(symbol: str, family: str, en: str, es: str):
+        return SkillCategoryRule(
+            symbol=symbol,
+            family=family,
+            name=LocalizedText(en=en, es=es),
+        )
+
+    rules = AdvancementRules(
+        id="advancement_rules",
+        max_advancements=6,
+        max_characteristic_improvements_per_stat=2,
+        random_skill_rolls=2,
+        random_skill_dice="2D6",
+        cost_table=[
+            level(1, "Experienced (1st)", "Experimentado (1ª)", (3, 6, 10, 14)),
+            level(2, "Veteran (2nd)", "Veterano (2ª)", (4, 8, 12, 16)),
+            level(3, "Emerging Star (3rd)", "Estrella Emergente (3ª)", (6, 12, 16, 20)),
+            level(4, "Star (4th)", "Estrella (4ª)", (8, 16, 20, 24)),
+            level(5, "Superstar (5th)", "Superestrella (5ª)", (10, 20, 24, 28)),
+            level(6, "Legend (6th)", "Leyenda (6ª)", (15, 30, 34, 38)),
+        ],
+        characteristic_table=[
+            characteristic(
+                1,
+                1,
+                ["AV"],
+                "Improve the player's AV by 1.",
+                "Mejora la AV del jugador en 1.",
+            ),
+            characteristic(
+                2,
+                2,
+                ["AV", "PA"],
+                "Improve the player's AV or PA by 1.",
+                "Mejora la AV o PA del jugador en 1.",
+            ),
+            characteristic(
+                3,
+                4,
+                ["AV", "MA", "PA"],
+                "Improve the player's AV, MA or PA by 1.",
+                "Mejora la AV, MA o PA del jugador en 1.",
+            ),
+            characteristic(
+                5,
+                5,
+                ["MA", "PA"],
+                "Improve the player's MA or PA by 1.",
+                "Mejora la MA o PA del jugador en 1.",
+            ),
+            characteristic(
+                6,
+                6,
+                ["AG", "MA"],
+                "Improve the player's AG or MA by 1.",
+                "Mejora la AG o MA del jugador en 1.",
+            ),
+            characteristic(
+                7,
+                7,
+                ["AG", "ST"],
+                "Improve the player's AG or ST by 1.",
+                "Mejora la AG o ST del jugador en 1.",
+            ),
+            characteristic(
+                8,
+                8,
+                ["MA", "ST", "AG", "PA", "AV"],
+                "Improve a Characteristic of your choice by 1.",
+                "Mejora un Atributo de tu elección en 1.",
+            ),
+        ],
+        value_increases=[
+            AdvancementValueIncrease(advancement_type="primary_skill", value=20000),
+            AdvancementValueIncrease(advancement_type="secondary_skill", value=40000),
+            AdvancementValueIncrease(advancement_type="AV", value=10000),
+            AdvancementValueIncrease(advancement_type="MA", value=20000),
+            AdvancementValueIncrease(advancement_type="PA", value=20000),
+            AdvancementValueIncrease(advancement_type="AG", value=30000),
+            AdvancementValueIncrease(advancement_type="ST", value=60000),
+        ],
+        skill_categories=[
+            category("A", "agility", "Agility Skills", "Habilidades de Agilidad"),
+            category("D", "devious", "Devious Skills", "Habilidades de Astucia"),
+            category("G", "general", "General Skills", "Habilidades Generales"),
+            category("M", "mutation", "Mutation Skills", "Habilidades de Mutación"),
+            category("P", "passing", "Passing Skills", "Habilidades de Pase"),
+            category("S", "strength", "Strength Skills", "Habilidades de Fuerza"),
+        ],
+        description=LocalizedText(
+            en="Players spend saved SPP to gain advancements. Costs depend on the number of advancements already gained and on whether the player randomly selects a Primary Skill, chooses a Primary Skill, chooses a Secondary Skill, or rolls for a Characteristic improvement.",
+            es="Los jugadores gastan SPP acumulados para obtener mejoras. Los costes dependen del número de mejoras ya obtenidas y de si el jugador selecciona aleatoriamente una Habilidad Primaria, elige una Habilidad Primaria, elige una Habilidad Secundaria o tira para mejorar un Atributo.",
+        ),
+    )
+    await upsert_catalog_document(AdvancementRules, rules)
+    logger.info("Upserted advancement rules")
 
 
 async def seed_injury_rules():
@@ -1519,6 +1695,7 @@ async def auto_seed_database():
         await seed_star_players(star_players_data)
         await seed_expensive_mistakes_rules()
         await seed_spp_rewards_rules()
+        await seed_advancement_rules()
         await seed_injury_rules()
         await seed_winnings_rules()
         await seed_dedicated_fans_rules()

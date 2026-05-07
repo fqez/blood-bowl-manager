@@ -24,6 +24,7 @@ class PlayerPerk(BaseModel):
 
     id: str
     name: str
+    parameter: Optional[str] = None
     category: Optional[str] = None  # G, A, S, P, M
 
 
@@ -48,6 +49,22 @@ class PlayerCareer(BaseModel):
     mvp_awards: int = Field(default=0, ge=0)
 
 
+class TeamValueBreakdown(BaseModel):
+    """Official TV/CTV components. Treasury and Dedicated Fans do not count."""
+
+    player_value: int = Field(default=0, ge=0)
+    unavailable_player_value: int = Field(default=0, ge=0)
+    reroll_value: int = Field(default=0, ge=0)
+    assistant_coach_value: int = Field(default=0, ge=0)
+    cheerleader_value: int = Field(default=0, ge=0)
+    apothecary_value: int = Field(default=0, ge=0)
+    sideline_staff_value: int = Field(default=0, ge=0)
+    treasury_value: int = Field(default=0, ge=0)
+    dedicated_fans_value: int = Field(default=0, ge=0)
+    team_value: int = Field(default=0, ge=0)
+    current_team_value: int = Field(default=0, ge=0)
+
+
 class UserPlayer(BaseModel):
     """
     A player owned by a user (embedded in UserTeam).
@@ -70,6 +87,7 @@ class UserPlayer(BaseModel):
     stat_increases: dict[str, int] = Field(
         default_factory=dict, description="Stat improvements purchased"
     )
+    advancements: int = Field(default=0, ge=0, description="Advancements gained")
     injuries: list[str] = Field(default_factory=list, description="Permanent injuries")
     spp: int = Field(default=0, ge=0, description="Star Player Points")
 
@@ -136,14 +154,42 @@ class UserTeam(Document):
     class Settings:
         name = "user_teams"
 
-    def calculate_team_value(self, reroll_cost: int = 0) -> int:
-        """Calculate total team value from players and extras."""
+    def calculate_team_value_breakdown(
+        self, reroll_cost: int = 0
+    ) -> TeamValueBreakdown:
+        """Calculate official TV and CTV from current roster state."""
         player_value = sum(p.current_value for p in self.players)
-        staff_value = (self.rerolls * reroll_cost) + (self.assistant_coaches * 10000)
-        staff_value += self.cheerleaders * 10000
-        if self.apothecary:
-            staff_value += 50000
-        return player_value + staff_value
+        unavailable_player_value = sum(
+            p.current_value
+            for p in self.players
+            if (p.status.value if isinstance(p.status, PlayerStatus) else p.status)
+            != PlayerStatus.HEALTHY.value
+        )
+        reroll_value = self.rerolls * reroll_cost
+        assistant_coach_value = self.assistant_coaches * 10000
+        cheerleader_value = self.cheerleaders * 10000
+        apothecary_value = 50000 if self.apothecary else 0
+        sideline_staff_value = (
+            reroll_value + assistant_coach_value + cheerleader_value + apothecary_value
+        )
+        team_value = player_value + sideline_staff_value
+        return TeamValueBreakdown(
+            player_value=player_value,
+            unavailable_player_value=unavailable_player_value,
+            reroll_value=reroll_value,
+            assistant_coach_value=assistant_coach_value,
+            cheerleader_value=cheerleader_value,
+            apothecary_value=apothecary_value,
+            sideline_staff_value=sideline_staff_value,
+            treasury_value=0,
+            dedicated_fans_value=0,
+            team_value=team_value,
+            current_team_value=max(0, team_value - unavailable_player_value),
+        )
+
+    def calculate_team_value(self, reroll_cost: int = 0) -> int:
+        """Calculate official full Team Value."""
+        return self.calculate_team_value_breakdown(reroll_cost=reroll_cost).team_value
 
     def permanent_player_count(self) -> int:
         """Count non-temporary players on the Team Draft List."""

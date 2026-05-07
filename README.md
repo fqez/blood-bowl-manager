@@ -230,40 +230,38 @@ The backend should own every rule that is persistent, calculable, auditable or s
   - Database-backed 2D6 Kick-off Event table in `rules_catalog`.
   - API endpoint: `/rules/kickoff-events`.
   - The live pre-match selector reads the backend table and persists the selected result on the match through the existing match state endpoint.
+- [X] Player advancements / level-ups [DONE]
+  - Database-backed advancement catalog in `rules_catalog`.
+  - API endpoint: `/rules/advancements`.
+  - Player advancement endpoint validates SPP costs, Primary/Secondary skill access, random/selected skill choices and Characteristic improvement rolls.
+  - Player and team value are recalculated after every advancement.
 
 ### High priority
 
-10. **Player advancements / level-ups**
-
-- Validate SPP cost for improvements.
-- Support primary/secondary skill rules.
-- Support random or selected improvements.
-- Recalculate team value after every advancement.
-
 ### Medium priority
 
-11. **Team value calculation**
+- [X] Team value calculation [DONE]
+  - Centralized official TV/CTV calculation in the backend.
+  - Full TV includes current player values, gained skills/characteristic increases, Team Re-rolls and Sideline Staff.
+  - CTV subtracts players unable to play the next game.
+  - Treasury and Dedicated Fans are explicitly excluded from TV/CTV.
 
-- Centralize current and full team value in backend.
-- Include players, permanent injuries, gained skills, rerolls and staff.
-- Treasury should not count as team value.
+- [X] Player availability maintenance [DONE]
+  - Backend validates match squads/events/MVP/aftermatch inputs against available selected players.
+  - `Miss Next Game` players are excluded from match selection and recover after missing the fixture.
+  - Match-day Star Players are stored as temporary signings and automatically released after the match.
 
-12. **Player availability maintenance**
+- [X] Generic rules catalogue [DONE]
+  - Centralized backend catalogue index at `/rules/catalogue`.
+  - Generic document lookup at `/rules/catalogue/{rule_id}` for every backend-owned rules document.
+  - Catalogue covers casualty, injury, weather, kick-off, Prayers to Nuffle, expensive mistakes, inducements, advancements, winnings, Dedicated Fans and SPP rewards.
+  - Dice semantics such as D3, D6, D8, D16 and 2D6 stay as compact metadata/helpers around the real persisted rule tables.
 
-- Apply `Miss Next Game` and automatically clear it after the next match.
-- Prevent dead players from being selected.
-- Remove temporary star players after the match unless rules say otherwise.
-
-13. **Redraft / end-of-season rules**
+12. **Redraft / end-of-season rules**
 
 - Redraft budget.
 - Re-hiring players.
 - Agent fees / season count if implemented later.
-
-14. **Generic rules catalogue**
-
-- Keep simple dice semantics such as D3, D6 and 2D6 in code/helpers.
-- Store actual game tables in backend: casualty, injury, weather, kick-off, prayers to Nuffle, expensive mistakes, inducements and advancements.
 
 ### Suggested backend structure
 
@@ -285,4 +283,4 @@ services
   TreasuryService
 ```
 
-Recommended next implementation: **SPP + injuries + single post-match close endpoint**. This would make the backend the real authority for post-match results.
+Recommended next implementation: **Redraft / end-of-season rules**.
