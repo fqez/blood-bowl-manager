@@ -30,7 +30,10 @@ app = FastAPI(lifespan=lifespan)
 # CORS configuration for Flutter web frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify actual origins
+    allow_origins=[
+        "https://bb.fqez.org",  # ejemplo: "https://bloodbowlmanager.pages.dev"
+        "http://localhost:3000",  # si usas local para pruebas
+    ],  # In production, specify actual origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
