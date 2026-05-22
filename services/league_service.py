@@ -696,6 +696,12 @@ class LeagueService:
                     away_turn_seconds=m.away_turn_seconds,
                     rerolls_used_home=m.rerolls_used_home,
                     rerolls_used_away=m.rerolls_used_away,
+                    home_inducement_purchases=m.home_inducement_purchases,
+                    away_inducement_purchases=m.away_inducement_purchases,
+                    home_inducement_uses=m.home_inducement_uses,
+                    away_inducement_uses=m.away_inducement_uses,
+                    home_inducement_details=m.home_inducement_details,
+                    away_inducement_details=m.away_inducement_details,
                     events=[
                         MatchEventResponse(
                             id=e.id,
@@ -1702,6 +1708,12 @@ class LeagueService:
             or request.away_ready is not None
             or request.home_squad is not None
             or request.away_squad is not None
+            or request.home_inducement_purchases is not None
+            or request.away_inducement_purchases is not None
+            or request.home_inducement_uses is not None
+            or request.away_inducement_uses is not None
+            or request.home_inducement_details is not None
+            or request.away_inducement_details is not None
         ) and all(
             v is None
             for v in [
@@ -1742,6 +1754,12 @@ class LeagueService:
                 request.away_squad,
                 request.rerolls_used_home,
                 request.rerolls_used_away,
+                request.home_inducement_purchases,
+                request.away_inducement_purchases,
+                request.home_inducement_uses,
+                request.away_inducement_uses,
+                request.home_inducement_details,
+                request.away_inducement_details,
             ]
         )
         if (
@@ -1879,6 +1897,70 @@ class LeagueService:
                 )
             else:
                 match.rerolls_used_away = request.rerolls_used_away
+        if request.home_inducement_purchases is not None:
+            match.home_inducement_purchases = {
+                key: value
+                for key, value in request.home_inducement_purchases.items()
+                if value > 0
+            }
+        if request.away_inducement_purchases is not None:
+            match.away_inducement_purchases = {
+                key: value
+                for key, value in request.away_inducement_purchases.items()
+                if value > 0
+            }
+        if request.home_inducement_uses is not None:
+            match.home_inducement_uses = {
+                key: value
+                for key, value in request.home_inducement_uses.items()
+                if value > 0
+            }
+        if request.away_inducement_uses is not None:
+            match.away_inducement_uses = {
+                key: value
+                for key, value in request.away_inducement_uses.items()
+                if value > 0
+            }
+        if request.home_inducement_details is not None:
+            match.home_inducement_details = {
+                key: [str(item).strip() for item in value if str(item).strip()]
+                for key, value in request.home_inducement_details.items()
+                if isinstance(value, list)
+            }
+        if request.away_inducement_details is not None:
+            match.away_inducement_details = {
+                key: [str(item).strip() for item in value if str(item).strip()]
+                for key, value in request.away_inducement_details.items()
+                if isinstance(value, list)
+            }
+        match.home_inducement_uses = {
+            key: min(value, match.home_inducement_purchases[key])
+            for key, value in match.home_inducement_uses.items()
+            if key in match.home_inducement_purchases
+            and value > 0
+            and match.home_inducement_purchases[key] > 0
+        }
+        match.away_inducement_uses = {
+            key: min(value, match.away_inducement_purchases[key])
+            for key, value in match.away_inducement_uses.items()
+            if key in match.away_inducement_purchases
+            and value > 0
+            and match.away_inducement_purchases[key] > 0
+        }
+        match.home_inducement_details = {
+            key: value[: match.home_inducement_purchases[key]]
+            for key, value in match.home_inducement_details.items()
+            if key in match.home_inducement_purchases
+            and match.home_inducement_purchases[key] > 0
+            and value
+        }
+        match.away_inducement_details = {
+            key: value[: match.away_inducement_purchases[key]]
+            for key, value in match.away_inducement_details.items()
+            if key in match.away_inducement_purchases
+            and match.away_inducement_purchases[key] > 0
+            and value
+        }
         if request.home_ready is not None:
             match.home_ready = request.home_ready
         if request.away_ready is not None:

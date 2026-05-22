@@ -231,6 +231,7 @@ class PrayerToNuffleResultResponse(BaseModel):
 
     roll: int
     code: str
+    name: LocalizedTextResponse
     description: LocalizedTextResponse
 
 

@@ -1257,8 +1257,8 @@ async def seed_inducement_rules():
                 1,
                 None,
                 variable,
-                "Named Biased Referees vary in cost and rules. Both teams may hire the same named Biased Referee.",
-                "Los Árbitros Parciales con nombre varían en coste y reglas. Ambos equipos pueden contratar al mismo Árbitro Parcial con nombre.",
+                "Named Biased Referees vary in cost and rules. Both teams may hire the same named Biased Referee. Dodgy League Rep costs 120,000 gp, or 80,000 gp for teams with Bribery and Corruption. Close Scrutiny: if an opposition player fouls and is not sent off, roll D6; on 5+ they are sent off. I Didn't See a Thing!: apply +1 when you Argue the Call; a natural 1 still fails.",
+                "Los Árbitros Parciales con nombre varían en coste y reglas. Ambos equipos pueden contratar al mismo Árbitro Parcial con nombre. El Delegado de Liga Sospechoso cuesta 120.000 po, o 80.000 po para equipos con Soborno y Corrupción. Escrutinio Cercano: si un rival hace una falta y no es expulsado, tira D6; con 5+ queda expulsado. ¡No he visto nada!: aplica +1 al Protestar al Árbitro; un 1 natural sigue fallando.",
                 cost_options=[
                     cost_option(
                         "Dodgy League Rep",
@@ -1282,8 +1282,8 @@ async def seed_inducement_rules():
                 1,
                 100_000,
                 game,
-                "Cannot also be hired as a Star Player. Gives +1 to KO recovery rolls and once per game can remove D3 players from the pitch and set them up again before Kick-off.",
-                "No puede contratarse también como Jugador Estrella. Da +1 a recuperar KO y una vez por partido permite retirar D3 jugadores del campo y recolocarlos antes de la Patada inicial.",
+                "Cannot also be hired as a Star Player. Bugman's XXXXXX: apply +1 whenever you roll to recover a Knocked-out player for the duration of the game. Dwarfen Wisdom: once per game, after both teams have set up but before Kick-off, remove D3 players from the pitch and set them up again.",
+                "No puede contratarse también como Jugador Estrella. Bugman's XXXXXX: aplica +1 siempre que tires para recuperar a un jugador Inconsciente (KO) durante el partido. Sabiduría Enana: una vez por partido, después de que ambos equipos se hayan colocado pero antes de la Patada inicial, retira D3 jugadores del campo y vuelve a colocarlos.",
             ),
             rule(
                 "mercenary_player",
@@ -1338,6 +1338,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=1,
                 code="treacherous_trapdoor",
+                name=LocalizedText(en="Treacherous Trapdoor", es="Trampilla Traicionera"),
                 description=LocalizedText(
                     en="Each time a player enters a Trapdoor square, roll D6. On 1, they fall through and make an Injury Roll as if Pushed into the Crowd.",
                     es="Cada vez que un jugador entre en una Trampilla, tira D6. Con 1, cae y realiza Tirada de Herida como si fuera Empujado al Público.",
@@ -1346,6 +1347,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=2,
                 code="friends_with_the_ref",
+                name=LocalizedText(en="Friends with the Ref", es="Amigos del Árbitro"),
                 description=LocalizedText(
                     en="When you Argue the Call, treat rolls of 5 or 6 as a successful 'Well, when you put it like that...'.",
                     es="Al Protestar al Árbitro, trata 5 o 6 como éxito de 'Bueno, visto así...'.",
@@ -1354,6 +1356,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=3,
                 code="stiletto",
+                name=LocalizedText(en="Stiletto", es="Estilete"),
                 description=LocalizedText(
                     en="Randomly select one player on your team. They gain Stab for the game.",
                     es="Selecciona aleatoriamente un jugador de tu equipo. Gana Puñalada durante el partido.",
@@ -1362,6 +1365,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=4,
                 code="iron_man",
+                name=LocalizedText(en="Iron Man", es="Hombre de Hierro"),
                 description=LocalizedText(
                     en="Select one player on your team. They improve AV by 1, to a maximum of 11+, for the game.",
                     es="Elige un jugador de tu equipo. Mejora AV en 1, máximo 11+, durante el partido.",
@@ -1370,6 +1374,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=5,
                 code="knuckle_dusters",
+                name=LocalizedText(en="Knuckle Dusters", es="Puño Americano"),
                 description=LocalizedText(
                     en="Select one player on your team. They gain Mighty Blow for the game.",
                     es="Elige un jugador de tu equipo. Gana Golpe Mortífero durante el partido.",
@@ -1378,6 +1383,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=6,
                 code="bad_habits",
+                name=LocalizedText(en="Bad Habits", es="Malos Hábitos"),
                 description=LocalizedText(
                     en="Randomly select D3 opposition players. They gain Loner (2+) for the game.",
                     es="Selecciona aleatoriamente D3 jugadores rivales. Ganan Solitario (2+) durante el partido.",
@@ -1386,6 +1392,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=7,
                 code="greasy_cleats",
+                name=LocalizedText(en="Greasy Cleats", es="Tacos Engrasados"),
                 description=LocalizedText(
                     en="Randomly select one opposition player. Reduce their MA by 1, minimum 1, for the game.",
                     es="Selecciona aleatoriamente un rival. Reduce su MO en 1, mínimo 1, durante el partido.",
@@ -1394,6 +1401,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=8,
                 code="blessing_of_nuffle",
+                name=LocalizedText(en="Blessing of Nuffle", es="Bendición de Nuffle"),
                 description=LocalizedText(
                     en="Randomly select one player on your team. They gain Pro for the game.",
                     es="Selecciona aleatoriamente un jugador de tu equipo. Gana Profesional durante el partido.",
@@ -1402,6 +1410,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=9,
                 code="moles_under_the_pitch",
+                name=LocalizedText(en="Moles under the Pitch", es="Topos bajo el Campo"),
                 description=LocalizedText(
                     en="Opposition players apply -1 when attempting to Rush.",
                     es="Los jugadores rivales aplican -1 al intentar Ir a Por Todas.",
@@ -1410,6 +1419,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=10,
                 code="perfect_passing",
+                name=LocalizedText(en="Perfect Passing", es="Pases Perfectos"),
                 description=LocalizedText(
                     en="Completions by your team earn 2 SPP instead of 1.",
                     es="Las compleciones de tu equipo ganan 2 PX en lugar de 1.",
@@ -1418,6 +1428,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=11,
                 code="dazzling_catching",
+                name=LocalizedText(en="Dazzling Catching", es="Recepciones Deslumbrantes"),
                 description=LocalizedText(
                     en="Your players earn 1 SPP when they successfully Catch the ball from a Pass Action.",
                     es="Tus jugadores ganan 1 PX al atrapar con éxito el balón por una Acción de Pase.",
@@ -1426,6 +1437,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=12,
                 code="fan_interaction",
+                name=LocalizedText(en="Fan Interaction", es="Interacción con los Fans"),
                 description=LocalizedText(
                     en="If an opposition player suffers a Casualty from being Pushed into the Crowd, the player that pushed them earns 2 SPP.",
                     es="Si un rival sufre Baja al ser Empujado al Público, el jugador que lo empujó gana 2 PX.",
@@ -1434,6 +1446,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=13,
                 code="fouling_frenzy",
+                name=LocalizedText(en="Fouling Frenzy", es="Frenesí de Faltas"),
                 description=LocalizedText(
                     en="Your players earn 2 SPP for causing a Casualty from a Foul Action.",
                     es="Tus jugadores ganan 2 PX por causar una Baja con una Acción de Falta.",
@@ -1442,6 +1455,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=14,
                 code="throw_a_rock",
+                name=LocalizedText(en="Throw a Rock", es="Lanzar una Piedra"),
                 description=LocalizedText(
                     en="Once per game, at the start of any of your turns, randomly select one opposition player. On 4+, they are Knocked Down.",
                     es="Una vez por partido, al inicio de uno de tus turnos, selecciona un rival al azar. Con 4+, es Derribado.",
@@ -1450,6 +1464,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=15,
                 code="under_scrutiny",
+                name=LocalizedText(en="Under Scrutiny", es="Bajo Escrutinio"),
                 description=LocalizedText(
                     en="Opposition players that Foul are automatically Sent-off if they break armour, regardless of doubles.",
                     es="Los rivales que hagan Falta son Expulsados automáticamente si rompen armadura, sin importar dobles.",
@@ -1458,6 +1473,7 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=16,
                 code="intensive_training",
+                name=LocalizedText(en="Intensive Training", es="Entrenamiento Intensivo"),
                 description=LocalizedText(
                     en="Randomly select one player on your team. They gain one Primary Skill of your choice for the game.",
                     es="Selecciona aleatoriamente un jugador de tu equipo. Gana una Habilidad Primaria de tu elección durante el partido.",

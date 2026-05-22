@@ -130,6 +130,12 @@ class MatchDetail(BaseModel):
     away_turn_seconds: list[int] = Field(default_factory=list)
     rerolls_used_home: int = 0
     rerolls_used_away: int = 0
+    home_inducement_purchases: dict[str, int] = Field(default_factory=dict)
+    away_inducement_purchases: dict[str, int] = Field(default_factory=dict)
+    home_inducement_uses: dict[str, int] = Field(default_factory=dict)
+    away_inducement_uses: dict[str, int] = Field(default_factory=dict)
+    home_inducement_details: dict[str, list[str]] = Field(default_factory=dict)
+    away_inducement_details: dict[str, list[str]] = Field(default_factory=dict)
     events: list[MatchEventResponse]
     mvp_home: Optional[str] = None
     mvp_away: Optional[str] = None
@@ -268,6 +274,12 @@ class UpdateMatchStateRequest(BaseModel):
     away_squad: Optional[list[str]] = None
     rerolls_used_home: Optional[int] = Field(None, ge=0)
     rerolls_used_away: Optional[int] = Field(None, ge=0)
+    home_inducement_purchases: Optional[dict[str, int]] = None
+    away_inducement_purchases: Optional[dict[str, int]] = None
+    home_inducement_uses: Optional[dict[str, int]] = None
+    away_inducement_uses: Optional[dict[str, int]] = None
+    home_inducement_details: Optional[dict[str, list[str]]] = None
+    away_inducement_details: Optional[dict[str, list[str]]] = None
     mvp_home: Optional[str] = None
     mvp_away: Optional[str] = None
     gate: Optional[int] = Field(None, ge=0)

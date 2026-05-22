@@ -161,6 +161,12 @@ class Match(BaseModel):
     away_turn_seconds: list[int] = Field(default_factory=list)
     rerolls_used_home: int = Field(default=0, ge=0)
     rerolls_used_away: int = Field(default=0, ge=0)
+    home_inducement_purchases: dict[str, int] = Field(default_factory=dict)
+    away_inducement_purchases: dict[str, int] = Field(default_factory=dict)
+    home_inducement_uses: dict[str, int] = Field(default_factory=dict)
+    away_inducement_uses: dict[str, int] = Field(default_factory=dict)
+    home_inducement_details: dict[str, list[str]] = Field(default_factory=dict)
+    away_inducement_details: dict[str, list[str]] = Field(default_factory=dict)
 
     # Match events (goals, casualties, etc.)
     events: list[MatchEvent] = Field(default_factory=list)

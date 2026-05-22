@@ -38,6 +38,7 @@ class PrayerToNuffleResult(BaseModel):
 
     roll: int = Field(..., ge=1, le=16)
     code: str
+    name: LocalizedText = Field(default_factory=lambda: LocalizedText(en="", es=""))
     description: LocalizedText
 
 
