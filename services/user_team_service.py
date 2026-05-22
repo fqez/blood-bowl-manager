@@ -333,6 +333,7 @@ class UserTeamService:
             apothecary=team.apothecary,
             apothecary_allowed=roster.apothecary_allowed if roster else True,
             dedicated_fans=team.dedicated_fans,
+            notes=team.notes,
             can_manage_roster=not await UserTeamService._is_in_active_league(team_id),
             league_memberships=await UserTeamService._league_memberships(team_id),
             icon=team.icon,
@@ -403,6 +404,8 @@ class UserTeamService:
             team.dedicated_fans = request.dedicated_fans
         if request.treasury is not None:
             team.treasury = request.treasury
+        if request.notes is not None:
+            team.notes = request.notes
 
         team.treasury -= cost_delta
         team.team_value = await UserTeamService._calculate_team_value(team, roster)

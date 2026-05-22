@@ -159,6 +159,7 @@ class UpdateTeamRequest(BaseModel):
     fan_factor: Optional[int] = Field(None, ge=0, le=9)
     dedicated_fans: Optional[int] = Field(None, ge=1, le=7)
     treasury: Optional[int] = Field(None, ge=0)
+    notes: Optional[str] = None
 
 
 class TeamLeagueMembership(BaseModel):
@@ -224,6 +225,7 @@ class UserTeamDetail(BaseModel):
     apothecary: bool
     apothecary_allowed: bool  # From base roster
     dedicated_fans: int
+    notes: str = ""
     can_manage_roster: bool = True
     league_memberships: list[TeamLeagueMembership] = Field(default_factory=list)
 

@@ -143,6 +143,9 @@ class UserTeam(Document):
     # Dedicated fans (for league play)
     dedicated_fans: int = Field(default=1, ge=0)
 
+    # Coach notes
+    notes: str = Field(default="")
+
     # Visual customization
     icon: Optional[str] = None
     wallpaper: Optional[str] = None
