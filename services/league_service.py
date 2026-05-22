@@ -1933,20 +1933,34 @@ class LeagueService:
                 for key, value in request.away_inducement_details.items()
                 if isinstance(value, list)
             }
-        match.home_inducement_uses = {
-            key: min(value, match.home_inducement_purchases[key])
-            for key, value in match.home_inducement_uses.items()
-            if key in match.home_inducement_purchases
-            and value > 0
-            and match.home_inducement_purchases[key] > 0
-        }
-        match.away_inducement_uses = {
-            key: min(value, match.away_inducement_purchases[key])
-            for key, value in match.away_inducement_uses.items()
-            if key in match.away_inducement_purchases
-            and value > 0
-            and match.away_inducement_purchases[key] > 0
-        }
+
+        def _sanitize_inducement_uses(
+            uses: dict[str, int], purchases: dict[str, int]
+        ) -> dict[str, int]:
+            sanitized: dict[str, int] = {}
+            prayer_count = purchases.get("prayers_to_nuffle", 0)
+            for key, value in uses.items():
+                if value <= 0:
+                    continue
+                if key in purchases and purchases[key] > 0:
+                    sanitized[key] = min(value, purchases[key])
+                    continue
+                prefix = "prayers_to_nuffle#"
+                if key.startswith(prefix) and prayer_count > 0:
+                    try:
+                        prayer_index = int(key[len(prefix) :])
+                    except ValueError:
+                        continue
+                    if 0 <= prayer_index < prayer_count:
+                        sanitized[key] = min(value, 1)
+            return sanitized
+
+        match.home_inducement_uses = _sanitize_inducement_uses(
+            match.home_inducement_uses, match.home_inducement_purchases
+        )
+        match.away_inducement_uses = _sanitize_inducement_uses(
+            match.away_inducement_uses, match.away_inducement_purchases
+        )
         match.home_inducement_details = {
             key: value[: match.home_inducement_purchases[key]]
             for key, value in match.home_inducement_details.items()

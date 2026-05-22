@@ -1338,7 +1338,9 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=1,
                 code="treacherous_trapdoor",
-                name=LocalizedText(en="Treacherous Trapdoor", es="Trampilla Traicionera"),
+                name=LocalizedText(
+                    en="Treacherous Trapdoor", es="Trampilla Traicionera"
+                ),
                 description=LocalizedText(
                     en="Each time a player enters a Trapdoor square, roll D6. On 1, they fall through and make an Injury Roll as if Pushed into the Crowd.",
                     es="Cada vez que un jugador entre en una Trampilla, tira D6. Con 1, cae y realiza Tirada de Herida como si fuera Empujado al Público.",
@@ -1410,7 +1412,9 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=9,
                 code="moles_under_the_pitch",
-                name=LocalizedText(en="Moles under the Pitch", es="Topos bajo el Campo"),
+                name=LocalizedText(
+                    en="Moles under the Pitch", es="Topos bajo el Campo"
+                ),
                 description=LocalizedText(
                     en="Opposition players apply -1 when attempting to Rush.",
                     es="Los jugadores rivales aplican -1 al intentar Ir a Por Todas.",
@@ -1428,7 +1432,9 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=11,
                 code="dazzling_catching",
-                name=LocalizedText(en="Dazzling Catching", es="Recepciones Deslumbrantes"),
+                name=LocalizedText(
+                    en="Dazzling Catching", es="Recepciones Deslumbrantes"
+                ),
                 description=LocalizedText(
                     en="Your players earn 1 SPP when they successfully Catch the ball from a Pass Action.",
                     es="Tus jugadores ganan 1 PX al atrapar con éxito el balón por una Acción de Pase.",
@@ -1473,7 +1479,9 @@ async def seed_inducement_rules():
             PrayerToNuffleResult(
                 roll=16,
                 code="intensive_training",
-                name=LocalizedText(en="Intensive Training", es="Entrenamiento Intensivo"),
+                name=LocalizedText(
+                    en="Intensive Training", es="Entrenamiento Intensivo"
+                ),
                 description=LocalizedText(
                     en="Randomly select one player on your team. They gain one Primary Skill of your choice for the game.",
                     es="Selecciona aleatoriamente un jugador de tu equipo. Gana una Habilidad Primaria de tu elección durante el partido.",
