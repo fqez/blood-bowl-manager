@@ -988,13 +988,7 @@
             "description": "Once per game, when Hakflem is tackled, he may transfer the tackle to an adjacent friendly player instead."
         },
         "plays_for": [
-            "chaos_chosen",
-            "chaos_dwarf",
-            "chaos_renegades",
             "goblin",
-            "khorne",
-            "norse",
-            "nurgle",
             "skaven",
             "snotling",
             "underworld_denizens"
@@ -1027,36 +1021,11 @@
             "description": "Once per game, Helmut may re-roll his Chainsaw kickback roll."
         },
         "plays_for": [
-            "amazon",
-            "black_orc",
             "bretonnian",
-            "chaos_chosen",
-            "chaos_dwarf",
-            "chaos_renegades",
-            "dark_elf",
-            "dwarf",
-            "elven_union",
-            "gnome",
-            "goblin",
-            "halfling",
-            "high_elf",
             "human",
             "imperial_nobility",
-            "khorne",
-            "lizardmen",
-            "necromantic_horror",
             "norse",
-            "nurgle",
-            "ogre",
-            "old_world_alliance",
-            "orc",
-            "shambling_undead",
-            "skaven",
-            "snotling",
-            "tomb_kings",
-            "underworld_denizens",
-            "vampire",
-            "wood_elf"
+            "old_world_alliance"
         ]
     },
     {
@@ -1228,6 +1197,8 @@
         "plays_for": [
             "dark_elf",
             "elven_union",
+            "gnome",
+            "halfling",
             "high_elf",
             "wood_elf"
         ]
@@ -1261,8 +1232,6 @@
         "plays_for": [
             "bretonnian",
             "dwarf",
-            "gnome",
-            "halfling",
             "human",
             "imperial_nobility",
             "norse",
@@ -1518,14 +1487,18 @@
             "imperial_nobility",
             "khorne",
             "lizardmen",
+            "necromantic_horror",
             "norse",
             "nurgle",
             "ogre",
             "old_world_alliance",
             "orc",
+            "shambling_undead",
             "skaven",
             "snotling",
+            "tomb_kings",
             "underworld_denizens",
+            "vampire",
             "wood_elf"
         ]
     },
@@ -1740,7 +1713,8 @@
         },
         "plays_for": [
             "gnome",
-            "halfling"
+            "halfling",
+            "wood_elf"
         ]
     },
     {
@@ -2187,9 +2161,11 @@
         },
         "plays_for": [
             "bretonnian",
+            "dwarf",
             "human",
             "imperial_nobility",
             "norse",
+            "ogre",
             "old_world_alliance"
         ]
     },

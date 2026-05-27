@@ -178,7 +178,7 @@
     {
         "name": "bretonnian",
         "team_details": {
-            "leagues": "Old World Classic / Clásico del Viejo Mundo",
+            "leagues": "Old World Classic / Cl?sico del Viejo Mundo",
             "special_rules": "None / Ninguna",
             "rerolls": {
                 "limit": "0-8",
@@ -399,7 +399,7 @@
     {
         "name": "chaos_dwarf",
         "team_details": {
-            "leagues": "Badlands Brawl or Chaos Clash / Trifulca de las Tierras Yermas o Choque de Caos",
+            "leagues": "Chaos Clash or Badlands Brawl / Choque de Caos o Trifulca de las Tierras Yermas",
             "special_rules": "Favoured of Hashut / Favorito de Hashut",
             "rerolls": {
                 "limit": "0-8",
@@ -769,7 +769,7 @@
     {
         "name": "dark_elf",
         "team_details": {
-            "leagues": "Elven Kingdoms League / Liga de los Reinos Élficos",
+            "leagues": "Elven Kingdoms League / Liga de los Reinos ?lficos",
             "special_rules": "None / Ninguna",
             "rerolls": {
                 "limit": "0-8",
@@ -1010,7 +1010,7 @@
     {
         "name": "elven_union",
         "team_details": {
-            "leagues": "Elven Kingdoms League / Liga de los Reinos Élficos",
+            "leagues": "Elven Kingdoms League / Liga de los Reinos ?lficos",
             "special_rules": "None / Ninguna",
             "rerolls": {
                 "limit": "0-8",
@@ -1231,7 +1231,7 @@
     {
         "name": "goblin",
         "team_details": {
-            "leagues": "Badlands Brawl or Underworld Challenge / Trifulca de las Tierras Yermas o Desafío del Inframundo",
+            "leagues": "Badlands Brawl or Underworld Challenge / Trifulca de las Tierras Yermas o Desaf?o del Inframundo",
             "special_rules": "Bribery and Corruption / Soborno y Corrupción",
             "rerolls": {
                 "limit": "0-8",
@@ -1527,7 +1527,7 @@
     {
         "name": "high_elf",
         "team_details": {
-            "leagues": "Elven Kingdoms League / Liga de los Reinos Élficos",
+            "leagues": "Elven Kingdoms League / Liga de los Reinos ?lficos",
             "special_rules": "None / Ninguna",
             "rerolls": {
                 "limit": "0-8",
@@ -1622,7 +1622,7 @@
     {
         "name": "human",
         "team_details": {
-            "leagues": "Old World Classic / Clásico del Viejo Mundo",
+            "leagues": "Old World Classic / Cl?sico del Viejo Mundo",
             "special_rules": "Team Captain / Capitán del Equipo",
             "rerolls": {
                 "limit": "0-8",
@@ -1759,7 +1759,7 @@
     {
         "name": "imperial_nobility",
         "team_details": {
-            "leagues": "Old World Classic / Clásico del Viejo Mundo",
+            "leagues": "Old World Classic / Cl?sico del Viejo Mundo",
             "special_rules": "None / Ninguna",
             "rerolls": {
                 "limit": "0-8",
@@ -2194,7 +2194,7 @@
     {
         "name": "norse",
         "team_details": {
-            "leagues": "Chaos Clash or Old World Classic / Choque de Caos o Clásico del Viejo Mundo",
+            "leagues": "Old World Classic or Chaos Clash / Cl?sico del Viejo Mundo o Choque de Caos",
             "special_rules": "If Chaos Clash is chosen, this team gains Favoured of Khorne / Si se elige Choque de Caos, este equipo gana Favorito de Khorne",
             "rerolls": {
                 "limit": "0-8",
@@ -2528,7 +2528,7 @@
     {
         "name": "old_world_alliance",
         "team_details": {
-            "leagues": "Old World Classic / Clásico del Viejo Mundo",
+            "leagues": "Old World Classic / Cl?sico del Viejo Mundo",
             "special_rules": "None / Ninguna",
             "rerolls": {
                 "limit": "0-8",
@@ -3036,7 +3036,7 @@
     {
         "name": "skaven",
         "team_details": {
-            "leagues": "Underworld Challenge / Desafío del Inframundo",
+            "leagues": "Underworld Challenge / Desaf?o del Inframundo",
             "special_rules": "None / Ninguna",
             "rerolls": {
                 "limit": "0-8",
@@ -3152,7 +3152,7 @@
     {
         "name": "snotling",
         "team_details": {
-            "leagues": "Underworld Challenge / Desafío del Inframundo",
+            "leagues": "Underworld Challenge / Desaf?o del Inframundo",
             "special_rules": "Bribery and Corruption, Low Cost Linemen, Swarming / Sobornos y Corrupción, Líneas de Bajo Coste, Enjambre",
             "rerolls": {
                 "limit": "0-8",
@@ -3406,7 +3406,7 @@
     {
         "name": "underworld_denizens",
         "team_details": {
-            "leagues": "Underworld Challenge / Desafío del Inframundo",
+            "leagues": "Underworld Challenge / Desaf?o del Inframundo",
             "special_rules": "Bribery and Corruption / Sobornos y Corrupción",
             "rerolls": {
                 "limit": "0-8",
@@ -3717,7 +3717,7 @@
     {
         "name": "wood_elf",
         "team_details": {
-            "leagues": "Elven Kingdoms League or Woodland League / Liga de los Reinos élficos o Liga de los Bosques",
+            "leagues": "Woodland League or Elven Kingdoms League / Liga del Bosque o Liga de los Reinos ?lficos",
             "special_rules": "None / Ninguna",
             "rerolls": {
                 "limit": "0-8",

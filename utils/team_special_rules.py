@@ -14,7 +14,6 @@ CHAOS_FAVOURED_LABELS = {
 }
 
 FAVOURED_STAR_PLAYER_REQUIREMENTS = {
-    "hakflem_skuttlespike": "any",
     "bilerot_vomitflesh": "nurgle",
     "guffle_pusmaw": "nurgle",
     "withergrasp_doubledrool": "nurgle",
