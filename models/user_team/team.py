@@ -17,6 +17,7 @@ class PlayerStatus(str, Enum):
     SERIOUSLY_INJURED = "seriously_injured"
     DEAD = "dead"
     MISSING_NEXT_GAME = "missing_next_game"
+    SENT_OFF = "sent_off"
 
 
 class PlayerPerk(BaseModel):
@@ -47,6 +48,19 @@ class PlayerCareer(BaseModel):
     interceptions: int = Field(default=0, ge=0)
     completions: int = Field(default=0, ge=0)
     mvp_awards: int = Field(default=0, ge=0)
+
+
+class PlayerInjuryRecord(BaseModel):
+    """Historical injury, death or send-off recorded for a player."""
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex)
+    type: str
+    label: str
+    notes: Optional[str] = None
+    roll: Optional[int] = None
+    stat: Optional[str] = None
+    reduction: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class TeamValueBreakdown(BaseModel):
@@ -89,6 +103,7 @@ class UserPlayer(BaseModel):
     )
     advancements: int = Field(default=0, ge=0, description="Advancements gained")
     injuries: list[str] = Field(default_factory=list, description="Permanent injuries")
+    injury_history: list[PlayerInjuryRecord] = Field(default_factory=list)
     spp: int = Field(default=0, ge=0, description="Star Player Points")
 
     # Status

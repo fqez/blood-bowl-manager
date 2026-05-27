@@ -13,13 +13,16 @@ from exceptions.exceptions import (
     TeamNotFoundException,
 )
 from models.base.advancement import AdvancementRules
+from models.base.injury import InjuryRules
 from models.base.roster import BasePlayer, BaseRoster
 from models.base.star_player import StarPlayer
 from models.league.league import League, LeagueStatus
 from models.user.user import User
 from models.user_team.team import (
+    PlayerInjuryRecord,
     PlayerPerk,
     PlayerStats,
+    PlayerStatus,
     TeamValueBreakdown,
     UserPlayer,
     UserTeam,
@@ -32,6 +35,7 @@ from schemas.user_team import (
     HirePlayerResponse,
     HireStarPlayerRequest,
     PlayerCareerResponse,
+    PlayerInjuryRecordResponse,
     PlayerPerkResponse,
     PlayerStatsResponse,
     TeamValueBreakdownResponse,
@@ -803,7 +807,7 @@ class UserTeamService:
     async def update_player(
         team_id: str, player_id: str, request: UpdatePlayerRequest
     ) -> UserTeam:
-        """Update a player's name and/or jersey number."""
+        """Update a player's name, jersey number, status and/or injury history."""
         team = await UserTeam.get(team_id)
         if not team:
             raise TeamNotFoundException(team_id)
@@ -829,6 +833,11 @@ class UserTeamService:
         if request.name is not None:
             player.name = request.name
 
+        if request.injury_category is not None:
+            await UserTeamService._apply_player_condition(player, request)
+        elif request.status is not None:
+            player.status = request.status
+
         team.updated_at = datetime.utcnow()
         await team.save()
 
@@ -836,6 +845,91 @@ class UserTeamService:
             f"Updated player '{player.name}' (#{player.number}) in team {team_id}"
         )
         return team
+
+    @staticmethod
+    async def _apply_player_condition(
+        player: UserPlayer, request: UpdatePlayerRequest
+    ) -> None:
+        category = request.injury_category
+
+        if category == "miss_next_game":
+            player.status = PlayerStatus.MISSING_NEXT_GAME.value
+            player.injury_history.append(
+                PlayerInjuryRecord(
+                    type="miss_next_game",
+                    label="Se pierde el proximo partido",
+                    notes=request.injury_note,
+                )
+            )
+            return
+
+        if category == "sent_off":
+            player.injury_history.append(
+                PlayerInjuryRecord(
+                    type="sent_off",
+                    label="Expulsado",
+                    notes=request.injury_note,
+                )
+            )
+            return
+
+        if category == "dead":
+            player.status = PlayerStatus.DEAD.value
+            if "dead" not in player.injuries:
+                player.injuries.append("dead")
+            player.injury_history.append(
+                PlayerInjuryRecord(
+                    type="dead",
+                    label="Muerto",
+                    notes=request.injury_note,
+                )
+            )
+            return
+
+        if category == "lasting_injury":
+            if request.lasting_injury_roll is None:
+                raise InvalidOperationException("Lasting injury requires a D6 roll")
+            rules = await InjuryRules.get("injury_rules")
+            if not rules:
+                raise InvalidOperationException("Injury rules are not available")
+            lasting = next(
+                (
+                    result
+                    for result in rules.lasting_injury_table
+                    if result.min_roll <= request.lasting_injury_roll <= result.max_roll
+                ),
+                None,
+            )
+            if not lasting:
+                raise InvalidOperationException(
+                    f"Invalid lasting injury roll '{request.lasting_injury_roll}'"
+                )
+            UserTeamService._apply_stat_reduction(player, lasting.stat)
+            player.status = PlayerStatus.MISSING_NEXT_GAME.value
+            player.injuries.append(lasting.code)
+            player.injury_history.append(
+                PlayerInjuryRecord(
+                    type="lasting_injury",
+                    label=lasting.label.es or lasting.label.en or lasting.code,
+                    notes=request.injury_note,
+                    roll=request.lasting_injury_roll,
+                    stat=lasting.stat,
+                    reduction=lasting.reduction_label,
+                )
+            )
+
+    @staticmethod
+    def _apply_stat_reduction(player: UserPlayer, stat: str) -> None:
+        if stat == "MA":
+            player.stats.MA = max(1, player.stats.MA - 1)
+        elif stat == "ST":
+            player.stats.ST = max(1, player.stats.ST - 1)
+        elif stat == "AV":
+            player.stats.AV = max(3, player.stats.AV - 1)
+        elif stat == "AG":
+            player.stats.AG = min(7, player.stats.AG + 1)
+        elif stat == "PA" and player.stats.PA is not None:
+            player.stats.PA = min(7, player.stats.PA + 1)
 
     # ============== Helpers ==============
 
@@ -1034,6 +1128,19 @@ class UserTeamService:
             advancements=player.advancements,
             level=player.advancements + 1,
             injuries=player.injuries,
+            injury_history=[
+                PlayerInjuryRecordResponse(
+                    id=record.id,
+                    type=record.type,
+                    label=record.label,
+                    notes=record.notes,
+                    roll=record.roll,
+                    stat=record.stat,
+                    reduction=record.reduction,
+                    created_at=record.created_at,
+                )
+                for record in player.injury_history
+            ],
             spp=player.spp,
             status=player.status,
             career=PlayerCareerResponse(

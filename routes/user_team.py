@@ -162,7 +162,7 @@ async def fire_player(team_id: str, player_id: str):
 
 @router.patch("/{team_id}/players/{player_id}", response_model=UserTeamDetail)
 async def update_player(team_id: str, player_id: str, request: UpdatePlayerRequest):
-    """Update a player's name and/or jersey number."""
+    """Update a player's name, jersey number, status and/or injury history."""
     try:
         await UserTeamService.update_player(team_id, player_id, request)
         return await UserTeamService.get_team_detail(team_id)

@@ -38,6 +38,19 @@ class PlayerCareerResponse(BaseModel):
     mvp_awards: int
 
 
+class PlayerInjuryRecordResponse(BaseModel):
+    """Historical injury, death or send-off for a player."""
+
+    id: str
+    type: str
+    label: str
+    notes: Optional[str] = None
+    roll: Optional[int] = None
+    stat: Optional[str] = None
+    reduction: Optional[str] = None
+    created_at: datetime
+
+
 class UserPlayerResponse(BaseModel):
     """Player in a user's team."""
 
@@ -52,6 +65,7 @@ class UserPlayerResponse(BaseModel):
     advancements: int
     level: int
     injuries: list[str]
+    injury_history: list[PlayerInjuryRecordResponse]
     spp: int
     status: str
     career: PlayerCareerResponse
@@ -108,6 +122,21 @@ class UpdatePlayerRequest(BaseModel):
 
     name: Optional[str] = Field(None, max_length=50)
     number: Optional[int] = Field(None, ge=1, le=99)
+    status: Optional[
+        Literal[
+            "healthy",
+            "badly_hurt",
+            "seriously_injured",
+            "missing_next_game",
+            "dead",
+            "sent_off",
+        ]
+    ] = None
+    injury_category: Optional[
+        Literal["miss_next_game", "sent_off", "dead", "lasting_injury"]
+    ] = None
+    injury_note: Optional[str] = Field(None, max_length=500)
+    lasting_injury_roll: Optional[int] = Field(None, ge=1, le=6)
 
 
 class AddPerkRequest(BaseModel):

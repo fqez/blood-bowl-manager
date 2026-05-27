@@ -30,7 +30,7 @@ from models.base.roster import BaseRoster
 from models.base.spp import SppRewardsRules
 from models.base.winnings import WinningsRules
 from models.user.user import User
-from models.user_team.team import PlayerStatus, UserTeam
+from models.user_team.team import PlayerInjuryRecord, PlayerStatus, UserTeam
 from schemas.league import (
     AddMatchEventRequest,
     ApplyAftermatchSppRequest,
@@ -113,6 +113,29 @@ class LeagueService:
             raise InvalidOperationException(
                 f"{field_name} player '{player.name}' is not available for this match"
             )
+
+    @staticmethod
+    async def _clear_match_sent_off_statuses(match: Match) -> None:
+        for team_id, squad in (
+            (match.home.team_id, set(match.home_squad)),
+            (match.away.team_id, set(match.away_squad)),
+        ):
+            team = await UserTeam.get(team_id)
+            if not team:
+                continue
+            changed = False
+            for player in team.players:
+                if squad and player.id not in squad:
+                    continue
+                if (
+                    LeagueService._player_status_value(player)
+                    == PlayerStatus.SENT_OFF.value
+                ):
+                    player.status = PlayerStatus.HEALTHY.value
+                    changed = True
+            if changed:
+                team.updated_at = datetime.utcnow()
+                await team.save()
 
     # ============== League CRUD ==============
 
@@ -648,6 +671,7 @@ class LeagueService:
                 home_standing.draws += 1
                 away_standing.draws += 1
 
+        await LeagueService._clear_match_sent_off_statuses(match)
         await league.save()
         logger.info(
             f"Recorded result for match {match_id}: {request.score_home}-{request.score_away}"
@@ -891,6 +915,8 @@ class LeagueService:
                 raise InvalidOperationException(
                     f"Player '{player.name}' was not selected for this match"
                 )
+            if squad:
+                return
             if not LeagueService._is_player_available_for_match(player):
                 raise InvalidOperationException(
                     f"Player '{player.name}' is not available for this match"
@@ -1071,6 +1097,8 @@ class LeagueService:
                 raise InvalidOperationException(
                     f"Player '{player.name}' was not selected for this match"
                 )
+            if squad:
+                return
             if not LeagueService._is_player_available_for_match(player):
                 raise InvalidOperationException(
                     f"Player '{player.name}' was not available for this match"
@@ -1324,6 +1352,18 @@ class LeagueService:
                     f" · Lasting D6 {injury_request.lasting_injury_roll}: "
                     f"{lasting.code} ({lasting.reduction_label})"
                 )
+            player.injury_history.append(
+                PlayerInjuryRecord(
+                    type="lasting_injury" if lasting else casualty.code,
+                    label=(lasting.label.es if lasting else casualty.label.es)
+                    or (lasting.label.en if lasting else casualty.label.en)
+                    or (lasting.code if lasting else casualty.code),
+                    notes=detail,
+                    roll=injury_request.lasting_injury_roll if lasting else None,
+                    stat=lasting.stat if lasting else None,
+                    reduction=lasting.reduction_label if lasting else None,
+                )
+            )
             match.events.append(
                 MatchEvent(
                     id=str(uuid.uuid4()),
@@ -1346,6 +1386,66 @@ class LeagueService:
         for injury_request in request.injuries:
             _validate_played_player(injury_request.team, injury_request.player_id)
             _apply_injury(injury_request)
+
+        def _record_result(standing, won: bool, lost: bool) -> None:
+            if won:
+                standing.wins += 1
+            elif lost:
+                standing.losses += 1
+            else:
+                standing.draws += 1
+
+        def _remove_recorded_result(standing, won: bool, lost: bool) -> None:
+            if won:
+                standing.wins = max(0, standing.wins - 1)
+            elif lost:
+                standing.losses = max(0, standing.losses - 1)
+            else:
+                standing.draws = max(0, standing.draws - 1)
+
+        def _sync_final_score_from_winnings() -> None:
+            if not request.winnings:
+                return
+            new_home = request.winnings.home_touchdowns
+            new_away = request.winnings.away_touchdowns
+            if new_home == match.score_home and new_away == match.score_away:
+                return
+
+            home_standing = league.get_team_standing(match.home.team_id)
+            away_standing = league.get_team_standing(match.away.team_id)
+            if home_standing and away_standing:
+                old_home = match.score_home
+                old_away = match.score_away
+                home_standing.touchdowns_for += new_home - old_home
+                home_standing.touchdowns_against += new_away - old_away
+                away_standing.touchdowns_for += new_away - old_away
+                away_standing.touchdowns_against += new_home - old_home
+
+                _remove_recorded_result(
+                    home_standing,
+                    old_home > old_away,
+                    old_home < old_away,
+                )
+                _remove_recorded_result(
+                    away_standing,
+                    old_away > old_home,
+                    old_away < old_home,
+                )
+                _record_result(
+                    home_standing,
+                    new_home > new_away,
+                    new_home < new_away,
+                )
+                _record_result(
+                    away_standing,
+                    new_away > new_home,
+                    new_away < new_home,
+                )
+
+            match.score_home = new_home
+            match.score_away = new_away
+
+        _sync_final_score_from_winnings()
 
         def _calculate_winnings(
             team: UserTeam, opponent: UserTeam, touchdowns: int, stalling: bool
@@ -1672,6 +1772,7 @@ class LeagueService:
 
         await _refresh_team_value(home_team)
         await _refresh_team_value(away_team)
+        await LeagueService._clear_match_sent_off_statuses(match)
 
         match.events.extend(post_match_events)
 
