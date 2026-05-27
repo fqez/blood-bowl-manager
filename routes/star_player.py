@@ -1,6 +1,8 @@
 """Routes for star player endpoints (read-only catalog)."""
 
-from fastapi import APIRouter, HTTPException, status
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Query, status
 
 from schemas.star_player import StarPlayerDetail, StarPlayerSummary
 from services.star_player_service import StarPlayerService
@@ -29,13 +31,17 @@ async def get_all_star_players_detail():
 
 
 @router.get("/team/{team_id}", response_model=list[StarPlayerSummary])
-async def get_star_players_for_team(team_id: str):
+async def get_star_players_for_team(
+    team_id: str, favoured_of: Optional[str] = Query(default=None)
+):
     """
     Get star players available for a specific team.
 
     Use this to show which star players a team can hire.
     """
-    star_players = await StarPlayerService.get_star_players_for_team(team_id)
+    star_players = await StarPlayerService.get_star_players_for_team(
+        team_id, favoured_of=favoured_of
+    )
     return star_players
 
 

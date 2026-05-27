@@ -32,9 +32,13 @@
         },
         "plays_for": [
             "amazon",
+            "black_orc",
+            "bretonnian",
             "chaos_chosen",
+            "chaos_dwarf",
             "chaos_renegades",
             "dark_elf",
+            "dwarf",
             "elven_union",
             "gnome",
             "goblin",
@@ -47,6 +51,7 @@
             "necromantic_horror",
             "norse",
             "nurgle",
+            "ogre",
             "old_world_alliance",
             "orc",
             "shambling_undead",
@@ -116,7 +121,11 @@
             "description": "Once per half, at the start of his activation, Barik may use his cannon. Nominate an empty square in any adjacent square. Roll a D6 for each Standing player (from either team) within 3 squares of the nominated square. On a 4+, the player is hit."
         },
         "plays_for": [
+            "bretonnian",
             "dwarf",
+            "human",
+            "imperial_nobility",
+            "norse",
             "ogre",
             "old_world_alliance"
         ]
@@ -181,12 +190,7 @@
         },
         "plays_for": [
             "amazon",
-            "chaos_chosen",
-            "chaos_renegades",
-            "khorne",
-            "lizardmen",
-            "nurgle",
-            "vampire"
+            "lizardmen"
         ]
     },
     {
@@ -222,7 +226,45 @@
             "goblin",
             "ogre",
             "orc",
+            "skaven",
+            "snotling",
             "underworld_denizens"
+        ]
+    },
+    {
+        "_id": "bryce_the_slice_cambuel",
+        "name": "Bryce 'The Slice' Cambuel",
+        "cost": 130000,
+        "stats": {
+            "MA": 5,
+            "ST": 3,
+            "AG": "4+",
+            "PA": "-",
+            "AV": "9+"
+        },
+        "type": [
+            "Human",
+            "Special",
+            "Undead"
+        ],
+        "skills": [
+            "Chainsaw",
+            "Loner (4+)",
+            "No Hands",
+            "Regeneration",
+            "Secret Weapon",
+            "Stand Firm",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Ghostly Flames",
+            "description": "Once per half, when Bryce makes the Chainsaw Attack Special action as part of a Blitz action, he may add +4 to the Armour roll against an opponent rather than +3."
+        },
+        "plays_for": [
+            "necromantic_horror",
+            "shambling_undead",
+            "tomb_kings",
+            "vampire"
         ]
     },
     {
@@ -287,8 +329,12 @@
             "description": "Cindy throws pies that act as bombs but always scatter one fewer square."
         },
         "plays_for": [
+            "bretonnian",
             "gnome",
             "halfling",
+            "human",
+            "imperial_nobility",
+            "norse",
             "old_world_alliance"
         ]
     },
@@ -358,7 +404,6 @@
         "plays_for": [
             "gnome",
             "halfling",
-            "old_world_alliance",
             "wood_elf"
         ]
     },
@@ -391,14 +436,8 @@
             "description": "Dribl and Drull are two players that count as one star player. They activate together."
         },
         "plays_for": [
-            "black_orc",
-            "chaos_dwarf",
-            "goblin",
-            "ogre",
-            "orc",
-            "skaven",
-            "snotling",
-            "underworld_denizens"
+            "amazon",
+            "lizardmen"
         ]
     },
     {
@@ -466,14 +505,47 @@
             "description": "Once per game, when Estelle performs a Blitz or Block action, she may add +1 to any Block dice result."
         },
         "plays_for": [
-            "dark_elf",
-            "elven_union",
-            "high_elf",
+            "amazon",
+            "lizardmen"
+        ]
+    },
+    {
+        "_id": "frank_n_stein",
+        "name": "Frank 'n' Stein",
+        "cost": 250000,
+        "stats": {
+            "MA": 4,
+            "ST": 5,
+            "AG": "4+",
+            "PA": "6+",
+            "AV": "10+"
+        },
+        "type": [
+            "Big Guy",
+            "Human"
+        ],
+        "skills": [
+            "Break Tackle",
+            "Loner (4+)",
+            "Mighty Blow",
+            "Regeneration",
+            "Stand Firm",
+            "Thick Skull"
+        ],
+        "special_ability": {
+            "name": "Brutal Block",
+            "description": "Once per game, when Frank 'n' Stein makes an Injury roll as the result of a Block action against an opposing player, he may apply an additional +1 modifier to that Injury roll. This modifier may be applied after seeing the roll."
+        },
+        "plays_for": [
+            "bretonnian",
+            "human",
+            "imperial_nobility",
             "necromantic_horror",
+            "norse",
+            "old_world_alliance",
             "shambling_undead",
             "tomb_kings",
-            "vampire",
-            "wood_elf"
+            "vampire"
         ]
     },
     {
@@ -509,6 +581,7 @@
             "goblin",
             "ogre",
             "orc",
+            "skaven",
             "snotling",
             "underworld_denizens"
         ]
@@ -541,8 +614,9 @@
             "description": "Once per game, Glart may apply the Frenzy skill when performing a Blitz action."
         },
         "plays_for": [
-            "chaos_renegades",
+            "goblin",
             "skaven",
+            "snotling",
             "underworld_denizens"
         ]
     },
@@ -575,6 +649,7 @@
             "description": "Once per game, after Gloriel has made a Pass action, she may move up to 3 squares."
         },
         "plays_for": [
+            "dark_elf",
             "elven_union",
             "high_elf",
             "wood_elf"
@@ -640,12 +715,36 @@
             "description": "Grak can throw Crumbleberry using Throw Team-mate; Crumbleberry has the Right Stuff skill."
         },
         "plays_for": [
+            "amazon",
+            "black_orc",
+            "bretonnian",
+            "chaos_chosen",
+            "chaos_dwarf",
+            "chaos_renegades",
+            "dark_elf",
+            "dwarf",
+            "elven_union",
             "gnome",
+            "goblin",
             "halfling",
+            "high_elf",
             "human",
             "imperial_nobility",
+            "khorne",
+            "lizardmen",
+            "necromantic_horror",
+            "norse",
+            "nurgle",
             "ogre",
-            "old_world_alliance"
+            "old_world_alliance",
+            "orc",
+            "shambling_undead",
+            "skaven",
+            "snotling",
+            "tomb_kings",
+            "underworld_denizens",
+            "vampire",
+            "wood_elf"
         ]
     },
     {
@@ -678,7 +777,10 @@
         "plays_for": [
             "chaos_chosen",
             "chaos_dwarf",
-            "chaos_renegades"
+            "chaos_renegades",
+            "khorne",
+            "norse",
+            "nurgle"
         ]
     },
     {
@@ -748,6 +850,7 @@
             "bretonnian",
             "human",
             "imperial_nobility",
+            "norse",
             "old_world_alliance"
         ]
     },
@@ -780,9 +883,7 @@
         },
         "plays_for": [
             "dwarf",
-            "norse",
-            "ogre",
-            "old_world_alliance"
+            "ogre"
         ]
     },
     {
@@ -887,8 +988,15 @@
             "description": "Once per game, when Hakflem is tackled, he may transfer the tackle to an adjacent friendly player instead."
         },
         "plays_for": [
+            "chaos_chosen",
+            "chaos_dwarf",
             "chaos_renegades",
+            "goblin",
+            "khorne",
+            "norse",
+            "nurgle",
             "skaven",
+            "snotling",
             "underworld_denizens"
         ]
     },
@@ -920,21 +1028,33 @@
         },
         "plays_for": [
             "amazon",
+            "black_orc",
             "bretonnian",
+            "chaos_chosen",
             "chaos_dwarf",
             "chaos_renegades",
             "dark_elf",
             "dwarf",
             "elven_union",
+            "gnome",
+            "goblin",
+            "halfling",
             "high_elf",
             "human",
             "imperial_nobility",
             "khorne",
+            "lizardmen",
             "necromantic_horror",
             "norse",
+            "nurgle",
+            "ogre",
             "old_world_alliance",
+            "orc",
             "shambling_undead",
+            "skaven",
+            "snotling",
             "tomb_kings",
+            "underworld_denizens",
             "vampire",
             "wood_elf"
         ]
@@ -967,7 +1087,13 @@
             "description": "Once per game, H'thark may add +1 MA when making a Blitz action."
         },
         "plays_for": [
-            "chaos_dwarf"
+            "black_orc",
+            "chaos_chosen",
+            "chaos_dwarf",
+            "chaos_renegades",
+            "goblin",
+            "ogre",
+            "orc"
         ]
     },
     {
@@ -998,12 +1124,7 @@
             "description": "Once per game, if Ivan is Knocked Out, he may return to the reserves box instead of going to the KO'd box."
         },
         "plays_for": [
-            "chaos_chosen",
-            "chaos_renegades",
-            "khorne",
             "necromantic_horror",
-            "norse",
-            "nurgle",
             "shambling_undead",
             "tomb_kings",
             "vampire"
@@ -1037,10 +1158,11 @@
             "description": "Once per game, Ivar may gain +2 ST for a Block or Blitz action."
         },
         "plays_for": [
-            "chaos_chosen",
-            "chaos_renegades",
-            "khorne",
-            "norse"
+            "bretonnian",
+            "human",
+            "imperial_nobility",
+            "norse",
+            "old_world_alliance"
         ]
     },
     {
@@ -1070,11 +1192,10 @@
             "description": "Once per game, when the Ball scatters, Jeremiah can move 3 squares towards it."
         },
         "plays_for": [
-            "bretonnian",
-            "human",
-            "imperial_nobility",
-            "ogre",
-            "old_world_alliance"
+            "dark_elf",
+            "elven_union",
+            "high_elf",
+            "wood_elf"
         ]
     },
     {
@@ -1140,6 +1261,7 @@
         "plays_for": [
             "bretonnian",
             "dwarf",
+            "gnome",
             "halfling",
             "human",
             "imperial_nobility",
@@ -1179,6 +1301,8 @@
             "bretonnian",
             "human",
             "imperial_nobility",
+            "lizardmen",
+            "norse",
             "old_world_alliance"
         ]
     },
@@ -1209,8 +1333,10 @@
             "description": "Once per game, Kiroth may force an opponent to re-roll a successful Dodge roll."
         },
         "plays_for": [
-            "chaos_renegades",
-            "dark_elf"
+            "dark_elf",
+            "elven_union",
+            "high_elf",
+            "wood_elf"
         ]
     },
     {
@@ -1242,8 +1368,9 @@
             "description": "Once per game, Kreek may deal an Armour Roll with +1 to all adjacent players."
         },
         "plays_for": [
-            "chaos_renegades",
+            "goblin",
             "skaven",
+            "snotling",
             "underworld_denizens"
         ]
     },
@@ -1276,7 +1403,10 @@
         "plays_for": [
             "chaos_chosen",
             "chaos_dwarf",
-            "chaos_renegades"
+            "chaos_renegades",
+            "khorne",
+            "norse",
+            "nurgle"
         ]
     },
     {
@@ -1309,7 +1439,7 @@
         "plays_for": [
             "gnome",
             "halfling",
-            "old_world_alliance"
+            "wood_elf"
         ]
     },
     {
@@ -1341,7 +1471,7 @@
             "chaos_chosen",
             "chaos_renegades",
             "khorne",
-            "nurgle"
+            "norse"
         ]
     },
     {
@@ -1374,6 +1504,7 @@
             "amazon",
             "black_orc",
             "bretonnian",
+            "chaos_chosen",
             "chaos_dwarf",
             "chaos_renegades",
             "dark_elf",
@@ -1387,17 +1518,14 @@
             "imperial_nobility",
             "khorne",
             "lizardmen",
-            "necromantic_horror",
             "norse",
+            "nurgle",
             "ogre",
             "old_world_alliance",
             "orc",
-            "shambling_undead",
             "skaven",
             "snotling",
-            "tomb_kings",
             "underworld_denizens",
-            "vampire",
             "wood_elf"
         ]
     },
@@ -1434,6 +1562,7 @@
             "goblin",
             "ogre",
             "orc",
+            "skaven",
             "snotling",
             "underworld_denizens"
         ]
@@ -1466,8 +1595,12 @@
             "description": "Once per game, Puggy can re-roll any single dice."
         },
         "plays_for": [
+            "bretonnian",
             "gnome",
             "halfling",
+            "human",
+            "imperial_nobility",
+            "norse",
             "old_world_alliance"
         ]
     },
@@ -1607,8 +1740,7 @@
         },
         "plays_for": [
             "gnome",
-            "halfling",
-            "wood_elf"
+            "halfling"
         ]
     },
     {
@@ -1815,7 +1947,6 @@
         "plays_for": [
             "bretonnian",
             "dwarf",
-            "halfling",
             "human",
             "imperial_nobility",
             "norse",
@@ -1961,10 +2092,9 @@
         },
         "plays_for": [
             "bretonnian",
-            "chaos_renegades",
+            "dwarf",
             "human",
             "imperial_nobility",
-            "khorne",
             "norse",
             "ogre",
             "old_world_alliance"
@@ -2057,11 +2187,9 @@
         },
         "plays_for": [
             "bretonnian",
-            "dwarf",
             "human",
             "imperial_nobility",
             "norse",
-            "ogre",
             "old_world_alliance"
         ]
     },
@@ -2266,7 +2394,8 @@
         },
         "plays_for": [
             "chaos_chosen",
-            "chaos_dwarf"
+            "chaos_dwarf",
+            "chaos_renegades"
         ]
     }
 ]

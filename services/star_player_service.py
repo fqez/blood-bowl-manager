@@ -10,6 +10,7 @@ from schemas.star_player import (
     StarPlayerStatsResponse,
     StarPlayerSummary,
 )
+from utils.team_special_rules import star_player_available_for_roster
 
 logger = logging.getLogger(__name__)
 
@@ -103,9 +104,21 @@ class StarPlayerService:
         )
 
     @staticmethod
-    async def get_star_players_for_team(team_id: str) -> list[StarPlayerSummary]:
+    async def get_star_players_for_team(
+        team_id: str, favoured_of: Optional[str] = None
+    ) -> list[StarPlayerSummary]:
         """Get all star players available for a specific team."""
         star_players = await StarPlayer.find({"plays_for": team_id}).to_list()
+        star_players = [
+            sp
+            for sp in star_players
+            if star_player_available_for_roster(
+                star_player_id=sp.id,
+                plays_for=sp.plays_for,
+                roster_id=team_id,
+                favoured_of=favoured_of,
+            )
+        ]
 
         return [
             StarPlayerSummary(

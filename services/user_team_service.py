@@ -46,6 +46,13 @@ from schemas.user_team import (
     UserTeamDetail,
     UserTeamSummary,
 )
+from utils.team_special_rules import (
+    CHAOS_FAVOURED_LABELS,
+    effective_special_rules,
+    is_favoured_choice_valid,
+    normalize_favoured_of,
+    star_player_available_for_roster,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +193,18 @@ class UserTeamService:
             )
 
     @staticmethod
+    def _validate_favoured_of(
+        roster_id: str, favoured_of: Optional[str]
+    ) -> Optional[str]:
+        normalized = normalize_favoured_of(favoured_of)
+        if not is_favoured_choice_valid(roster_id, normalized):
+            allowed = ", ".join(CHAOS_FAVOURED_LABELS.keys())
+            raise InvalidOperationException(
+                f"Invalid favoured_of for roster '{roster_id}'. Allowed: {allowed}"
+            )
+        return normalized
+
+    @staticmethod
     async def create_team(user_id: str, request: CreateTeamRequest) -> UserTeam:
         """Create a new team for a user."""
         # Verify roster exists
@@ -195,10 +214,15 @@ class UserTeamService:
                 f"Roster '{request.base_roster_id}' not found"
             )
 
+        favoured_of = UserTeamService._validate_favoured_of(
+            request.base_roster_id, request.favoured_of
+        )
+
         team = UserTeam(
             user_id=user_id,
             base_roster_id=request.base_roster_id,
             name=request.name,
+            favoured_of=favoured_of,
             treasury=1_000_000,
             team_value=0,
             players=[],
@@ -295,6 +319,12 @@ class UserTeamService:
                     can_manage_roster=not await UserTeamService._is_in_active_league(
                         team_id
                     ),
+                    favoured_of=t.favoured_of,
+                    special_rules=effective_special_rules(
+                        roster.special_rules if roster else [],
+                        t.base_roster_id,
+                        t.favoured_of,
+                    ),
                     league_memberships=memberships.get(team_id, []),
                     icon=t.icon,
                     created_at=t.created_at,
@@ -339,6 +369,12 @@ class UserTeamService:
             dedicated_fans=team.dedicated_fans,
             notes=team.notes,
             can_manage_roster=not await UserTeamService._is_in_active_league(team_id),
+            favoured_of=team.favoured_of,
+            special_rules=effective_special_rules(
+                roster.special_rules if roster else [],
+                team.base_roster_id,
+                team.favoured_of,
+            ),
             league_memberships=await UserTeamService._league_memberships(team_id),
             icon=team.icon,
             wallpaper=team.wallpaper,
@@ -410,6 +446,10 @@ class UserTeamService:
             team.treasury = request.treasury
         if request.notes is not None:
             team.notes = request.notes
+        if "favoured_of" in request.model_fields_set:
+            team.favoured_of = UserTeamService._validate_favoured_of(
+                team.base_roster_id, request.favoured_of
+            )
 
         team.treasury -= cost_delta
         team.team_value = await UserTeamService._calculate_team_value(team, roster)
@@ -534,7 +574,12 @@ class UserTeamService:
             )
 
         # Validate team compatibility
-        if team.base_roster_id not in star.plays_for:
+        if not star_player_available_for_roster(
+            star_player_id=star.id,
+            plays_for=star.plays_for,
+            roster_id=team.base_roster_id,
+            favoured_of=team.favoured_of,
+        ):
             raise InvalidOperationException(
                 f"Star player '{star.name}' cannot play for this team"
             )

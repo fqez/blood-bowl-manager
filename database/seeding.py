@@ -468,16 +468,16 @@ def convert_star_player(sp_data: dict) -> StarPlayer:
 
 async def seed_star_players(star_players_data: list):
     """Seed star_players collection."""
-    existing_count = await StarPlayer.find().count()
-    if existing_count > 0:
-        logger.info(f"Star players already seeded ({existing_count} found)")
-        return
+    canonical_ids = {sp.get("_id") for sp in star_players_data if sp.get("_id")}
 
     for sp in star_players_data:
         star_player = convert_star_player(sp)
-        await star_player.insert()
+        await upsert_catalog_document(StarPlayer, star_player)
 
-    logger.info(f"Seeded {len(star_players_data)} star players")
+    if canonical_ids:
+        await StarPlayer.find({"_id": {"$nin": list(canonical_ids)}}).delete()
+
+    logger.info(f"Upserted {len(star_players_data)} star players")
 
 
 async def seed_expensive_mistakes_rules():

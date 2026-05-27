@@ -154,6 +154,7 @@ class UserTeam(Document):
     cheerleaders: int = Field(default=0, ge=0)
     assistant_coaches: int = Field(default=0, ge=0, le=6)
     apothecary: bool = Field(default=False)
+    favoured_of: Optional[str] = None
 
     # Dedicated fans (for league play)
     dedicated_fans: int = Field(default=1, ge=0)

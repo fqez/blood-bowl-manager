@@ -175,6 +175,7 @@ class CreateTeamRequest(BaseModel):
     assistant_coaches: int = Field(default=0, ge=0, le=6)
     apothecary: bool = False
     dedicated_fans: int = Field(default=1, ge=1, le=3)
+    favoured_of: Optional[str] = Field(default=None)
 
 
 class UpdateTeamRequest(BaseModel):
@@ -189,6 +190,7 @@ class UpdateTeamRequest(BaseModel):
     dedicated_fans: Optional[int] = Field(None, ge=1, le=7)
     treasury: Optional[int] = Field(None, ge=0)
     notes: Optional[str] = None
+    favoured_of: Optional[str] = Field(default=None)
 
 
 class TeamLeagueMembership(BaseModel):
@@ -227,6 +229,8 @@ class UserTeamSummary(BaseModel):
     treasury: int
     player_count: int
     can_manage_roster: bool = True
+    favoured_of: Optional[str] = None
+    special_rules: list[str] = Field(default_factory=list)
     league_memberships: list[TeamLeagueMembership] = Field(default_factory=list)
     icon: Optional[str] = None
     created_at: datetime
@@ -256,6 +260,8 @@ class UserTeamDetail(BaseModel):
     dedicated_fans: int
     notes: str = ""
     can_manage_roster: bool = True
+    favoured_of: Optional[str] = None
+    special_rules: list[str] = Field(default_factory=list)
     league_memberships: list[TeamLeagueMembership] = Field(default_factory=list)
 
     icon: Optional[str] = None
