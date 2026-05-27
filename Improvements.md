@@ -23,7 +23,7 @@ Autenticación segura con JWT + bcrypt + refresh token rotation implementada.
 
 **Archivos creados:**
 - `auth/password_utils.py` — bcrypt hash/verify + SHA-256 para tokens + `validate_password_strength()`
-- `auth/token_service.py` — Generación y decodificación de access (15min) / refresh (7 días) JWT
+- `auth/token_service.py` — Generación y decodificación de access (12h) / refresh (30 días) JWT
 - `schemas/auth.py` — `RegisterRequest`, `LoginRequest`, `RefreshRequest`, `TokenResponse`, `UserProfile`
 - `services/auth_service.py` — Lógica de registro, login, refresh con rotación segura de tokens
 - `routes/auth.py` — Los 5 endpoints de autenticación
@@ -31,13 +31,13 @@ Autenticación segura con JWT + bcrypt + refresh token rotation implementada.
 **Archivos modificados:**
 - `models/user/user.py` — `StoredToken` (embedded), `refresh_tokens[]`, `is_active`, `email_verified`
 - `auth/jwt_bearer.py` — Reescrito con `get_current_user` dependency (valida JWT y retorna `user_id`)
-- `config/config.py` — `ACCESS_TOKEN_EXPIRE_MINUTES=15`, `REFRESH_TOKEN_EXPIRE_DAYS=7`
+- `config/config.py` — `ACCESS_TOKEN_EXPIRE_MINUTES=720`, `REFRESH_TOKEN_EXPIRE_DAYS=30`
 - `routes/user_team.py`, `routes/league.py` — Reemplazado mock `get_current_user_id()` por `get_current_user`
 - `app.py` — incluye `AuthRouter`, protege `/user-teams` y `/leagues` con `Depends(get_current_user)`
 
 **Características de seguridad:**
 - ✅ Passwords: bcrypt (12 rounds) con validación de fortaleza (min 8 chars, mayús, número, símbolo)
-- ✅ JWT: HS256, access 15min + refresh 7 días con family_id para detección de robo
+- ✅ JWT: HS256, access 12h + refresh 30 días con family_id para detección de robo
 - ✅ Refresh tokens: almacenados hasheados en BD (nunca en claro), máx 5 sesiones concurrentes
 - ✅ Token rotation: nuevo family_id en cada refresh (si se detecta reuso → revoca toda familia)
 - ✅ Email + IP logging para auditoría
@@ -45,7 +45,7 @@ Autenticación segura con JWT + bcrypt + refresh token rotation implementada.
 
 **Testing realizado:**
 - ✅ `POST /auth/register` → 201 + tokens
-- ✅ `POST /auth/login` → 200 + tokens con `expires_in: 900`
+- ✅ `POST /auth/login` → 200 + tokens con `expires_in: 43200`
 - ✅ `GET /auth/me` → perfil del usuario autenticado
 - ✅ `POST /auth/refresh` → rotación segura de tokens
 - ✅ Ruta protegida sin token → 401 Unauthorized

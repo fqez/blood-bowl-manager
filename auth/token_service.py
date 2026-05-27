@@ -16,7 +16,7 @@ class TokenService:
         self.refresh_expire_days = settings.REFRESH_TOKEN_EXPIRE_DAYS
 
     def create_access_token(self, user_id: str) -> str:
-        """Create short-lived JWT access token (15 min by default)."""
+        """Create JWT access token."""
         payload = {
             "sub": user_id,
             "type": "access",
@@ -27,7 +27,7 @@ class TokenService:
         return jwt.encode(payload, self.secret_key, algorithm=self.algorithm)
 
     def create_refresh_token(self, user_id: str, family_id: str) -> str:
-        """Create long-lived JWT refresh token (7 days by default)."""
+        """Create long-lived JWT refresh token."""
         payload = {
             "sub": user_id,
             "family_id": family_id,

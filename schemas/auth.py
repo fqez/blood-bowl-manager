@@ -22,7 +22,9 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    expires_in: int = Field(default=900, description="Access token lifetime in seconds")
+    expires_in: int = Field(
+        default=43200, description="Access token lifetime in seconds"
+    )
 
 
 class UserProfile(BaseModel):
