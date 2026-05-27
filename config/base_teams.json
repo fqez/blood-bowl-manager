@@ -1525,6 +1525,101 @@
         ]
     },
     {
+        "name": "high_elf",
+        "team_details": {
+            "leagues": "Elven Kingdoms League / Liga de los Reinos Élficos",
+            "special_rules": "None / Ninguna",
+            "rerolls": {
+                "limit": "0-8",
+                "cost": "50,000 gold pieces each / 50,000 piezas de oro cada una"
+            },
+            "apothecary": "YES / SÍ"
+        },
+        "roster": [
+            {
+                "qty": "0-16",
+                "position": "High Elf Lineman (Lineman, Elf) / Línea Alto Elfo (Línea, Elfo)",
+                "cost": 65000,
+                "stats": {
+                    "MA": 6,
+                    "ST": 3,
+                    "AG": "2+",
+                    "PA": "3+",
+                    "AV": "9+"
+                },
+                "skills_traits": [
+                    "None / Ninguna"
+                ],
+                "categories": {
+                    "primary": "A, G",
+                    "secondary": "S"
+                }
+            },
+            {
+                "qty": "0-2",
+                "position": "Phoenix Warrior (Thrower, Elf) / Guerrero Fénix (Lanzador, Elfo)",
+                "cost": 90000,
+                "stats": {
+                    "MA": 6,
+                    "ST": 3,
+                    "AG": "2+",
+                    "PA": "2+",
+                    "AV": "9+"
+                },
+                "skills_traits": [
+                    "Cloud Burster / Rompenubes",
+                    "Pass / Pasar",
+                    "Safe Pass / Pase Seguro"
+                ],
+                "categories": {
+                    "primary": "A, G, P",
+                    "secondary": "S"
+                }
+            },
+            {
+                "qty": "0-2",
+                "position": "Dragon Prince (Blitzer, Elf Runner) / Príncipe Dragón (Blitzer, Corredor Elfo)",
+                "cost": 110000,
+                "stats": {
+                    "MA": 8,
+                    "ST": 3,
+                    "AG": "2+",
+                    "PA": "4+",
+                    "AV": "9+"
+                },
+                "skills_traits": [
+                    "Block / Bloquear",
+                    "My Ball / ¡mío!",
+                    "Steady Footing / Pisada Firme"
+                ],
+                "categories": {
+                    "primary": "A, G",
+                    "secondary": "S"
+                }
+            },
+            {
+                "qty": "0-2",
+                "position": "White Lion (Blitzer, Elf) / León Blanco (Blitzer, Elfo)",
+                "cost": 110000,
+                "stats": {
+                    "MA": 7,
+                    "ST": 3,
+                    "AG": "2+",
+                    "PA": "3+",
+                    "AV": "9+"
+                },
+                "skills_traits": [
+                    "Claws / Garras",
+                    "Wrestle / Forcejeo"
+                ],
+                "categories": {
+                    "primary": "A, G",
+                    "secondary": "P, S"
+                }
+            }
+        ]
+    },
+    {
         "name": "human",
         "team_details": {
             "leagues": "Old World Classic / Clásico del Viejo Mundo",
