@@ -162,6 +162,9 @@ class UserTeam(Document):
     # Coach notes
     notes: str = Field(default="")
 
+    # Public sharing code. Detail lookups by this code never expose notes.
+    share_code: Optional[str] = None
+
     # Visual customization
     icon: Optional[str] = None
     wallpaper: Optional[str] = None

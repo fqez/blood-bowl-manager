@@ -34,6 +34,7 @@ from models.user_team.team import PlayerInjuryRecord, PlayerStatus, UserTeam
 from schemas.league import (
     AddMatchEventRequest,
     ApplyAftermatchSppRequest,
+    CreateLeagueMatchRequest,
     CreateLeagueRequest,
     LeagueByCodePreview,
     LeagueDetail,
@@ -48,6 +49,7 @@ from schemas.league import (
     MatchTeamResponse,
     RecordMatchResultRequest,
     UpdateLeagueRequest,
+    UpdateLeagueMatchRequest,
     UpdateMatchStateRequest,
 )
 from services.user_team_service import UserTeamService
@@ -71,6 +73,17 @@ class LeagueService:
     def _player_status_value(player) -> str:
         status = player.status
         return status.value if isinstance(status, PlayerStatus) else str(status)
+
+    @staticmethod
+    def _current_round(league: League) -> Optional[int]:
+        if not league.matches:
+            return None
+        pending_rounds = [
+            m.round for m in league.matches if m.status != MatchStatus.COMPLETED
+        ]
+        if pending_rounds:
+            return min(pending_rounds)
+        return max(m.round for m in league.matches)
 
     @staticmethod
     def _is_player_available_for_match(player) -> bool:
@@ -230,18 +243,6 @@ class LeagueService:
             # Check if user is the owner
             is_owner = league.owner_id == user_id
 
-            # Calculate current round from matches (lowest round with pending matches)
-            current_round = None
-            if league.matches:
-                pending_rounds = [
-                    m.round for m in league.matches if m.status != MatchStatus.COMPLETED
-                ]
-                if pending_rounds:
-                    current_round = min(pending_rounds)
-                else:
-                    # All matches completed - show the last round
-                    current_round = max(m.round for m in league.matches)
-
             results.append(
                 LeagueSummary(
                     id=str(league.id),
@@ -256,7 +257,7 @@ class LeagueService:
                     created_at=league.created_at,
                     is_owner=is_owner,
                     user_team_name=user_team_name,
-                    current_round=current_round,
+                    current_round=LeagueService._current_round(league),
                 )
             )
 
@@ -365,6 +366,7 @@ class LeagueService:
             invite_code=league.invite_code,
             status=league.status,
             season=league.season,
+            current_round=LeagueService._current_round(league),
             format=league.format,
             max_teams=league.max_teams,
             rules=LeagueRulesRequest(
@@ -520,7 +522,9 @@ class LeagueService:
     # ============== League Lifecycle ==============
 
     @staticmethod
-    async def start_league(league_id: str, owner_id: str) -> League:
+    async def start_league(
+        league_id: str, owner_id: str, *, schedule_mode: str = "automatic"
+    ) -> League:
         """Start the league and generate fixtures."""
         league = await _get_league(league_id)
         if not league:
@@ -535,8 +539,9 @@ class LeagueService:
         if len(league.teams) < 2:
             raise InvalidOperationException("Need at least 2 teams to start")
 
-        # Generate matches based on format
-        if league.format == "round_robin":
+        if schedule_mode == "manual":
+            league.matches = []
+        elif league.format == "round_robin":
             league.matches = LeagueService._generate_round_robin(league.teams)
         else:
             # Default to round robin for now
@@ -583,6 +588,105 @@ class LeagueService:
                 round_num += 1
 
         return matches
+
+    @staticmethod
+    def _league_team_by_id(league: League, team_id: str) -> LeagueTeam:
+        for team in league.teams:
+            if team.team_id == team_id:
+                return team
+        raise InvalidOperationException(f"Team '{team_id}' is not in this league")
+
+    @staticmethod
+    def _match_team_info(team: LeagueTeam) -> MatchTeamInfo:
+        return MatchTeamInfo(
+            team_id=team.team_id,
+            team_name=team.team_name,
+            user_id=team.user_id,
+            username=team.username,
+            base_roster_id=team.base_roster_id,
+        )
+
+    @staticmethod
+    def _ensure_owner_can_edit_calendar(league: League, user_id: str) -> None:
+        if league.owner_id != user_id:
+            raise InvalidOperationException(
+                "Solo el propietario puede editar el calendario"
+            )
+        if league.status != LeagueStatus.ACTIVE:
+            raise InvalidOperationException(
+                "El calendario solo se puede editar con la liga activa"
+            )
+
+    @staticmethod
+    def _ensure_match_is_scheduled(match: Match) -> None:
+        if match.status != MatchStatus.SCHEDULED:
+            raise InvalidOperationException(
+                "Solo se pueden editar encuentros pendientes"
+            )
+
+    @staticmethod
+    async def create_league_match(
+        league_id: str, user_id: str, request: CreateLeagueMatchRequest
+    ) -> MatchDetail:
+        league = await _get_league(league_id)
+        if not league:
+            raise LeagueNotFoundException(league_id)
+        LeagueService._ensure_owner_can_edit_calendar(league, user_id)
+        if request.home_team_id == request.away_team_id:
+            raise InvalidOperationException("Un equipo no puede jugar contra si mismo")
+
+        home = LeagueService._league_team_by_id(league, request.home_team_id)
+        away = LeagueService._league_team_by_id(league, request.away_team_id)
+        match = Match(
+            id=uuid.uuid4().hex,
+            round=request.round,
+            home=LeagueService._match_team_info(home),
+            away=LeagueService._match_team_info(away),
+            scheduled_at=request.scheduled_at,
+        )
+        league.matches.append(match)
+        await league.save()
+        return await LeagueService.get_match_detail(league_id, match.id)
+
+    @staticmethod
+    async def update_league_match_fixture(
+        league_id: str,
+        match_id: str,
+        user_id: str,
+        request: UpdateLeagueMatchRequest,
+    ) -> MatchDetail:
+        league, match = await LeagueService._get_league_and_match(league_id, match_id)
+        LeagueService._ensure_owner_can_edit_calendar(league, user_id)
+        LeagueService._ensure_match_is_scheduled(match)
+
+        next_home_id = request.home_team_id or match.home.team_id
+        next_away_id = request.away_team_id or match.away.team_id
+        if next_home_id == next_away_id:
+            raise InvalidOperationException("Un equipo no puede jugar contra si mismo")
+
+        if request.round is not None:
+            match.round = request.round
+        if request.home_team_id is not None:
+            match.home = LeagueService._match_team_info(
+                LeagueService._league_team_by_id(league, request.home_team_id)
+            )
+        if request.away_team_id is not None:
+            match.away = LeagueService._match_team_info(
+                LeagueService._league_team_by_id(league, request.away_team_id)
+            )
+        if "scheduled_at" in request.model_fields_set:
+            match.scheduled_at = request.scheduled_at
+
+        await league.save()
+        return await LeagueService.get_match_detail(league_id, match_id)
+
+    @staticmethod
+    async def delete_league_match(league_id: str, match_id: str, user_id: str) -> None:
+        league, match = await LeagueService._get_league_and_match(league_id, match_id)
+        LeagueService._ensure_owner_can_edit_calendar(league, user_id)
+        LeagueService._ensure_match_is_scheduled(match)
+        league.matches = [m for m in league.matches if m.id != match_id]
+        await league.save()
 
     # ============== Match Operations ==============
 

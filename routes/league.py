@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 
 from auth.jwt_bearer import get_current_user
 from exceptions.exceptions import (
@@ -13,6 +13,7 @@ from exceptions.exceptions import (
 from schemas.league import (
     AddMatchEventRequest,
     ApplyAftermatchSppRequest,
+    CreateLeagueMatchRequest,
     CreateLeagueRequest,
     JoinLeagueRequest,
     LeagueByCodePreview,
@@ -21,7 +22,9 @@ from schemas.league import (
     MatchDetail,
     MatchSummary,
     RecordMatchResultRequest,
+    StartLeagueRequest,
     UpdateLeagueRequest,
+    UpdateLeagueMatchRequest,
     UpdateMatchStateRequest,
 )
 from services.league_service import LeagueService
@@ -197,10 +200,16 @@ async def leave_league(
 
 
 @router.post("/{league_id}/start", response_model=LeagueDetail)
-async def start_league(league_id: str, user_id: str = Depends(get_current_user)):
+async def start_league(
+    league_id: str,
+    request: StartLeagueRequest = Body(default=StartLeagueRequest()),
+    user_id: str = Depends(get_current_user),
+):
     """Start the league and generate fixtures (owner only)."""
     try:
-        await LeagueService.start_league(league_id, user_id)
+        await LeagueService.start_league(
+            league_id, user_id, schedule_mode=request.schedule_mode
+        )
         return await LeagueService.get_league_detail(league_id)
     except LeagueNotFoundException:
         raise HTTPException(
@@ -226,6 +235,24 @@ async def get_league_matches(league_id: str):
     return detail.matches
 
 
+@router.post("/{league_id}/matches", response_model=MatchDetail)
+async def create_league_match(
+    league_id: str,
+    request: CreateLeagueMatchRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Create a scheduled match in the league calendar (owner only)."""
+    try:
+        return await LeagueService.create_league_match(league_id, user_id, request)
+    except LeagueNotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"League '{league_id}' not found",
+        )
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
 @router.get("/{league_id}/matches/{match_id}", response_model=MatchDetail)
 async def get_match(league_id: str, match_id: str):
     """Get full match detail."""
@@ -238,6 +265,47 @@ async def get_match(league_id: str, match_id: str):
         )
 
     return match
+
+
+@router.patch("/{league_id}/matches/{match_id}/fixture", response_model=MatchDetail)
+async def update_league_match_fixture(
+    league_id: str,
+    match_id: str,
+    request: UpdateLeagueMatchRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Edit teams, round or date for a scheduled match (owner only)."""
+    try:
+        return await LeagueService.update_league_match_fixture(
+            league_id, match_id, user_id, request
+        )
+    except LeagueNotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"League '{league_id}' not found",
+        )
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.delete(
+    "/{league_id}/matches/{match_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+async def delete_league_match(
+    league_id: str,
+    match_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Delete a scheduled match from the league calendar (owner only)."""
+    try:
+        await LeagueService.delete_league_match(league_id, match_id, user_id)
+    except LeagueNotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"League '{league_id}' not found",
+        )
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post("/{league_id}/matches/{match_id}/result", response_model=LeagueDetail)

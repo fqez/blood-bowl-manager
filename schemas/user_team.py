@@ -229,6 +229,7 @@ class UserTeamSummary(BaseModel):
     treasury: int
     player_count: int
     can_manage_roster: bool = True
+    share_code: str
     favoured_of: Optional[str] = None
     special_rules: list[str] = Field(default_factory=list)
     league_memberships: list[TeamLeagueMembership] = Field(default_factory=list)
@@ -259,6 +260,7 @@ class UserTeamDetail(BaseModel):
     apothecary_allowed: bool  # From base roster
     dedicated_fans: int
     notes: str = ""
+    share_code: str
     can_manage_roster: bool = True
     favoured_of: Optional[str] = None
     special_rules: list[str] = Field(default_factory=list)

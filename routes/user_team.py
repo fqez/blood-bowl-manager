@@ -47,10 +47,27 @@ async def get_my_teams(user_id: str = Depends(get_current_user)):
     return await UserTeamService.get_teams_by_user(user_id)
 
 
+@router.get("/by-code/{share_code}", response_model=UserTeamDetail)
+async def get_team_by_share_code(share_code: str):
+    """Get public team detail by share code without private notes."""
+    detail = await UserTeamService.get_team_detail_by_share_code(share_code)
+
+    if not detail:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Team with code '{share_code}' not found",
+        )
+
+    return detail
+
+
 @router.get("/{team_id}", response_model=UserTeamDetail)
-async def get_team(team_id: str):
+async def get_team(
+    team_id: str,
+    user_id: str = Depends(get_current_user),
+):
     """Get full team detail with all players."""
-    detail = await UserTeamService.get_team_detail(team_id)
+    detail = await UserTeamService.get_team_detail(team_id, viewer_id=user_id)
 
     if not detail:
         raise HTTPException(

@@ -178,6 +178,35 @@ class UserTeamService:
         )
 
     @staticmethod
+    async def _ensure_share_code(team: UserTeam) -> str:
+        share_code = getattr(team, "share_code", None)
+        if share_code:
+            normalized = str(share_code).upper()
+            if normalized != share_code:
+                team.share_code = normalized
+                team.updated_at = datetime.utcnow()
+                await team.save()
+            return normalized
+
+        legacy_candidate = str(team.id).replace("-", "")[:8].upper()
+        if len(legacy_candidate) == 8:
+            existing = await UserTeam.find_one(UserTeam.share_code == legacy_candidate)
+            if not existing or str(existing.id) == str(team.id):
+                team.share_code = legacy_candidate
+                team.updated_at = datetime.utcnow()
+                await team.save()
+                return legacy_candidate
+
+        while True:
+            candidate = uuid.uuid4().hex[:8].upper()
+            existing = await UserTeam.find_one(UserTeam.share_code == candidate)
+            if not existing:
+                team.share_code = candidate
+                team.updated_at = datetime.utcnow()
+                await team.save()
+                return candidate
+
+    @staticmethod
     async def _ensure_roster_can_be_managed(team_id: str) -> None:
         if await UserTeamService._is_in_active_league(team_id):
             raise InvalidOperationException(
@@ -307,6 +336,7 @@ class UserTeamService:
             value_breakdown = await UserTeamService._calculate_team_value_breakdown(
                 t, roster
             )
+            share_code = await UserTeamService._ensure_share_code(t)
             summaries.append(
                 UserTeamSummary(
                     id=str(t.id),
@@ -319,6 +349,7 @@ class UserTeamService:
                     can_manage_roster=not await UserTeamService._is_in_active_league(
                         team_id
                     ),
+                    share_code=share_code,
                     favoured_of=t.favoured_of,
                     special_rules=effective_special_rules(
                         roster.special_rules if roster else [],
@@ -333,11 +364,50 @@ class UserTeamService:
         return summaries
 
     @staticmethod
-    async def get_team_detail(team_id: str) -> Optional[UserTeamDetail]:
+    async def get_team_detail(
+        team_id: str, *, hide_notes: bool = False, viewer_id: Optional[str] = None
+    ) -> Optional[UserTeamDetail]:
         """Get full team detail with players."""
         team = await UserTeam.get(team_id)
         if not team:
             return None
+
+        if viewer_id is not None and team.user_id != viewer_id:
+            hide_notes = True
+
+        return await UserTeamService._team_to_detail(team, hide_notes=hide_notes)
+
+    @staticmethod
+    async def get_team_detail_by_share_code(
+        share_code: str,
+    ) -> Optional[UserTeamDetail]:
+        """Get public team detail by share code without private notes."""
+        normalized = share_code.strip().upper()
+        team = await UserTeam.find_one({"share_code": normalized})
+        if not team:
+            team = await UserTeam.find_one({"share_code": share_code.strip()})
+        if not team and len(normalized) == 8:
+            teams = await UserTeam.find_all().to_list()
+            matches = [
+                candidate
+                for candidate in teams
+                if str(candidate.id).replace("-", "").upper().startswith(normalized)
+            ]
+            if len(matches) == 1:
+                team = matches[0]
+                team.share_code = normalized
+                team.updated_at = datetime.utcnow()
+                await team.save()
+        if not team:
+            return None
+
+        return await UserTeamService._team_to_detail(team, hide_notes=True)
+
+    @staticmethod
+    async def _team_to_detail(
+        team: UserTeam, *, hide_notes: bool = False
+    ) -> UserTeamDetail:
+        team_id = str(team.id)
 
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
         await UserTeamService._sync_team_value(team, roster)
@@ -346,6 +416,7 @@ class UserTeamService:
         )
 
         players = [UserTeamService._player_to_response(p) for p in team.players]
+        share_code = await UserTeamService._ensure_share_code(team)
 
         return UserTeamDetail(
             id=str(team.id),
@@ -367,7 +438,8 @@ class UserTeamService:
             apothecary=team.apothecary,
             apothecary_allowed=roster.apothecary_allowed if roster else True,
             dedicated_fans=team.dedicated_fans,
-            notes=team.notes,
+            notes="" if hide_notes else team.notes,
+            share_code=share_code,
             can_manage_roster=not await UserTeamService._is_in_active_league(team_id),
             favoured_of=team.favoured_of,
             special_rules=effective_special_rules(
@@ -736,6 +808,18 @@ class UserTeamService:
         player.spp -= spp_cost
         player.current_value += value_increase
         player.advancements = advancement_count + 1
+        player.injury_history.append(
+            PlayerInjuryRecord(
+                type="advancement",
+                label=UserTeamService._advancement_history_label(player, request),
+                notes=UserTeamService._advancement_history_notes(
+                    request, spp_cost, value_increase
+                ),
+                roll=request.characteristic_roll,
+                stat=request.characteristic,
+                reduction=f"+{value_increase // 1000}k TV" if value_increase else None,
+            )
+        )
         team.team_value = await UserTeamService._calculate_team_value(team, roster)
         team.updated_at = datetime.utcnow()
         await team.save()
@@ -847,6 +931,34 @@ class UserTeamService:
         raise InvalidOperationException(
             f"Value increase for '{advancement_type}' not found"
         )
+
+    @staticmethod
+    def _advancement_history_label(
+        player: UserPlayer, request: ApplyPlayerAdvancementRequest
+    ) -> str:
+        if request.advancement_type == "characteristic_improvement":
+            return f"Mejora de atributo: {request.characteristic}"
+        if player.perks:
+            return f"Mejora: {player.perks[-1].name}"
+        return "Mejora comprada con SPP"
+
+    @staticmethod
+    def _advancement_history_notes(
+        request: ApplyPlayerAdvancementRequest, spp_cost: int, value_increase: int
+    ) -> str:
+        labels = {
+            "random_primary_skill": "Primaria al azar",
+            "choose_primary_skill": "Primaria elegida",
+            "choose_secondary_skill": "Secundaria elegida",
+            "characteristic_improvement": "Mejora de atributo",
+        }
+        details = [labels.get(request.advancement_type, request.advancement_type)]
+        details.append(f"Coste {spp_cost} SPP")
+        if value_increase:
+            details.append(f"+{value_increase // 1000}k TV")
+        if request.characteristic_roll is not None:
+            details.append(f"D8 {request.characteristic_roll}")
+        return " · ".join(details)
 
     @staticmethod
     async def update_player(

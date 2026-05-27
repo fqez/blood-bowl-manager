@@ -285,6 +285,24 @@ class UpdateMatchStateRequest(BaseModel):
     gate: Optional[int] = Field(None, ge=0)
 
 
+class CreateLeagueMatchRequest(BaseModel):
+    """Request to add a scheduled match to a league calendar."""
+
+    round: int = Field(..., ge=1)
+    home_team_id: str
+    away_team_id: str
+    scheduled_at: Optional[datetime] = None
+
+
+class UpdateLeagueMatchRequest(BaseModel):
+    """Request to edit a scheduled match fixture."""
+
+    round: Optional[int] = Field(None, ge=1)
+    home_team_id: Optional[str] = None
+    away_team_id: Optional[str] = None
+    scheduled_at: Optional[datetime] = None
+
+
 # ============== League Schemas ==============
 
 
@@ -306,6 +324,12 @@ class CreateLeagueRequest(BaseModel):
     format: str = Field(default="round_robin", pattern="^(round_robin|knockout|swiss)$")
     max_teams: int = Field(default=8, ge=2, le=20)
     rules: Optional[LeagueRulesRequest] = None
+
+
+class StartLeagueRequest(BaseModel):
+    """Request to start a league and choose how fixtures are created."""
+
+    schedule_mode: str = Field(default="automatic", pattern="^(automatic|manual)$")
 
 
 class UpdateLeagueRequest(BaseModel):
@@ -368,6 +392,7 @@ class LeagueDetail(BaseModel):
 
     status: str
     season: int
+    current_round: Optional[int] = None
     format: str
     max_teams: int
     rules: LeagueRulesRequest
