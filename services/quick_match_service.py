@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 from exceptions.exceptions import InvalidOperationException
-from models.league.league import Match, MatchEvent, MatchStatus, MatchTeamInfo
+from models.league.league import League, Match, MatchEvent, MatchStatus, MatchTeamInfo
 from models.quick_match.quick_match import QuickMatch
 from models.user.user import User
 from models.user_team.team import UserTeam
@@ -32,6 +32,18 @@ class QuickMatchService:
         if not qm:
             raise InvalidOperationException(f"Quick match {qm_id} not found")
         return qm
+
+    @staticmethod
+    async def _ensure_teams_not_registered_in_league(
+        home_team_id: str, away_team_id: str
+    ) -> None:
+        league = await League.find_one(
+            {"teams.team_id": {"$in": [home_team_id, away_team_id]}}
+        )
+        if league:
+            raise InvalidOperationException(
+                "Teams registered in a league cannot be used in quick matches"
+            )
 
     @staticmethod
     def _to_detail(qm: QuickMatch) -> MatchDetail:
@@ -139,6 +151,10 @@ class QuickMatchService:
             raise InvalidOperationException(f"Home team {home_team_id} not found")
         if not away_team:
             raise InvalidOperationException(f"Away team {away_team_id} not found")
+
+        await QuickMatchService._ensure_teams_not_registered_in_league(
+            home_team_id, away_team_id
+        )
 
         # Resolve usernames
         home_user = await User.get(home_team.user_id)

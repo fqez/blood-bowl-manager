@@ -3,11 +3,12 @@
 import pytest
 from asgi_lifespan import LifespanManager
 from beanie import init_beanie
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from mongomock_motor import AsyncMongoMockClient
 
 import models as models
-from app import app, token_listener
+from app import app
+from auth.jwt_bearer import get_current_user
 
 
 async def mock_database():
@@ -20,7 +21,7 @@ async def mock_database():
 
 
 def mock_no_authentication():
-    app.dependency_overrides[token_listener] = lambda: {}
+    app.dependency_overrides[get_current_user] = lambda: "test-user"
 
 
 @pytest.fixture
@@ -30,11 +31,12 @@ async def client_test(mocker):
     :return: yield HTTP client.
     """
 
-    mocker.patch("config.config.initiate_database", return_value=await mock_database())
+    mocker.patch("app.initiate_database", new=mock_database)
 
     async with LifespanManager(app):
+        transport = ASGITransport(app=app)
         async with AsyncClient(
-            app=app, base_url="http://test", follow_redirects=True
+            transport=transport, base_url="http://test", follow_redirects=True
         ) as ac:
             yield ac
 
