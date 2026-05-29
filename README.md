@@ -112,6 +112,12 @@ Current verdict: the database design is good enough for the current MVP, but it 
 | `base_teams`     | Legacy/residual collection                               | Candidate for removal after confirming it is unused                                     |
 | `perk_families`  | Legacy/residual collection                               | Candidate for removal after confirming it is unused                                     |
 
+### Database dump
+
+```bash
+mongodump --uri "mongodb+srv://<user>:<pass>@<cluster>/blood-bowl-manager"
+```
+
 ### What should stay embedded
 
 - Keep player positions embedded in `base_rosters`. They are official catalogue data, small and loaded together.
@@ -241,17 +247,18 @@ The backend should own every rule that is persistent, calculable, auditable or s
 ### Medium priority
 
 - [X] Team value calculation [DONE]
+
   - Centralized official TV/CTV calculation in the backend.
   - Full TV includes current player values, gained skills/characteristic increases, Team Re-rolls and Sideline Staff.
   - CTV subtracts players unable to play the next game.
   - Treasury and Dedicated Fans are explicitly excluded from TV/CTV.
-
 - [X] Player availability maintenance [DONE]
+
   - Backend validates match squads/events/MVP/aftermatch inputs against available selected players.
   - `Miss Next Game` players are excluded from match selection and recover after missing the fixture.
   - Match-day Star Players are stored as temporary signings and automatically released after the match.
-
 - [X] Generic rules catalogue [DONE]
+
   - Centralized backend catalogue index at `/rules/catalogue`.
   - Generic document lookup at `/rules/catalogue/{rule_id}` for every backend-owned rules document.
   - Catalogue covers casualty, injury, weather, kick-off, Prayers to Nuffle, expensive mistakes, inducements, advancements, winnings, Dedicated Fans and SPP rewards.

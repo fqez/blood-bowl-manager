@@ -1,10 +1,11 @@
 # Legacy models (kept for backwards compatibility)
 # New models for restructured data
-from models.base.dedicated_fans import DedicatedFansRules
 from models.base.advancement import AdvancementRules
+from models.base.dedicated_fans import DedicatedFansRules
 from models.base.expensive_mistake import ExpensiveMistakesRules
 from models.base.inducement import InducementRules
 from models.base.injury import InjuryRules
+from models.base.league_points import LeaguePointsRules
 from models.base.pre_match import KickoffEventRules, WeatherRules
 from models.base.roster import BaseRoster
 from models.base.skill_family import SkillFamily
@@ -41,6 +42,7 @@ __all__ = [
     ExpensiveMistakesRules,
     InducementRules,
     InjuryRules,
+    LeaguePointsRules,
     KickoffEventRules,
     SppRewardsRules,
     WeatherRules,

@@ -17,6 +17,7 @@ from models.base.injury import InjuryRules
 from models.base.roster import BasePlayer, BaseRoster
 from models.base.star_player import StarPlayer
 from models.league.league import League, LeagueStatus
+from models.team.perk import Perk
 from models.user.user import User
 from models.user_team.team import (
     PlayerInjuryRecord,
@@ -27,7 +28,6 @@ from models.user_team.team import (
     UserPlayer,
     UserTeam,
 )
-from models.team.perk import Perk
 from schemas.user_team import (
     ApplyPlayerAdvancementRequest,
     CreateTeamRequest,
@@ -38,8 +38,8 @@ from schemas.user_team import (
     PlayerInjuryRecordResponse,
     PlayerPerkResponse,
     PlayerStatsResponse,
-    TeamValueBreakdownResponse,
     TeamLeagueMembership,
+    TeamValueBreakdownResponse,
     UpdatePlayerRequest,
     UpdateTeamRequest,
     UserPlayerResponse,
@@ -107,7 +107,31 @@ class UserTeamService:
     @staticmethod
     def _eligible_player_count(team: UserTeam) -> int:
         """Count players able to play the next game."""
-        return sum(1 for player in team.players if player.status == "healthy")
+        return sum(
+            1
+            for player in team.players
+            if (
+                player.status.value
+                if hasattr(player.status, "value")
+                else player.status
+            )
+            == "healthy"
+        )
+
+    @staticmethod
+    def _available_player_count_by_type(team: UserTeam, base_type: str) -> int:
+        """Count players of a type able to play the next game."""
+        return sum(
+            1
+            for player in team.players
+            if player.base_type == base_type
+            and (
+                player.status.value
+                if hasattr(player.status, "value")
+                else player.status
+            )
+            == "healthy"
+        )
 
     @staticmethod
     async def _calculate_current_team_value(
@@ -576,14 +600,37 @@ class UserTeamService:
         base_player = UserTeamService._find_base_player(roster, request.base_type)
 
         if request.temporary_for_match:
-            if base_player.position.lower() != "lineman" or base_player.max != 16:
-                raise InvalidOperationException(
-                    "Journeymen must be Lineman position players with QTY 0-16"
+            if request.mercenary:
+                current_available = UserTeamService._available_player_count_by_type(
+                    team, request.base_type
                 )
-            if UserTeamService._eligible_player_count(team) >= 11:
-                raise InvalidOperationException(
-                    "Journeymen cannot take eligible players above 11"
-                )
+                if current_available >= base_player.max:
+                    raise InvalidOperationException(
+                        f"Maximum available {request.base_type} reached ({base_player.max})"
+                    )
+                mercenary_cost = base_player.cost + 30_000
+                if team.treasury < mercenary_cost:
+                    raise InvalidOperationException(
+                        f"Insufficient treasury ({team.treasury} < {mercenary_cost})"
+                    )
+            else:
+                if base_player.position.lower() != "lineman":
+                    raise InvalidOperationException(
+                        "Journeymen must be Lineman players"
+                    )
+                if request.riotous_rookie and not any(
+                    "low cost linemen" in rule.lower() for rule in roster.special_rules
+                ):
+                    raise InvalidOperationException(
+                        "Riotous Rookies requires Low Cost Linemen"
+                    )
+                if (
+                    not request.riotous_rookie
+                    and UserTeamService._eligible_player_count(team) >= 11
+                ):
+                    raise InvalidOperationException(
+                        "Journeymen cannot take eligible players above 11"
+                    )
         else:
             # Validate permanent hiring
             can_hire, reason = team.can_hire_player(
@@ -604,13 +651,17 @@ class UserTeamService:
         if request.temporary_for_match:
             new_player.temporary_for_match = True
             new_player.temporary_match_id = request.temporary_match_id
-            new_player.journeyman = True
-            if not UserTeamService._has_loner_perk(new_player.perks):
+            new_player.journeyman = not request.mercenary
+            if request.mercenary:
+                new_player.current_value = base_player.cost + 30_000
+            elif not UserTeamService._has_loner_perk(new_player.perks):
                 new_player.perks.append(UserTeamService._journeyman_loner_perk())
 
         # Update team
         team.players.append(new_player)
-        if not request.temporary_for_match:
+        if request.temporary_for_match and request.mercenary:
+            team.treasury -= new_player.current_value
+        elif not request.temporary_for_match:
             team.treasury -= base_player.cost
         team.team_value = await UserTeamService._calculate_team_value(team, roster)
         team.updated_at = datetime.utcnow()
@@ -964,7 +1015,7 @@ class UserTeamService:
     async def update_player(
         team_id: str, player_id: str, request: UpdatePlayerRequest
     ) -> UserTeam:
-        """Update a player's name, jersey number, status and/or injury history."""
+        """Update a player's name, jersey number, image, status and/or injury history."""
         team = await UserTeam.get(team_id)
         if not team:
             raise TeamNotFoundException(team_id)
@@ -989,6 +1040,9 @@ class UserTeamService:
 
         if request.name is not None:
             player.name = request.name
+
+        if request.image is not None:
+            player.image = request.image.strip() or None
 
         if request.injury_category is not None:
             await UserTeamService._apply_player_condition(player, request)

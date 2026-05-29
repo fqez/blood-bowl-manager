@@ -7,6 +7,7 @@ from models.base.dedicated_fans import DedicatedFansRules
 from models.base.expensive_mistake import ExpensiveMistakesRules
 from models.base.inducement import InducementRules
 from models.base.injury import InjuryRules
+from models.base.league_points import LeaguePointsRules
 from models.base.pre_match import KickoffEventRules, WeatherRules
 from models.base.spp import SppRewardsRules
 from models.base.winnings import WinningsRules
@@ -63,6 +64,14 @@ class RulesService:
             "name": {"en": "Winnings", "es": "Ganancias"},
             "category": "post_match",
             "endpoint": "/rules/winnings",
+            "dice": [],
+            "table_fields": [],
+        },
+        {
+            "id": "league_points",
+            "name": {"en": "League Points", "es": "Puntos de liga"},
+            "category": "post_match",
+            "endpoint": "/rules/league-points",
             "dice": [],
             "table_fields": [],
         },
@@ -174,6 +183,11 @@ class RulesService:
     async def get_winnings_rules() -> WinningsRules | None:
         """Return the post-game winnings rules document."""
         return await WinningsRules.get("winnings")
+
+    @staticmethod
+    async def get_league_points_rules() -> LeaguePointsRules | None:
+        """Return the post-game league points rules document."""
+        return await LeaguePointsRules.get("league_points")
 
     @staticmethod
     async def get_dedicated_fans_rules() -> DedicatedFansRules | None:

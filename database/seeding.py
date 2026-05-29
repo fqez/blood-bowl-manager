@@ -4,8 +4,6 @@ import json
 import re
 from pathlib import Path
 
-
-from models.base.dedicated_fans import DedicatedFansRules
 from models.base.advancement import (
     AdvancementCostRow,
     AdvancementRules,
@@ -13,7 +11,7 @@ from models.base.advancement import (
     CharacteristicImprovementResult,
     SkillCategoryRule,
 )
-from models.base.roster import BasePerk, BasePlayer, BaseRoster, BaseStats
+from models.base.dedicated_fans import DedicatedFansRules
 from models.base.expensive_mistake import (
     ExpensiveMistakeBand,
     ExpensiveMistakeEffect,
@@ -33,7 +31,9 @@ from models.base.injury import (
     InjuryRules,
     LastingInjuryTableEntry,
 )
+from models.base.league_points import LeaguePointsRules
 from models.base.pre_match import DiceRangeTableEntry, KickoffEventRules, WeatherRules
+from models.base.roster import BasePerk, BasePlayer, BaseRoster, BaseStats
 from models.base.skill_family import SkillFamily
 from models.base.spp import SppEventReward, SppRewardsRules, ThrowTeammateReward
 from models.base.star_player import SpecialAbility, StarPlayer, StarPlayerStats
@@ -1004,6 +1004,28 @@ async def seed_winnings_rules():
     logger.info("Upserted winnings rules")
 
 
+async def seed_league_points_rules():
+    """Seed post-game league points and bonus points rules."""
+    rules = LeaguePointsRules(
+        id="league_points",
+        win_points=3,
+        draw_points=1,
+        loss_points=0,
+        touchdown_bonus_threshold=3,
+        touchdown_bonus_points=1,
+        shutout_bonus_points=1,
+        casualty_bonus_threshold=3,
+        casualty_bonus_points=1,
+        casualty_bonus_requires_spp=True,
+        description=LocalizedText(
+            en="League points are awarded after the match: win +3, draw +1, loss +0. Bonus points: score more than 3 touchdowns +1, concede 0 touchdowns +1, cause 3 or more casualties that award SPP +1.",
+            es="Los puntos de liga se otorgan tras el partido: victoria +3, empate +1, derrota +0. Bonificaciones: anotar mas de 3 touchdowns +1, encajar 0 touchdowns +1, causar 3 o mas lesiones que otorguen SPP +1.",
+        ),
+    )
+    await upsert_catalog_document(LeaguePointsRules, rules)
+    logger.info("Upserted league points rules")
+
+
 async def seed_dedicated_fans_rules():
     """Seed post-game Dedicated Fans update rules from the core rules."""
     rules = DedicatedFansRules(
@@ -1210,7 +1232,7 @@ async def seed_inducement_rules():
             rule(
                 "riotous_rookies",
                 "Riotous Rookies",
-                "Novatos Alborotadores",
+                "Novatos Embravecidos",
                 "special",
                 1,
                 150_000,
@@ -1722,6 +1744,7 @@ async def auto_seed_database():
         await seed_advancement_rules()
         await seed_injury_rules()
         await seed_winnings_rules()
+        await seed_league_points_rules()
         await seed_dedicated_fans_rules()
         await seed_inducement_rules()
         await seed_weather_rules()

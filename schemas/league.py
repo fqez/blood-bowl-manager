@@ -237,6 +237,14 @@ class ApplyAftermatchSppRequest(BaseModel):
     )
 
 
+class FinalizeAftermatchRostersRequest(BaseModel):
+    """Force final keep/release resolution for temporary roster players."""
+
+    temporary_players: list[AftermatchTemporaryPlayerDecision] = Field(
+        default_factory=list
+    )
+
+
 class AddMatchEventRequest(BaseModel):
     """Request to add a single event to a live match."""
 

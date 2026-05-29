@@ -9,6 +9,7 @@ from schemas.rules import (
     InducementRulesResponse,
     InjuryRulesResponse,
     KickoffEventRulesResponse,
+    LeaguePointsRulesResponse,
     RuleCatalogDocumentResponse,
     RuleCatalogResponse,
     SppRewardsRulesResponse,
@@ -94,6 +95,18 @@ async def get_winnings_rules():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Winnings rules not found",
+        )
+    return rules
+
+
+@router.get("/league-points", response_model=LeaguePointsRulesResponse)
+async def get_league_points_rules():
+    """Get the post-game league points formula."""
+    rules = await RulesService.get_league_points_rules()
+    if not rules:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="League points rules not found",
         )
     return rules
 

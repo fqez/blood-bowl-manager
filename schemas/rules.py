@@ -190,6 +190,22 @@ class WinningsRulesResponse(BaseModel):
     description: LocalizedTextResponse
 
 
+class LeaguePointsRulesResponse(BaseModel):
+    """Database-backed post-game league points rules."""
+
+    id: str
+    win_points: int
+    draw_points: int
+    loss_points: int
+    touchdown_bonus_threshold: int
+    touchdown_bonus_points: int
+    shutout_bonus_points: int
+    casualty_bonus_threshold: int
+    casualty_bonus_points: int
+    casualty_bonus_requires_spp: bool
+    description: LocalizedTextResponse
+
+
 class DedicatedFansRulesResponse(BaseModel):
     """Database-backed post-game Dedicated Fans update rules."""
 

@@ -87,6 +87,8 @@ class HirePlayerRequest(BaseModel):
     )
     temporary_for_match: bool = Field(default=False)
     temporary_match_id: Optional[str] = Field(default=None)
+    mercenary: bool = Field(default=False)
+    riotous_rookie: bool = Field(default=False)
 
 
 class CreateTeamPlayerRequest(HirePlayerRequest):
@@ -122,6 +124,7 @@ class UpdatePlayerRequest(BaseModel):
 
     name: Optional[str] = Field(None, max_length=50)
     number: Optional[int] = Field(None, ge=1, le=99)
+    image: Optional[str] = Field(None, max_length=5_000_000)
     status: Optional[
         Literal[
             "healthy",

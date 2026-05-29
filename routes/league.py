@@ -15,6 +15,7 @@ from schemas.league import (
     ApplyAftermatchSppRequest,
     CreateLeagueMatchRequest,
     CreateLeagueRequest,
+    FinalizeAftermatchRostersRequest,
     JoinLeagueRequest,
     LeagueByCodePreview,
     LeagueDetail,
@@ -23,8 +24,8 @@ from schemas.league import (
     MatchSummary,
     RecordMatchResultRequest,
     StartLeagueRequest,
-    UpdateLeagueRequest,
     UpdateLeagueMatchRequest,
+    UpdateLeagueRequest,
     UpdateMatchStateRequest,
 )
 from services.league_service import LeagueService
@@ -441,6 +442,32 @@ async def apply_aftermatch_spp(
 ):
     """Compatibility alias for older clients; applies the complete report."""
     return await _apply_aftermatch_report(league_id, match_id, request, user_id)
+
+
+@router.post(
+    "/{league_id}/matches/{match_id}/aftermatch/rosters",
+    response_model=MatchDetail,
+)
+async def finalize_aftermatch_rosters(
+    league_id: str,
+    match_id: str,
+    request: FinalizeAftermatchRostersRequest,
+    user_id: str = Depends(get_current_user),
+):
+    """Force temporary keep/release roster updates after the final report."""
+    try:
+        return await LeagueService.finalize_aftermatch_rosters(
+            league_id, match_id, user_id, request.temporary_players
+        )
+    except LeagueNotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"League '{league_id}' not found",
+        )
+    except TeamNotFoundException as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.patch("/{league_id}/matches/{match_id}/state", response_model=MatchDetail)

@@ -7,11 +7,18 @@ from itertools import combinations
 from typing import Optional
 
 from bson import ObjectId
+
 from exceptions.exceptions import (
     InvalidOperationException,
     LeagueNotFoundException,
     TeamNotFoundException,
 )
+from models.base.dedicated_fans import DedicatedFansRules
+from models.base.expensive_mistake import ExpensiveMistakesRules
+from models.base.injury import InjuryRules
+from models.base.roster import BaseRoster
+from models.base.spp import SppRewardsRules
+from models.base.winnings import WinningsRules
 from models.league.league import (
     League,
     LeagueRules,
@@ -23,16 +30,11 @@ from models.league.league import (
     MatchStatus,
     MatchTeamInfo,
 )
-from models.base.dedicated_fans import DedicatedFansRules
-from models.base.expensive_mistake import ExpensiveMistakesRules
-from models.base.injury import InjuryRules
-from models.base.roster import BaseRoster
-from models.base.spp import SppRewardsRules
-from models.base.winnings import WinningsRules
 from models.user.user import User
 from models.user_team.team import PlayerInjuryRecord, PlayerStatus, UserTeam
 from schemas.league import (
     AddMatchEventRequest,
+    AftermatchTemporaryPlayerDecision,
     ApplyAftermatchSppRequest,
     CreateLeagueMatchRequest,
     CreateLeagueRequest,
@@ -48,8 +50,8 @@ from schemas.league import (
     MatchSummary,
     MatchTeamResponse,
     RecordMatchResultRequest,
-    UpdateLeagueRequest,
     UpdateLeagueMatchRequest,
+    UpdateLeagueRequest,
     UpdateMatchStateRequest,
 )
 from services.user_team_service import UserTeamService
@@ -95,8 +97,6 @@ class LeagueService:
 
     @staticmethod
     def _validate_match_squad(team: UserTeam, squad: list[str], label: str) -> None:
-        if len(squad) > 11:
-            raise InvalidOperationException(f"{label} squad cannot exceed 11 players")
         if len(squad) != len(set(squad)):
             raise InvalidOperationException(f"{label} squad contains duplicate players")
 
@@ -110,6 +110,154 @@ class LeagueService:
                 raise InvalidOperationException(
                     f"Player '{player.name}' is not available for this match"
                 )
+
+    @staticmethod
+    def _sanitize_match_squad(
+        team: UserTeam, squad: list[str], match_id: str
+    ) -> list[str]:
+        clean: list[str] = []
+        seen: set[str] = set()
+        for player_id in squad:
+            if player_id in seen:
+                continue
+            player = LeagueService._player_by_id(team, player_id)
+            if not player:
+                continue
+            if not LeagueService._is_player_available_for_match(player):
+                continue
+            if player.temporary_for_match and player.temporary_match_id != match_id:
+                continue
+            seen.add(player_id)
+            clean.append(player_id)
+        for player in team.players:
+            if player.id in seen:
+                continue
+            if not LeagueService._is_player_available_for_match(player):
+                continue
+            if player.temporary_for_match and player.temporary_match_id == match_id:
+                seen.add(player.id)
+                clean.append(player.id)
+        return clean
+
+    @staticmethod
+    def _is_current_match_temporary_player(player, match_id: str) -> bool:
+        return bool(
+            player
+            and player.temporary_for_match
+            and player.temporary_match_id == match_id
+        )
+
+    @staticmethod
+    def _temporary_player_decisions(
+        match: Match, temporary_players: list[AftermatchTemporaryPlayerDecision]
+    ) -> dict[tuple[str, str], str]:
+        decisions: dict[tuple[str, str], str] = {}
+        for event in match.events:
+            if event.type != "temporary_player_decision" or not event.player_id:
+                continue
+            detail = (event.detail or "").lower()
+            if "decision=keep" in detail:
+                decisions[(event.team, event.player_id)] = "keep"
+            elif "decision=release" in detail:
+                decisions[(event.team, event.player_id)] = "release"
+        for temp_request in temporary_players:
+            decisions[(temp_request.team, temp_request.player_id)] = (
+                temp_request.decision
+            )
+        return decisions
+
+    @staticmethod
+    def _finalize_temporary_players(
+        match: Match,
+        teams_by_side: dict[str, UserTeam],
+        rosters_by_side: dict[str, BaseRoster],
+        decisions: dict[tuple[str, str], str],
+        user_id: str,
+        username: str,
+    ) -> None:
+        def _release_temporary_player(team_side: str, player) -> None:
+            match.events.append(
+                MatchEvent(
+                    id=str(uuid.uuid4()),
+                    type="temporary_player_release",
+                    team=team_side,
+                    player_id=player.id,
+                    player_name=player.name,
+                    detail=f"Temporary player released: {player.name}",
+                    half=0,
+                    turn=0,
+                    timestamp=datetime.utcnow(),
+                    created_by=user_id,
+                    created_by_name=username,
+                )
+            )
+
+        def _base_player_has_loner(team_side: str, player) -> bool:
+            roster = rosters_by_side[team_side]
+            base_player = next(
+                (p for p in roster.players if p.type == player.base_type), None
+            )
+            if not base_player:
+                return False
+            return any(
+                UserTeamService._is_loner_perk(perk) for perk in base_player.perks
+            )
+
+        for team_side, team in teams_by_side.items():
+            next_players = []
+            for player in list(team.players):
+                if not player.temporary_for_match:
+                    next_players.append(player)
+                    continue
+
+                if decisions.get((team_side, player.id)) != "keep":
+                    _release_temporary_player(team_side, player)
+                    continue
+
+                permanent_count = sum(
+                    1
+                    for team_player in next_players
+                    if not team_player.temporary_for_match
+                )
+                if permanent_count >= 16:
+                    raise InvalidOperationException(
+                        f"Cannot keep '{player.name}': roster is full (max 16 players)"
+                    )
+                if team.treasury < player.current_value:
+                    raise InvalidOperationException(
+                        f"Cannot keep '{player.name}': insufficient treasury ({team.treasury} < {player.current_value})"
+                    )
+
+                team.treasury -= player.current_value
+                player.temporary_for_match = False
+                player.temporary_match_id = None
+                if player.journeyman and not _base_player_has_loner(team_side, player):
+                    player.perks = [
+                        perk
+                        for perk in player.perks
+                        if not UserTeamService._is_journeyman_loner_perk(perk)
+                    ]
+                player.journeyman = False
+                next_players.append(player)
+                match.events.append(
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="temporary_player_keep",
+                        team=team_side,
+                        player_id=player.id,
+                        player_name=player.name,
+                        detail=(
+                            f"Temporary player kept: {player.name}; cost: {player.current_value}; "
+                            f"treasury: {team.treasury}"
+                        ),
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    )
+                )
+            team.players = next_players
 
     @staticmethod
     def _validate_match_player_reference(
@@ -957,6 +1105,12 @@ class LeagueService:
             raise TeamNotFoundException(match.home.team_id)
         if not away_team:
             raise TeamNotFoundException(match.away.team_id)
+        match.home_squad = LeagueService._sanitize_match_squad(
+            home_team, match.home_squad, match.id
+        )
+        match.away_squad = LeagueService._sanitize_match_squad(
+            away_team, match.away_squad, match.id
+        )
         LeagueService._validate_match_squad(home_team, match.home_squad, "home")
         LeagueService._validate_match_squad(away_team, match.away_squad, "away")
 
@@ -985,7 +1139,11 @@ class LeagueService:
         """Add an event to a live match with audit trail."""
         league, match = await LeagueService._get_league_and_match(league_id, match_id)
 
-        if match.status != MatchStatus.IN_PROGRESS:
+        post_match_decision = (
+            match.status == MatchStatus.COMPLETED
+            and request.type == "temporary_player_decision"
+        )
+        if match.status != MatchStatus.IN_PROGRESS and not post_match_decision:
             raise InvalidOperationException("Match is not in progress")
 
         if not LeagueService._user_can_manage_match(league, match, user_id):
@@ -1014,8 +1172,16 @@ class LeagueService:
                 raise InvalidOperationException(
                     f"Player '{player_id}' not found in {team_side} team"
                 )
+            is_current_match_temporary = (
+                LeagueService._is_current_match_temporary_player(player, match.id)
+            )
+            if (
+                request.type == "temporary_player_decision"
+                and is_current_match_temporary
+            ):
+                return
             squad = squads_by_side[team_side]
-            if squad and player_id not in squad:
+            if squad and player_id not in squad and not is_current_match_temporary:
                 raise InvalidOperationException(
                     f"Player '{player.name}' was not selected for this match"
                 )
@@ -1126,9 +1292,6 @@ class LeagueService:
                 "Only match participants or the league owner can submit aftermatch SPP"
             )
 
-        if match.aftermatch_spp_applied_at is not None:
-            raise InvalidOperationException("SPP already applied for this match")
-
         rules = await SppRewardsRules.get("spp_rewards")
         if not rules:
             raise InvalidOperationException("SPP reward rules are not available")
@@ -1170,6 +1333,36 @@ class LeagueService:
                     f"Base roster '{team.base_roster_id}' not found for {team_side} team"
                 )
             rosters_by_side[team_side] = roster
+
+        user = await User.get(user_id)
+        username = user.username if user else "unknown"
+
+        if match.aftermatch_spp_applied_at is not None:
+            decisions = LeagueService._temporary_player_decisions(
+                match, request.temporary_players
+            )
+            LeagueService._finalize_temporary_players(
+                match,
+                teams_by_side,
+                rosters_by_side,
+                decisions,
+                user_id,
+                username,
+            )
+            home_team.team_value = await UserTeamService._calculate_team_value(
+                home_team, rosters_by_side["home"]
+            )
+            away_team.team_value = await UserTeamService._calculate_team_value(
+                away_team, rosters_by_side["away"]
+            )
+            now = datetime.utcnow()
+            home_team.updated_at = now
+            away_team.updated_at = now
+            await home_team.save()
+            await away_team.save()
+            await league.save()
+            return await LeagueService.get_match_detail(league_id, match_id)
+
         squads_by_side = {
             "home": set(match.home_squad),
             "away": set(match.away_squad),
@@ -1197,7 +1390,10 @@ class LeagueService:
                 return
             player = _get_player(teams_by_side[team_side], player_id)
             squad = squads_by_side[team_side]
-            if squad and player_id not in squad:
+            is_current_match_temporary = (
+                LeagueService._is_current_match_temporary_player(player, match.id)
+            )
+            if squad and player_id not in squad and not is_current_match_temporary:
                 raise InvalidOperationException(
                     f"Player '{player.name}' was not selected for this match"
                 )
@@ -1329,8 +1525,6 @@ class LeagueService:
                         rules.throw_teammate.superb_thrower_spp,
                     )
 
-        user = await User.get(user_id)
-        username = user.username if user else "unknown"
         if request.mvp_home is not None:
             home_team = await UserTeam.get(match.home.team_id)
             if not home_team:
@@ -1355,6 +1549,11 @@ class LeagueService:
             match.mvp_away = request.mvp_away
         if request.gate is not None:
             match.gate = request.gate
+
+        if not match.mvp_home or not match.mvp_away:
+            raise InvalidOperationException(
+                "Both MVP selections are required before applying the post-match report"
+            )
 
         post_match_events: list[MatchEvent] = []
         for event_request in request.post_match_events:
@@ -1758,108 +1957,17 @@ class LeagueService:
         _apply_dedicated_fans()
 
         def _apply_temporary_players() -> None:
-            processed_player_ids = set()
-
-            def _release_temporary_player(
-                team_side: str, team: UserTeam, player
-            ) -> None:
-                team.players = [p for p in team.players if p.id != player.id]
-                match.events.append(
-                    MatchEvent(
-                        id=str(uuid.uuid4()),
-                        type="temporary_player_release",
-                        team=team_side,
-                        player_id=player.id,
-                        player_name=player.name,
-                        detail=f"Temporary player released: {player.name}",
-                        half=0,
-                        turn=0,
-                        timestamp=datetime.utcnow(),
-                        created_by=user_id,
-                        created_by_name=username,
-                    )
-                )
-
-            def _base_player_has_loner(team_side: str, player) -> bool:
-                roster = rosters_by_side[team_side]
-                base_player = next(
-                    (p for p in roster.players if p.type == player.base_type), None
-                )
-                if not base_player:
-                    return False
-                return any(
-                    UserTeamService._is_loner_perk(perk) for perk in base_player.perks
-                )
-
-            for temp_request in request.temporary_players:
-                team = teams_by_side[temp_request.team]
-                player = _get_player(team, temp_request.player_id)
-                if not player.temporary_for_match:
-                    raise InvalidOperationException(
-                        f"Player '{player.name}' is not a temporary player"
-                    )
-
-                processed_player_ids.add(player.id)
-                if temp_request.decision == "release" or player.base_type.startswith(
-                    "star_"
-                ):
-                    _release_temporary_player(temp_request.team, team, player)
-                    continue
-
-                permanent_count = sum(
-                    1
-                    for team_player in team.players
-                    if not team_player.temporary_for_match
-                )
-                if permanent_count >= 16:
-                    raise InvalidOperationException(
-                        f"Cannot keep '{player.name}': roster is full (max 16 players)"
-                    )
-                if team.treasury < player.current_value:
-                    raise InvalidOperationException(
-                        f"Cannot keep '{player.name}': insufficient treasury ({team.treasury} < {player.current_value})"
-                    )
-
-                team.treasury -= player.current_value
-                player.temporary_for_match = False
-                player.temporary_match_id = None
-                if player.journeyman and not _base_player_has_loner(
-                    temp_request.team, player
-                ):
-                    player.perks = [
-                        perk
-                        for perk in player.perks
-                        if not UserTeamService._is_journeyman_loner_perk(perk)
-                    ]
-                player.journeyman = False
-                match.events.append(
-                    MatchEvent(
-                        id=str(uuid.uuid4()),
-                        type="temporary_player_keep",
-                        team=temp_request.team,
-                        player_id=player.id,
-                        player_name=player.name,
-                        detail=(
-                            f"Temporary player kept: {player.name}; cost: {player.current_value}; "
-                            f"treasury: {team.treasury}"
-                        ),
-                        half=0,
-                        turn=0,
-                        timestamp=datetime.utcnow(),
-                        created_by=user_id,
-                        created_by_name=username,
-                    )
-                )
-
-            for team_side, team in teams_by_side.items():
-                for player in list(team.players):
-                    if (
-                        player.temporary_for_match
-                        and player.base_type.startswith("star_")
-                        and player.id not in processed_player_ids
-                        and player.temporary_match_id == match.id
-                    ):
-                        _release_temporary_player(team_side, team, player)
+            decisions = LeagueService._temporary_player_decisions(
+                match, request.temporary_players
+            )
+            LeagueService._finalize_temporary_players(
+                match,
+                teams_by_side,
+                rosters_by_side,
+                decisions,
+                user_id,
+                username,
+            )
 
         _apply_temporary_players()
 
@@ -1892,6 +2000,64 @@ class LeagueService:
         await league.save()
 
         logger.info(f"Aftermatch SPP applied for match {match_id} by user {user_id}")
+        return await LeagueService.get_match_detail(league_id, match_id)
+
+    @staticmethod
+    async def finalize_aftermatch_rosters(
+        league_id: str,
+        match_id: str,
+        user_id: str,
+        temporary_players: list[AftermatchTemporaryPlayerDecision],
+    ) -> MatchDetail:
+        """Force keep/release resolution for all temporary players in both rosters."""
+        league, match = await LeagueService._get_league_and_match(league_id, match_id)
+
+        if not LeagueService._user_can_manage_match(league, match, user_id):
+            raise InvalidOperationException(
+                "Only match participants or the league owner can finalize rosters"
+            )
+
+        home_team = await UserTeam.get(match.home.team_id)
+        away_team = await UserTeam.get(match.away.team_id)
+        if not home_team:
+            raise TeamNotFoundException(match.home.team_id)
+        if not away_team:
+            raise TeamNotFoundException(match.away.team_id)
+
+        teams_by_side = {"home": home_team, "away": away_team}
+        rosters_by_side = {}
+        for team_side, team in teams_by_side.items():
+            roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
+            if not roster:
+                raise InvalidOperationException(
+                    f"Base roster '{team.base_roster_id}' not found for {team_side} team"
+                )
+            rosters_by_side[team_side] = roster
+
+        user = await User.get(user_id)
+        username = user.username if user else "unknown"
+        decisions = LeagueService._temporary_player_decisions(match, temporary_players)
+        LeagueService._finalize_temporary_players(
+            match,
+            teams_by_side,
+            rosters_by_side,
+            decisions,
+            user_id,
+            username,
+        )
+
+        home_team.team_value = await UserTeamService._calculate_team_value(
+            home_team, rosters_by_side["home"]
+        )
+        away_team.team_value = await UserTeamService._calculate_team_value(
+            away_team, rosters_by_side["away"]
+        )
+        now = datetime.utcnow()
+        home_team.updated_at = now
+        away_team.updated_at = now
+        await home_team.save()
+        await away_team.save()
+        await league.save()
         return await LeagueService.get_match_detail(league_id, match_id)
 
     @staticmethod
