@@ -16,6 +16,7 @@ from schemas.league import (
     UpdateMatchStateRequest,
 )
 from schemas.quick_match import QuickMatchSummary
+from services.user_team_service import UserTeamService
 from utils.logging_config import setup_logger
 
 logger = setup_logger(__name__)
@@ -32,6 +33,15 @@ class QuickMatchService:
         if not qm:
             raise InvalidOperationException(f"Quick match {qm_id} not found")
         return qm
+
+    @staticmethod
+    def _user_can_access_qm(qm: QuickMatch, user_id: str) -> bool:
+        m = qm.match
+        return (
+            qm.owner_id == user_id
+            or m.home.user_id == user_id
+            or m.away.user_id == user_id
+        )
 
     @staticmethod
     async def _ensure_teams_not_registered_in_league(
@@ -195,6 +205,32 @@ class QuickMatchService:
     async def get_detail(qm_id: str) -> MatchDetail:
         qm = await QuickMatchService._get_qm(qm_id)
         return QuickMatchService._to_detail(qm)
+
+    @staticmethod
+    async def get_team_details(qm_id: str, user_id: str):
+        """Get both quick-match team rosters for participants."""
+        qm = await QuickMatchService._get_qm(qm_id)
+        if not QuickMatchService._user_can_access_qm(qm, user_id):
+            raise InvalidOperationException(
+                "Only quick match participants can access match rosters"
+            )
+
+        home_detail = await UserTeamService.get_team_detail(
+            qm.match.home.team_id,
+            hide_notes=True,
+        )
+        away_detail = await UserTeamService.get_team_detail(
+            qm.match.away.team_id,
+            hide_notes=True,
+        )
+
+        if not home_detail or not away_detail:
+            raise InvalidOperationException("Quick match team not found")
+
+        return {
+            "home": home_detail,
+            "away": away_detail,
+        }
 
     # ── Match lifecycle ────────────────────────────────────
 

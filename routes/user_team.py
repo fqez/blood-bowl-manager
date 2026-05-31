@@ -36,7 +36,7 @@ async def create_team(
     """Create a new team for the current user."""
     try:
         team = await UserTeamService.create_team(user_id, request)
-        return await UserTeamService.get_team_detail(str(team.id))
+        return await UserTeamService.get_team_detail(str(team.id), viewer_id=user_id)
     except InvalidOperationException as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -67,7 +67,10 @@ async def get_team(
     user_id: str = Depends(get_current_user),
 ):
     """Get full team detail with all players."""
-    detail = await UserTeamService.get_team_detail(team_id, viewer_id=user_id)
+    try:
+        detail = await UserTeamService.get_team_detail(team_id, viewer_id=user_id)
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
     if not detail:
         raise HTTPException(
@@ -79,11 +82,15 @@ async def get_team(
 
 
 @router.patch("/{team_id}", response_model=UserTeamDetail)
-async def update_team(team_id: str, request: UpdateTeamRequest):
+async def update_team(
+    team_id: str,
+    request: UpdateTeamRequest,
+    user_id: str = Depends(get_current_user),
+):
     """Update team settings."""
     try:
-        await UserTeamService.update_team(team_id, request)
-        return await UserTeamService.get_team_detail(team_id)
+        await UserTeamService.update_team(team_id, user_id, request)
+        return await UserTeamService.get_team_detail(team_id, viewer_id=user_id)
     except TeamNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -115,7 +122,11 @@ async def delete_team(team_id: str, user_id: str = Depends(get_current_user)):
     response_model=HirePlayerResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def hire_player(team_id: str, request: HirePlayerRequest):
+async def hire_player(
+    team_id: str,
+    request: HirePlayerRequest,
+    user_id: str = Depends(get_current_user),
+):
     """
     Hire a new player for a team.
 
@@ -123,7 +134,7 @@ async def hire_player(team_id: str, request: HirePlayerRequest):
     and the team must have enough treasury and roster space.
     """
     try:
-        return await UserTeamService.hire_player(team_id, request)
+        return await UserTeamService.hire_player(team_id, user_id, request)
     except TeamNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -138,7 +149,11 @@ async def hire_player(team_id: str, request: HirePlayerRequest):
     response_model=HirePlayerResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def hire_star_player(team_id: str, request: HireStarPlayerRequest):
+async def hire_star_player(
+    team_id: str,
+    request: HireStarPlayerRequest,
+    user_id: str = Depends(get_current_user),
+):
     """
     Hire a star player for a team.
 
@@ -146,7 +161,7 @@ async def hire_star_player(team_id: str, request: HireStarPlayerRequest):
     and the team must have enough treasury and roster space.
     """
     try:
-        return await UserTeamService.hire_star_player(team_id, request)
+        return await UserTeamService.hire_star_player(team_id, user_id, request)
     except TeamNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -157,14 +172,18 @@ async def hire_star_player(team_id: str, request: HireStarPlayerRequest):
 
 
 @router.delete("/{team_id}/players/{player_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def fire_player(team_id: str, player_id: str):
+async def fire_player(
+    team_id: str,
+    player_id: str,
+    user_id: str = Depends(get_current_user),
+):
     """
     Fire a player from a team.
 
     The player is removed and their cost is NOT refunded.
     """
     try:
-        await UserTeamService.fire_player(team_id, player_id)
+        await UserTeamService.fire_player(team_id, user_id, player_id)
     except TeamNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -178,11 +197,22 @@ async def fire_player(team_id: str, player_id: str):
 
 
 @router.patch("/{team_id}/players/{player_id}", response_model=UserTeamDetail)
-async def update_player(team_id: str, player_id: str, request: UpdatePlayerRequest):
+async def update_player(
+    team_id: str,
+    player_id: str,
+    request: UpdatePlayerRequest,
+    user_id: str = Depends(get_current_user),
+):
     """Update a player's name, jersey number, image, status and/or injury history."""
     try:
-        await UserTeamService.update_player(team_id, player_id, request)
-        return await UserTeamService.get_team_detail(team_id)
+        await UserTeamService.update_player(team_id, user_id, player_id, request)
+        return await UserTeamService.get_team_detail(
+            team_id,
+            viewer_id=user_id,
+            league_id=request.league_id,
+            match_id=request.match_id,
+            quick_match_id=request.quick_match_id,
+        )
     except TeamNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -198,13 +228,23 @@ async def update_player(team_id: str, player_id: str, request: UpdatePlayerReque
 
 
 @router.post("/{team_id}/players/{player_id}/perks", response_model=UserTeamDetail)
-async def add_perk_to_player(team_id: str, player_id: str, request: AddPerkRequest):
+async def add_perk_to_player(
+    team_id: str,
+    player_id: str,
+    request: AddPerkRequest,
+    user_id: str = Depends(get_current_user),
+):
     """Add a skill/perk to a player."""
     try:
         await UserTeamService.add_perk_to_player(
-            team_id, player_id, request.perk_id, request.perk_name, request.category
+            team_id,
+            user_id,
+            player_id,
+            request.perk_id,
+            request.perk_name,
+            request.category,
         )
-        return await UserTeamService.get_team_detail(team_id)
+        return await UserTeamService.get_team_detail(team_id, viewer_id=user_id)
     except TeamNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -223,12 +263,17 @@ async def add_perk_to_player(team_id: str, player_id: str, request: AddPerkReque
     "/{team_id}/players/{player_id}/advancements", response_model=UserTeamDetail
 )
 async def apply_player_advancement(
-    team_id: str, player_id: str, request: ApplyPlayerAdvancementRequest
+    team_id: str,
+    player_id: str,
+    request: ApplyPlayerAdvancementRequest,
+    user_id: str = Depends(get_current_user),
 ):
     """Spend SPP on an official player advancement."""
     try:
-        await UserTeamService.apply_player_advancement(team_id, player_id, request)
-        return await UserTeamService.get_team_detail(team_id)
+        await UserTeamService.apply_player_advancement(
+            team_id, user_id, player_id, request
+        )
+        return await UserTeamService.get_team_detail(team_id, viewer_id=user_id)
     except TeamNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

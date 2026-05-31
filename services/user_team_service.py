@@ -17,6 +17,7 @@ from models.base.injury import InjuryRules
 from models.base.roster import BasePlayer, BaseRoster
 from models.base.star_player import StarPlayer
 from models.league.league import League, LeagueStatus
+from models.quick_match.quick_match import QuickMatch
 from models.team.perk import Perk
 from models.user.user import User
 from models.user_team.team import (
@@ -388,8 +389,120 @@ class UserTeamService:
         return summaries
 
     @staticmethod
+    async def _require_team_owner(team_id: str, user_id: str) -> UserTeam:
+        """Return the team only if it belongs to the current user."""
+        team = await UserTeam.get(team_id)
+        if not team:
+            raise TeamNotFoundException(team_id)
+        if team.user_id != user_id:
+            raise InvalidOperationException("Cannot access another user's team")
+        return team
+
+    @staticmethod
+    async def _can_access_team_via_league_match(
+        team_id: str,
+        user_id: str,
+        league_id: Optional[str],
+        match_id: Optional[str],
+    ) -> bool:
+        if not league_id or not match_id:
+            return False
+
+        league = await League.get(league_id)
+        if not league:
+            return False
+
+        match = next((candidate for candidate in league.matches if candidate.id == match_id), None)
+        if not match:
+            return False
+
+        if team_id not in {match.home.team_id, match.away.team_id}:
+            return False
+
+        return (
+            league.owner_id == user_id
+            or match.home.user_id == user_id
+            or match.away.user_id == user_id
+        )
+
+    @staticmethod
+    async def _can_access_team_via_quick_match(
+        team_id: str,
+        user_id: str,
+        quick_match_id: Optional[str],
+    ) -> bool:
+        if not quick_match_id:
+            return False
+
+        quick_match = await QuickMatch.get(quick_match_id)
+        if not quick_match:
+            return False
+
+        match = quick_match.match
+        if team_id not in {match.home.team_id, match.away.team_id}:
+            return False
+
+        return (
+            quick_match.owner_id == user_id
+            or match.home.user_id == user_id
+            or match.away.user_id == user_id
+        )
+
+    @staticmethod
+    async def _can_access_team_in_match_context(
+        team_id: str,
+        user_id: str,
+        *,
+        league_id: Optional[str] = None,
+        match_id: Optional[str] = None,
+        quick_match_id: Optional[str] = None,
+    ) -> bool:
+        if await UserTeamService._can_access_team_via_league_match(
+            team_id,
+            user_id,
+            league_id,
+            match_id,
+        ):
+            return True
+        return await UserTeamService._can_access_team_via_quick_match(
+            team_id,
+            user_id,
+            quick_match_id,
+        )
+
+    @staticmethod
+    async def _require_team_owner_or_match_access(
+        team_id: str,
+        user_id: str,
+        *,
+        league_id: Optional[str] = None,
+        match_id: Optional[str] = None,
+        quick_match_id: Optional[str] = None,
+    ) -> UserTeam:
+        team = await UserTeam.get(team_id)
+        if not team:
+            raise TeamNotFoundException(team_id)
+        if team.user_id == user_id:
+            return team
+        if await UserTeamService._can_access_team_in_match_context(
+            team_id,
+            user_id,
+            league_id=league_id,
+            match_id=match_id,
+            quick_match_id=quick_match_id,
+        ):
+            return team
+        raise InvalidOperationException("Cannot access another user's team")
+
+    @staticmethod
     async def get_team_detail(
-        team_id: str, *, hide_notes: bool = False, viewer_id: Optional[str] = None
+        team_id: str,
+        *,
+        hide_notes: bool = False,
+        viewer_id: Optional[str] = None,
+        league_id: Optional[str] = None,
+        match_id: Optional[str] = None,
+        quick_match_id: Optional[str] = None,
     ) -> Optional[UserTeamDetail]:
         """Get full team detail with players."""
         team = await UserTeam.get(team_id)
@@ -397,6 +510,14 @@ class UserTeamService:
             return None
 
         if viewer_id is not None and team.user_id != viewer_id:
+            if not await UserTeamService._can_access_team_in_match_context(
+                team_id,
+                viewer_id,
+                league_id=league_id,
+                match_id=match_id,
+                quick_match_id=quick_match_id,
+            ):
+                raise InvalidOperationException("Cannot access another user's team")
             hide_notes = True
 
         return await UserTeamService._team_to_detail(team, hide_notes=hide_notes)
@@ -479,11 +600,11 @@ class UserTeamService:
         )
 
     @staticmethod
-    async def update_team(team_id: str, request: UpdateTeamRequest) -> UserTeam:
+    async def update_team(
+        team_id: str, user_id: str, request: UpdateTeamRequest
+    ) -> UserTeam:
         """Update team settings."""
-        team = await UserTeam.get(team_id)
-        if not team:
-            raise TeamNotFoundException(team_id)
+        team = await UserTeamService._require_team_owner(team_id, user_id)
 
         if request.name is not None:
             await UserTeamService._ensure_roster_can_be_managed(team_id)
@@ -581,16 +702,14 @@ class UserTeamService:
 
     @staticmethod
     async def hire_player(
-        team_id: str, request: HirePlayerRequest
+        team_id: str, user_id: str, request: HirePlayerRequest
     ) -> HirePlayerResponse:
         """Hire a new player for a team.
 
         Player hiring is allowed for teams registered in active leagues; other
         roster management actions remain locked by _ensure_roster_can_be_managed.
         """
-        team = await UserTeam.get(team_id)
-        if not team:
-            raise TeamNotFoundException(team_id)
+        team = await UserTeamService._require_team_owner(team_id, user_id)
 
         # Get base roster and player type
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
@@ -679,12 +798,10 @@ class UserTeamService:
 
     @staticmethod
     async def hire_star_player(
-        team_id: str, request: HireStarPlayerRequest
+        team_id: str, user_id: str, request: HireStarPlayerRequest
     ) -> HirePlayerResponse:
         """Hire a star player for a team."""
-        team = await UserTeam.get(team_id)
-        if not team:
-            raise TeamNotFoundException(team_id)
+        team = await UserTeamService._require_team_owner(team_id, user_id)
 
         if not request.temporary_for_match:
             await UserTeamService._ensure_roster_can_be_managed(team_id)
@@ -771,11 +888,9 @@ class UserTeamService:
         )
 
     @staticmethod
-    async def fire_player(team_id: str, player_id: str) -> UserTeam:
+    async def fire_player(team_id: str, user_id: str, player_id: str) -> UserTeam:
         """Remove a player from a team (no refund)."""
-        team = await UserTeam.get(team_id)
-        if not team:
-            raise TeamNotFoundException(team_id)
+        team = await UserTeamService._require_team_owner(team_id, user_id)
 
         player_idx = None
         for i, p in enumerate(team.players):
@@ -796,11 +911,17 @@ class UserTeamService:
 
     @staticmethod
     async def add_perk_to_player(
-        team_id: str, player_id: str, perk_id: str, perk_name: str, category: str = None
+        team_id: str,
+        user_id: str,
+        player_id: str,
+        perk_id: str,
+        perk_name: str,
+        category: str = None,
     ) -> UserTeam:
         """Spend SPP to add a chosen Primary skill to a player."""
         return await UserTeamService.apply_player_advancement(
             team_id,
+            user_id,
             player_id,
             ApplyPlayerAdvancementRequest(
                 advancement_type="choose_primary_skill",
@@ -810,12 +931,13 @@ class UserTeamService:
 
     @staticmethod
     async def apply_player_advancement(
-        team_id: str, player_id: str, request: ApplyPlayerAdvancementRequest
+        team_id: str,
+        user_id: str,
+        player_id: str,
+        request: ApplyPlayerAdvancementRequest,
     ) -> UserTeam:
         """Spend SPP on an official player advancement."""
-        team = await UserTeam.get(team_id)
-        if not team:
-            raise TeamNotFoundException(team_id)
+        team = await UserTeamService._require_team_owner(team_id, user_id)
 
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
         if not roster:
@@ -1013,12 +1135,16 @@ class UserTeamService:
 
     @staticmethod
     async def update_player(
-        team_id: str, player_id: str, request: UpdatePlayerRequest
+        team_id: str, user_id: str, player_id: str, request: UpdatePlayerRequest
     ) -> UserTeam:
         """Update a player's name, jersey number, image, status and/or injury history."""
-        team = await UserTeam.get(team_id)
-        if not team:
-            raise TeamNotFoundException(team_id)
+        team = await UserTeamService._require_team_owner_or_match_access(
+            team_id,
+            user_id,
+            league_id=request.league_id,
+            match_id=request.match_id,
+            quick_match_id=request.quick_match_id,
+        )
 
         player = None
         for p in team.players:

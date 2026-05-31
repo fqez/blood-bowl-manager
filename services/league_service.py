@@ -96,6 +96,17 @@ class LeagueService:
         return next((player for player in team.players if player.id == player_id), None)
 
     @staticmethod
+    def _event_detail_has_flag(detail: Optional[str], flag: str) -> bool:
+        normalized = (detail or "").lower().replace(" ", "")
+        return f"{flag.lower()}=true" in normalized
+
+    @staticmethod
+    def _is_accidental_casualty_event(event_type: str, detail: Optional[str]) -> bool:
+        return event_type == "casualty" and LeagueService._event_detail_has_flag(
+            detail, "accidental"
+        )
+
+    @staticmethod
     def _validate_match_squad(team: UserTeam, squad: list[str], label: str) -> None:
         if len(squad) != len(set(squad)):
             raise InvalidOperationException(f"{label} squad contains duplicate players")
@@ -412,7 +423,16 @@ class LeagueService:
         return results
 
     @staticmethod
-    async def get_league_detail(league_id: str) -> Optional[LeagueDetail]:
+    def _user_can_view_league(league: League, user_id: str) -> bool:
+        """Check if user is the owner or has a team in the league."""
+        if league.owner_id == user_id:
+            return True
+        return any(team.user_id == user_id for team in league.teams)
+
+    @staticmethod
+    async def get_league_detail(
+        league_id: str, *, viewer_id: Optional[str] = None
+    ) -> Optional[LeagueDetail]:
         """Get full league detail."""
         from bson import ObjectId
 
@@ -429,6 +449,11 @@ class LeagueService:
 
         if not league:
             return None
+
+        if viewer_id is not None and not LeagueService._user_can_view_league(
+            league, viewer_id
+        ):
+            raise InvalidOperationException("You do not have access to this league")
 
         owner = None
         try:
@@ -840,22 +865,21 @@ class LeagueService:
 
     @staticmethod
     async def record_match_result(
-        league_id: str, match_id: str, request: RecordMatchResultRequest
+        league_id: str,
+        match_id: str,
+        user_id: str,
+        request: RecordMatchResultRequest,
     ) -> League:
         """Record the result of a match."""
-        league = await _get_league(league_id)
-        if not league:
-            raise LeagueNotFoundException(league_id)
+        league, match = await LeagueService._get_league_and_match(league_id, match_id)
+
+        if not LeagueService._user_can_manage_match(league, match, user_id):
+            raise InvalidOperationException(
+                "Only match participants or the league owner can record the match result"
+            )
 
         if league.status != LeagueStatus.ACTIVE:
             raise InvalidOperationException("League is not active")
-
-        # Find match
-        match = None
-        for m in league.matches:
-            if m.id == match_id:
-                match = m
-                break
 
         if not match:
             raise InvalidOperationException(f"Match {match_id} not found")
@@ -884,6 +908,7 @@ class LeagueService:
                     victim_id=e.victim_id,
                     victim_name=e.victim_name,
                     injury=e.injury,
+                    detail=e.detail,
                     half=e.half,
                     turn=e.turn,
                 )
@@ -902,10 +927,18 @@ class LeagueService:
 
             # Update casualties
             home_cas = sum(
-                1 for e in request.events if e.type == "casualty" and e.team == "home"
+                1
+                for e in request.events
+                if e.type == "casualty"
+                and e.team == "home"
+                and not LeagueService._is_accidental_casualty_event(e.type, e.detail)
             )
             away_cas = sum(
-                1 for e in request.events if e.type == "casualty" and e.team == "away"
+                1
+                for e in request.events
+                if e.type == "casualty"
+                and e.team == "away"
+                and not LeagueService._is_accidental_casualty_event(e.type, e.detail)
             )
             home_standing.casualties_for += home_cas
             home_standing.casualties_against += away_cas
@@ -932,11 +965,18 @@ class LeagueService:
         return league
 
     @staticmethod
-    async def get_match_detail(league_id: str, match_id: str) -> Optional[MatchDetail]:
+    async def get_match_detail(
+        league_id: str, match_id: str, *, viewer_id: Optional[str] = None
+    ) -> Optional[MatchDetail]:
         """Get full match detail."""
         league = await _get_league(league_id)
         if not league:
             return None
+
+        if viewer_id is not None and not LeagueService._user_can_view_league(
+            league, viewer_id
+        ):
+            raise InvalidOperationException("You do not have access to this match")
 
         for m in league.matches:
             if m.id == match_id:
@@ -1012,6 +1052,35 @@ class LeagueService:
                 )
 
         return None
+
+    @staticmethod
+    async def get_match_team_details(league_id: str, match_id: str, user_id: str):
+        """Get both match team rosters for participants or the league owner."""
+        league, match = await LeagueService._get_league_and_match(league_id, match_id)
+
+        if not LeagueService._user_can_manage_match(league, match, user_id):
+            raise InvalidOperationException(
+                "Only match participants or the league owner can access match rosters"
+            )
+
+        home_detail = await UserTeamService.get_team_detail(
+            match.home.team_id,
+            hide_notes=True,
+        )
+        away_detail = await UserTeamService.get_team_detail(
+            match.away.team_id,
+            hide_notes=True,
+        )
+
+        if not home_detail:
+            raise TeamNotFoundException(match.home.team_id)
+        if not away_detail:
+            raise TeamNotFoundException(match.away.team_id)
+
+        return {
+            "home": home_detail,
+            "away": away_detail,
+        }
 
     # ============== Delete Operations ==============
 
@@ -1192,10 +1261,13 @@ class LeagueService:
                     f"Player '{player.name}' is not available for this match"
                 )
 
+        accidental_casualty = LeagueService._is_accidental_casualty_event(
+            request.type, request.detail
+        )
         _validate_live_player(request.team, request.player_id)
         victim_side = (
             request.team
-            if request.type == "throw_teammate"
+            if request.type == "throw_teammate" or accidental_casualty
             else "away" if request.team == "home" else "home"
         )
         _validate_live_player(victim_side, request.victim_id)
@@ -1407,9 +1479,12 @@ class LeagueService:
         def _validate_match_event_reference(event_request: MatchEventRequest) -> None:
             _validate_played_player(event_request.team, event_request.player_id)
             if event_request.victim_id:
+                accidental_casualty = LeagueService._is_accidental_casualty_event(
+                    event_request.type, event_request.detail
+                )
                 victim_side = (
                     event_request.team
-                    if event_request.type == "throw_teammate"
+                    if event_request.type == "throw_teammate" or accidental_casualty
                     else "away" if event_request.team == "home" else "home"
                 )
                 _validate_played_player(victim_side, event_request.victim_id)
@@ -1493,6 +1568,10 @@ class LeagueService:
 
         def _score_event(event: MatchEvent) -> None:
             if event.type in event_rewards:
+                if LeagueService._is_accidental_casualty_event(
+                    event.type, event.detail
+                ):
+                    return
                 reward = event_rewards[event.type]
                 if reward.requires_player and not event.player_id:
                     raise InvalidOperationException(
@@ -1526,9 +1605,6 @@ class LeagueService:
                     )
 
         if request.mvp_home is not None:
-            home_team = await UserTeam.get(match.home.team_id)
-            if not home_team:
-                raise TeamNotFoundException(match.home.team_id)
             LeagueService._validate_match_player_reference(
                 home_team, request.mvp_home, "MVP"
             )
@@ -1537,9 +1613,6 @@ class LeagueService:
                 raise InvalidOperationException("Star Players cannot be MVP")
             match.mvp_home = request.mvp_home
         if request.mvp_away is not None:
-            away_team = await UserTeam.get(match.away.team_id)
-            if not away_team:
-                raise TeamNotFoundException(match.away.team_id)
             LeagueService._validate_match_player_reference(
                 away_team, request.mvp_away, "MVP"
             )

@@ -28,6 +28,7 @@ from schemas.league import (
     UpdateLeagueRequest,
     UpdateMatchStateRequest,
 )
+from schemas.user_team import UserTeamDetail
 from services.league_service import LeagueService
 
 router = APIRouter(prefix="/leagues", tags=["Leagues"])
@@ -69,9 +70,12 @@ async def get_active_matches(user_id: str = Depends(get_current_user)):
 
 
 @router.get("/{league_id}", response_model=LeagueDetail)
-async def get_league(league_id: str):
+async def get_league(league_id: str, user_id: str = Depends(get_current_user)):
     """Get full league detail with teams, standings, and matches."""
-    detail = await LeagueService.get_league_detail(league_id)
+    try:
+        detail = await LeagueService.get_league_detail(league_id, viewer_id=user_id)
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
     if not detail:
         raise HTTPException(
@@ -106,7 +110,7 @@ async def update_league_settings(
     """Update league settings (owner only)."""
     try:
         await LeagueService.update_league(league_id, user_id, request)
-        return await LeagueService.get_league_detail(league_id)
+        return await LeagueService.get_league_detail(league_id, viewer_id=user_id)
     except LeagueNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -164,7 +168,7 @@ async def join_league(
         await LeagueService.join_league(
             league_id, user_id, request.team_id, request.invite_code
         )
-        return await LeagueService.get_league_detail(league_id)
+        return await LeagueService.get_league_detail(league_id, viewer_id=user_id)
     except LeagueNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -211,7 +215,7 @@ async def start_league(
         await LeagueService.start_league(
             league_id, user_id, schedule_mode=request.schedule_mode
         )
-        return await LeagueService.get_league_detail(league_id)
+        return await LeagueService.get_league_detail(league_id, viewer_id=user_id)
     except LeagueNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -225,15 +229,41 @@ async def start_league(
 
 
 @router.get("/{league_id}/matches", response_model=list[MatchSummary])
-async def get_league_matches(league_id: str):
+async def get_league_matches(
+    league_id: str,
+    user_id: str = Depends(get_current_user),
+):
     """Get all matches for a league."""
-    detail = await LeagueService.get_league_detail(league_id)
+    try:
+        detail = await LeagueService.get_league_detail(league_id, viewer_id=user_id)
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     if not detail:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"League '{league_id}' not found",
         )
     return detail.matches
+
+
+@router.get(
+    "/{league_id}/matches/{match_id}/teams", response_model=dict[str, UserTeamDetail]
+)
+async def get_match_teams(
+    league_id: str,
+    match_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Get both match team rosters for pre-match and live views."""
+    try:
+        return await LeagueService.get_match_team_details(league_id, match_id, user_id)
+    except TeamNotFoundException as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Team '{e.args[0]}' not found",
+        )
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
 @router.post("/{league_id}/matches", response_model=MatchDetail)
@@ -255,9 +285,18 @@ async def create_league_match(
 
 
 @router.get("/{league_id}/matches/{match_id}", response_model=MatchDetail)
-async def get_match(league_id: str, match_id: str):
+async def get_match(
+    league_id: str,
+    match_id: str,
+    user_id: str = Depends(get_current_user),
+):
     """Get full match detail."""
-    match = await LeagueService.get_match_detail(league_id, match_id)
+    try:
+        match = await LeagueService.get_match_detail(
+            league_id, match_id, viewer_id=user_id
+        )
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
     if not match:
         raise HTTPException(
@@ -314,11 +353,12 @@ async def record_match_result(
     league_id: str,
     match_id: str,
     request: RecordMatchResultRequest,
+    user_id: str = Depends(get_current_user),
 ):
     """Record the result of a match."""
     try:
-        await LeagueService.record_match_result(league_id, match_id, request)
-        return await LeagueService.get_league_detail(league_id)
+        await LeagueService.record_match_result(league_id, match_id, user_id, request)
+        return await LeagueService.get_league_detail(league_id, viewer_id=user_id)
     except LeagueNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -340,7 +380,7 @@ async def start_match(
     """Start a match (either contestant or owner)."""
     try:
         await LeagueService.start_match(league_id, match_id, user_id)
-        return await LeagueService.get_league_detail(league_id)
+        return await LeagueService.get_league_detail(league_id, viewer_id=user_id)
     except LeagueNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -500,7 +540,7 @@ async def complete_match(
     """Complete a live match and update standings."""
     try:
         await LeagueService.complete_match(league_id, match_id, user_id)
-        return await LeagueService.get_league_detail(league_id)
+        return await LeagueService.get_league_detail(league_id, viewer_id=user_id)
     except LeagueNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

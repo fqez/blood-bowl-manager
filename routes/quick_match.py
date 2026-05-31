@@ -6,6 +6,7 @@ from auth.jwt_bearer import get_current_user
 from exceptions.exceptions import InvalidOperationException
 from schemas.league import AddMatchEventRequest, MatchDetail, UpdateMatchStateRequest
 from schemas.quick_match import CreateQuickMatchRequest, QuickMatchSummary
+from schemas.user_team import UserTeamDetail
 from services.quick_match_service import QuickMatchService
 
 router = APIRouter(prefix="/quick-matches", tags=["Quick Matches"])
@@ -41,6 +42,18 @@ async def get_quick_match(match_id: str):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Quick match '{match_id}' not found",
         )
+
+
+@router.get("/{match_id}/teams", response_model=dict[str, UserTeamDetail])
+async def get_quick_match_teams(
+    match_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Get both quick-match team rosters for pre-match and live views."""
+    try:
+        return await QuickMatchService.get_team_details(match_id, user_id)
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
 @router.post("/{match_id}/start", response_model=MatchDetail)

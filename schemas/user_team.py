@@ -140,6 +140,9 @@ class UpdatePlayerRequest(BaseModel):
     ] = None
     injury_note: Optional[str] = Field(None, max_length=500)
     lasting_injury_roll: Optional[int] = Field(None, ge=1, le=6)
+    league_id: Optional[str] = None
+    match_id: Optional[str] = None
+    quick_match_id: Optional[str] = None
 
 
 class AddPerkRequest(BaseModel):
