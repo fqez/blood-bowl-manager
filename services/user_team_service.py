@@ -412,7 +412,10 @@ class UserTeamService:
         if not league:
             return False
 
-        match = next((candidate for candidate in league.matches if candidate.id == match_id), None)
+        match = next(
+            (candidate for candidate in league.matches if candidate.id == match_id),
+            None,
+        )
         if not match:
             return False
 
