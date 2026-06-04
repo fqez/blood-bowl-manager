@@ -44,6 +44,7 @@ class RulesService:
                 "characteristic_table",
                 "value_increases",
                 "skill_categories",
+                "random_primary_skill_table",
             ],
         },
         {

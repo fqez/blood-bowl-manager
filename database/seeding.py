@@ -10,6 +10,7 @@ from models.base.advancement import (
     AdvancementRules,
     AdvancementValueIncrease,
     CharacteristicImprovementResult,
+    RandomPrimarySkillTableEntry,
     SkillCategoryRule,
 )
 from models.base.dedicated_fans import DedicatedFansRules
@@ -773,6 +774,19 @@ async def seed_advancement_rules():
             name=LocalizedText(en=en, es=es),
         )
 
+    def random_primary_entry(
+        first_d6_min: int,
+        first_d6_max: int,
+        second_d6: int,
+        perk_ids: list[str],
+    ):
+        return RandomPrimarySkillTableEntry(
+            first_d6_min=first_d6_min,
+            first_d6_max=first_d6_max,
+            second_d6=second_d6,
+            perk_ids=perk_ids,
+        )
+
     rules = AdvancementRules(
         id="advancement_rules",
         max_advancements=6,
@@ -848,12 +862,26 @@ async def seed_advancement_rules():
             AdvancementValueIncrease(advancement_type="ST", value=60000),
         ],
         skill_categories=[
-            category("A", "agility", "Agility Skills", "Habilidades de Agilidad"),
-            category("D", "devious", "Devious Skills", "Habilidades de Astucia"),
-            category("G", "general", "General Skills", "Habilidades Generales"),
-            category("M", "mutation", "Mutation Skills", "Habilidades de Mutación"),
-            category("P", "passing", "Passing Skills", "Habilidades de Pase"),
-            category("S", "strength", "Strength Skills", "Habilidades de Fuerza"),
+            category("A", "agility", "Agility", "Agilidad"),
+            category("S", "strength", "Strength", "Fuerza"),
+            category("G", "general", "General", "Generales"),
+            category("M", "mutation", "Mutation", "Mutación"),
+            category("P", "passing", "Passing", "Pase"),
+            category("D", "devious", "Devious", "Triquiñuelas"),
+        ],
+        random_primary_skill_table=[
+            random_primary_entry(1, 3, 1, ["catch", "break_tackle", "dauntless", "foul_appearance", "on_the_ball", "lone_fouler"]),
+            random_primary_entry(1, 3, 2, ["sidestep", "grab", "steady_footing", "monstrous_mouth", "cannoneer", "pile_driver"]),
+            random_primary_entry(1, 3, 3, ["jump_up", "strong_arm", "wrestle", "extra_arms", "leader", "fumblerooskie"]),
+            random_primary_entry(1, 3, 4, ["sprint", "thick_skull", "frenzy", "prehensile_tail", "nerves_of_steel", "quick_foul"]),
+            random_primary_entry(1, 3, 5, ["dodge", "guard", "sure_hands", "horns", "cloud_burster", "sneaky_git"]),
+            random_primary_entry(1, 3, 6, ["hit_and_run", "mighty_blow", "kick", "two_heads", "pass", "violent_innovator"]),
+            random_primary_entry(4, 6, 1, ["sure_feet", "juggernaut", "tackle", "claws", "give_and_go", "dirty_player"]),
+            random_primary_entry(4, 6, 2, ["diving_tackle", "arm_bar", "block", "big_hand", "hail_mary_pass", "put_the_boot_in"]),
+            random_primary_entry(4, 6, 3, ["safe_pair_of_hands", "brawler", "pro", "iron_hard_skin", "dump_off", "shadowing"]),
+            random_primary_entry(4, 6, 4, ["diving_catch", "stand_firm", "taunt", "very_long_legs", "safe_pass", "eye_gouge"]),
+            random_primary_entry(4, 6, 5, ["defensive", "bullseye", "strip_ball", "disturbing_presence", "punt", "saboteur"]),
+            random_primary_entry(4, 6, 6, ["leap", "multiple_block", "fend", "tentacles", "accurate", "lethal_flight"]),
         ],
         description=LocalizedText(
             en="Players spend saved SPP to gain advancements. Costs depend on the number of advancements already gained and on whether the player randomly selects a Primary Skill, chooses a Primary Skill, chooses a Secondary Skill, or rolls for a Characteristic improvement.",

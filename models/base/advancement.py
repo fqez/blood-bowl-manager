@@ -41,6 +41,15 @@ class SkillCategoryRule(BaseModel):
     name: LocalizedText
 
 
+class RandomPrimarySkillTableEntry(BaseModel):
+    """One official 2D6 row for random primary skill generation."""
+
+    first_d6_min: int = Field(..., ge=1, le=6)
+    first_d6_max: int = Field(..., ge=1, le=6)
+    second_d6: int = Field(..., ge=1, le=6)
+    perk_ids: list[str] = Field(min_length=6, max_length=6)
+
+
 class AdvancementRules(Document):
     """Database-backed player advancement rules."""
 
@@ -51,6 +60,7 @@ class AdvancementRules(Document):
     characteristic_table: list[CharacteristicImprovementResult]
     value_increases: list[AdvancementValueIncrease]
     skill_categories: list[SkillCategoryRule]
+    random_primary_skill_table: list[RandomPrimarySkillTableEntry]
     random_skill_rolls: int = Field(default=2, ge=1)
     random_skill_dice: str = Field(default="2D6")
     description: LocalizedText

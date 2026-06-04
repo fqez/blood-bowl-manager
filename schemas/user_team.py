@@ -166,6 +166,9 @@ class ApplyPlayerAdvancementRequest(BaseModel):
         "characteristic_improvement",
     ]
     perk_id: Optional[str] = None
+    skill_category: Optional[str] = None
+    random_skill_first_d6: Optional[int] = Field(None, ge=1, le=6)
+    random_skill_second_d6: Optional[int] = Field(None, ge=1, le=6)
     characteristic: Optional[Literal["MA", "ST", "AG", "PA", "AV"]] = None
     characteristic_roll: Optional[int] = Field(None, ge=1, le=8)
     league_id: Optional[str] = None

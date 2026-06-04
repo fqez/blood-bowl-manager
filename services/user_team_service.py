@@ -1105,12 +1105,31 @@ class UserTeamService:
         request: ApplyPlayerAdvancementRequest,
         rules: AdvancementRules,
     ) -> int:
-        if not request.perk_id:
+        selected_symbol = None
+        perk_id = request.perk_id
+
+        if request.advancement_type == "random_primary_skill":
+            selected_symbol = UserTeamService._family_symbol(request.skill_category)
+            if not selected_symbol:
+                raise InvalidOperationException(
+                    "Random primary skill requires a valid skill_category"
+                )
+            if selected_symbol not in base_player.primary_access:
+                raise InvalidOperationException(
+                    f"Skill family '{selected_symbol}' is not Primary for this player"
+                )
+            perk_id = UserTeamService._resolve_random_primary_skill_perk_id(
+                rules,
+                selected_symbol,
+                request.random_skill_first_d6,
+                request.random_skill_second_d6,
+            )
+        elif not perk_id:
             raise InvalidOperationException("Skill advancement requires perk_id")
 
-        perk = await UserTeamService._find_advancement_perk(request.perk_id)
+        perk = await UserTeamService._find_advancement_perk(perk_id)
         if not perk:
-            raise InvalidOperationException(f"Perk '{request.perk_id}' not found")
+            raise InvalidOperationException(f"Perk '{perk_id}' not found")
 
         stored_perk_id = str(perk.id)
         if (perk.kind or "").lower() != "skill":
@@ -1130,7 +1149,13 @@ class UserTeamService:
         if not symbol:
             raise InvalidOperationException("Only skill categories can be advanced")
 
-        if request.advancement_type in {"random_primary_skill", "choose_primary_skill"}:
+        if request.advancement_type == "random_primary_skill":
+            if symbol != selected_symbol:
+                raise InvalidOperationException(
+                    "Random skill result does not belong to the selected category"
+                )
+            value_key = "primary_skill"
+        elif request.advancement_type == "choose_primary_skill":
             if symbol not in base_player.primary_access:
                 raise InvalidOperationException(
                     f"Skill family '{symbol}' is not Primary for this player"
@@ -1148,6 +1173,56 @@ class UserTeamService:
         name = UserTeamService._localized_name(perk.name, stored_perk_id)
         player.perks.append(PlayerPerk(id=stored_perk_id, name=name, category=family))
         return UserTeamService._value_increase(rules, value_key)
+
+    @staticmethod
+    def _resolve_random_primary_skill_perk_id(
+        rules: AdvancementRules,
+        skill_category: str,
+        first_d6: int | None,
+        second_d6: int | None,
+    ) -> str:
+        if first_d6 is None or second_d6 is None:
+            raise InvalidOperationException(
+                "Random primary skill requires both D6 roll values"
+            )
+
+        target_symbol = UserTeamService._family_symbol(skill_category)
+        if not target_symbol:
+            raise InvalidOperationException("Unknown skill category for random skill")
+
+        column_index = next(
+            (
+                index
+                for index, category in enumerate(rules.skill_categories)
+                if UserTeamService._family_symbol(category.symbol) == target_symbol
+                or UserTeamService._family_symbol(category.family) == target_symbol
+            ),
+            None,
+        )
+        if column_index is None:
+            raise InvalidOperationException(
+                f"Random skill category '{target_symbol}' is not configured"
+            )
+
+        entry = next(
+            (
+                row
+                for row in rules.random_primary_skill_table
+                if row.first_d6_min <= first_d6 <= row.first_d6_max
+                and row.second_d6 == second_d6
+            ),
+            None,
+        )
+        if not entry:
+            raise InvalidOperationException(
+                f"No random primary skill entry for {first_d6}+{second_d6}"
+            )
+        if column_index >= len(entry.perk_ids):
+            raise InvalidOperationException(
+                f"Random primary skill entry for {first_d6}+{second_d6} is incomplete"
+            )
+
+        return entry.perk_ids[column_index]
 
     @staticmethod
     def _apply_characteristic_advancement(

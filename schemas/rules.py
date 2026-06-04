@@ -130,6 +130,15 @@ class SkillCategoryRuleResponse(BaseModel):
     name: LocalizedTextResponse
 
 
+class RandomPrimarySkillTableEntryResponse(BaseModel):
+    """One official 2D6 row for random primary skill generation."""
+
+    first_d6_min: int
+    first_d6_max: int
+    second_d6: int
+    perk_ids: list[str]
+
+
 class AdvancementRulesResponse(BaseModel):
     """Database-backed player advancement rules."""
 
@@ -140,6 +149,7 @@ class AdvancementRulesResponse(BaseModel):
     characteristic_table: list[CharacteristicImprovementResultResponse]
     value_increases: list[AdvancementValueIncreaseResponse]
     skill_categories: list[SkillCategoryRuleResponse]
+    random_primary_skill_table: list[RandomPrimarySkillTableEntryResponse]
     random_skill_rolls: int
     random_skill_dice: str
     description: LocalizedTextResponse
