@@ -202,6 +202,7 @@ class AftermatchPlayerPurchaseRequest(BaseModel):
     base_type: str
     name: Optional[str] = Field(default=None, max_length=50)
     number: Optional[int] = Field(default=None, ge=1, le=99)
+    free: bool = False
 
 
 class AftermatchTeamPurchasesRequest(BaseModel):
@@ -374,6 +375,7 @@ class UpdateLeagueRequest(BaseModel):
     name: Optional[str] = Field(None, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     max_teams: Optional[int] = Field(None, ge=2, le=20)
+    commissioner_usernames: Optional[list[str]] = Field(default=None, max_length=20)
 
 
 class JoinLeagueRequest(BaseModel):
@@ -389,6 +391,7 @@ class LeagueByCodePreview(BaseModel):
     id: str
     name: str
     owner_username: str
+    commissioner_usernames: list[str] = Field(default_factory=list)
     status: str
     format: str
     team_count: int
@@ -403,6 +406,7 @@ class LeagueSummary(BaseModel):
     id: str
     name: str
     owner_username: str
+    commissioner_usernames: list[str] = Field(default_factory=list)
     status: str
     format: str
     team_count: int
@@ -412,6 +416,7 @@ class LeagueSummary(BaseModel):
     created_at: datetime
     # User-specific fields
     is_owner: bool = False
+    is_commissioner: bool = False
     user_team_name: Optional[str] = None
     current_round: Optional[int] = None
 
@@ -424,6 +429,9 @@ class LeagueDetail(BaseModel):
     description: Optional[str]
     owner_id: str
     owner_username: str
+    commissioner_ids: list[str] = Field(default_factory=list)
+    commissioner_usernames: list[str] = Field(default_factory=list)
+    is_commissioner: bool = False
     invite_code: Optional[str] = None
 
     status: str

@@ -89,6 +89,7 @@ class HirePlayerRequest(BaseModel):
     temporary_match_id: Optional[str] = Field(default=None)
     mercenary: bool = Field(default=False)
     riotous_rookie: bool = Field(default=False)
+    league_id: Optional[str] = Field(default=None)
 
 
 class CreateTeamPlayerRequest(HirePlayerRequest):
@@ -109,6 +110,7 @@ class HireStarPlayerRequest(BaseModel):
     )
     temporary_for_match: bool = Field(default=False)
     temporary_match_id: Optional[str] = Field(default=None)
+    league_id: Optional[str] = Field(default=None)
 
 
 class HirePlayerResponse(BaseModel):
@@ -151,6 +153,7 @@ class AddPerkRequest(BaseModel):
     perk_id: str
     perk_name: str
     category: Optional[str] = None
+    league_id: Optional[str] = None
 
 
 class ApplyPlayerAdvancementRequest(BaseModel):
@@ -165,6 +168,7 @@ class ApplyPlayerAdvancementRequest(BaseModel):
     perk_id: Optional[str] = None
     characteristic: Optional[Literal["MA", "ST", "AG", "PA", "AV"]] = None
     characteristic_roll: Optional[int] = Field(None, ge=1, le=8)
+    league_id: Optional[str] = None
 
 
 # ============== Team Schemas ==============
@@ -197,6 +201,8 @@ class UpdateTeamRequest(BaseModel):
     treasury: Optional[int] = Field(None, ge=0)
     notes: Optional[str] = None
     favoured_of: Optional[str] = Field(default=None)
+    league_id: Optional[str] = None
+    commissioner_edit: bool = False
 
 
 class TeamLeagueMembership(BaseModel):

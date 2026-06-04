@@ -61,6 +61,7 @@ from schemas.league import (
     UpdateMatchStateRequest,
 )
 from services.user_team_service import UserTeamService
+from utils.team_special_rules import adjusted_spp_reward, has_masters_of_undeath
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,57 @@ async def _get_league(league_id: str) -> Optional[League]:
 
 class LeagueService:
     """Service for managing leagues."""
+
+    @staticmethod
+    def _commissioner_ids(league: League) -> list[str]:
+        commissioner_ids = [league.owner_id]
+        for commissioner_id in league.commissioner_ids or []:
+            if commissioner_id not in commissioner_ids:
+                commissioner_ids.append(commissioner_id)
+        return commissioner_ids
+
+    @staticmethod
+    def _is_commissioner(league: League, user_id: str) -> bool:
+        return user_id in LeagueService._commissioner_ids(league)
+
+    @staticmethod
+    async def _commissioner_usernames(league: League) -> list[str]:
+        usernames: list[str] = []
+        for commissioner_id in LeagueService._commissioner_ids(league):
+            try:
+                user = await User.get(commissioner_id)
+            except Exception:
+                user = None
+            if user and user.username not in usernames:
+                usernames.append(user.username)
+        return usernames
+
+    @staticmethod
+    async def _resolve_commissioner_ids(
+        owner_id: str,
+        commissioner_usernames: Optional[list[str]],
+    ) -> list[str]:
+        if commissioner_usernames is None:
+            return []
+
+        resolved_ids: list[str] = []
+        seen_usernames: set[str] = set()
+        for raw_username in commissioner_usernames:
+            username = raw_username.strip()
+            if not username:
+                continue
+            normalized = username.lower()
+            if normalized in seen_usernames:
+                continue
+            seen_usernames.add(normalized)
+            user = await User.find_one(User.username == username)
+            if not user:
+                raise InvalidOperationException(f"No existe el usuario '{username}'")
+            user_id = str(user.id)
+            if user_id == owner_id or user_id in resolved_ids:
+                continue
+            resolved_ids.append(user_id)
+        return resolved_ids
 
     @staticmethod
     def _player_status_value(player) -> str:
@@ -329,6 +381,13 @@ class LeagueService:
                     next_players.append(player)
                     continue
 
+                can_be_kept = bool(
+                    player.journeyman and not player.base_type.startswith("star_")
+                )
+                if not can_be_kept:
+                    _release_temporary_player(team_side, player)
+                    continue
+
                 if decisions.get((team_side, player.id)) != "keep":
                     _release_temporary_player(team_side, player)
                     continue
@@ -434,6 +493,7 @@ class LeagueService:
                         "base_type": player.base_type,
                         "name": player.name,
                         "number": player.number,
+                        "free": player.free,
                     }
                     for player in purchases.players
                 ],
@@ -503,6 +563,7 @@ class LeagueService:
                         base_type=player.get("base_type", ""),
                         name=player.get("name", ""),
                         number=player.get("number", 0),
+                        free=bool(player.get("free", False)),
                     )
                     for player in payload.get("players", [])
                 ],
@@ -621,6 +682,7 @@ class LeagueService:
             rosters_by_side[side] = roster
 
         team = teams_by_side[team_side]
+        team_roster = rosters_by_side[team_side]
         opponent_side = "away" if team_side == "home" else "home"
         opponent = teams_by_side[opponent_side]
         squad = set(match.home_squad if team_side == "home" else match.away_squad)
@@ -717,8 +779,7 @@ class LeagueService:
                 if LeagueService._is_accidental_casualty_event(
                     event.type, event.detail
                 ) or (
-                    event.type == "casualty"
-                    and _is_self_inflicted_event(event.detail)
+                    event.type == "casualty" and _is_self_inflicted_event(event.detail)
                 ):
                     return
                 reward = event_rewards[event.type]
@@ -727,7 +788,15 @@ class LeagueService:
                         f"Event '{event.type}' is missing credited player"
                     )
                 if event.player_id:
-                    _add_spp(event.player_id, reward.spp, reward.career_stat)
+                    _add_spp(
+                        event.player_id,
+                        adjusted_spp_reward(
+                            team_roster.special_rules,
+                            event_type=event.type,
+                            default_spp=reward.spp,
+                        ),
+                        reward.career_stat,
+                    )
                 return
 
             if event.type == rules.throw_teammate.event_type:
@@ -994,6 +1063,49 @@ class LeagueService:
         def _apply_post_match_purchases(purchases) -> None:
             roster = rosters_by_side[team_side]
             summary_parts: list[str] = []
+            opponent_side = "away" if team_side == "home" else "home"
+            free_raise_dead_remaining = 0
+
+            def _event_is_self_inflicted(detail: str | None) -> bool:
+                return any(
+                    line.strip() == "BBM_SELF_INFLICTED:1"
+                    for line in (detail or "").splitlines()
+                )
+
+            def _event_grants_raise_dead(event: MatchEvent) -> bool:
+                if event.type == "casualty":
+                    return (
+                        event.team == team_side
+                        and (event.injury or "").strip().lower()
+                        in {"dead", "muerto", "rip"}
+                        and not LeagueService._is_accidental_casualty_event(
+                            event.type, event.detail
+                        )
+                        and not _event_is_self_inflicted(event.detail)
+                    )
+                if event.type == "dead":
+                    return event.team == opponent_side
+                return False
+
+            if has_masters_of_undeath(roster.special_rules):
+                free_raise_dead_remaining += sum(
+                    1 for event in match.events if _event_grants_raise_dead(event)
+                )
+                for injury in request.injuries:
+                    if injury.team != opponent_side:
+                        continue
+                    casualty_result = next(
+                        (
+                            result
+                            for result in injury_rules.casualty_table
+                            if result.min_roll
+                            <= injury.casualty_roll
+                            <= result.max_roll
+                        ),
+                        None,
+                    )
+                    if casualty_result and casualty_result.code == "dead":
+                        free_raise_dead_remaining += 1
 
             if purchases.rerolls:
                 if team.rerolls + purchases.rerolls > 8:
@@ -1061,16 +1173,32 @@ class LeagueService:
                 base_player = UserTeamService._find_base_player(
                     roster, player_purchase.base_type
                 )
+                purchase_cost = base_player.cost
+                if player_purchase.free:
+                    if not has_masters_of_undeath(roster.special_rules):
+                        raise InvalidOperationException(
+                            f"Cannot apply free player purchase for {team_side}: roster does not have Masters of Undeath"
+                        )
+                    if (base_player.position or "").lower() != "lineman":
+                        raise InvalidOperationException(
+                            f"Cannot apply free player purchase for {team_side}: only Lineman positions are eligible"
+                        )
+                    if free_raise_dead_remaining <= 0:
+                        raise InvalidOperationException(
+                            f"Cannot apply free player purchase for {team_side}: no Raise the Dead slots remain"
+                        )
+                    purchase_cost = 0
+                    free_raise_dead_remaining -= 1
                 can_hire, reason = team.can_hire_player(
                     base_type=player_purchase.base_type,
                     max_allowed=base_player.max,
-                    cost=base_player.cost,
+                    cost=purchase_cost,
                 )
                 if not can_hire:
                     raise InvalidOperationException(reason)
-                if team.treasury < base_player.cost:
+                if team.treasury < purchase_cost:
                     raise InvalidOperationException(
-                        f"Cannot buy player '{player_purchase.base_type}' for {team_side}: insufficient treasury ({team.treasury} < {base_player.cost})"
+                        f"Cannot buy player '{player_purchase.base_type}' for {team_side}: insufficient treasury ({team.treasury} < {purchase_cost})"
                     )
                 new_player = UserTeamService._build_user_player(
                     team=team,
@@ -1080,7 +1208,7 @@ class LeagueService:
                     number=player_purchase.number,
                 )
                 team.players.append(new_player)
-                team.treasury -= base_player.cost
+                team.treasury -= purchase_cost
                 match.events.append(
                     MatchEvent(
                         id=str(uuid.uuid4()),
@@ -1090,7 +1218,12 @@ class LeagueService:
                         player_name=new_player.name,
                         detail=(
                             f"Player purchased: {new_player.name}; type: {player_purchase.base_type}; "
-                            f"cost: {base_player.cost}; treasury: {team.treasury}"
+                            f"cost: {purchase_cost}; treasury: {team.treasury}"
+                            + (
+                                "; special_rule: Masters of Undeath"
+                                if player_purchase.free
+                                else ""
+                            )
                         ),
                         half=0,
                         turn=0,
@@ -1315,6 +1448,7 @@ class LeagueService:
             name=request.name,
             description=request.description,
             owner_id=owner_id,
+            commissioner_ids=[],
             status=LeagueStatus.DRAFT,
             format=request.format,
             max_teams=request.max_teams,
@@ -1352,6 +1486,9 @@ class LeagueService:
                     id=str(league.id),
                     name=league.name,
                     owner_username=owner.username if owner else "Unknown",
+                    commissioner_usernames=await LeagueService._commissioner_usernames(
+                        league
+                    ),
                     status=league.status,
                     format=league.format,
                     team_count=len(league.teams),
@@ -1366,9 +1503,15 @@ class LeagueService:
 
     @staticmethod
     async def get_leagues_by_user(user_id: str) -> list[LeagueSummary]:
-        """Get leagues where user is the owner or has a team."""
+        """Get leagues where user is commissioner or has a team."""
         leagues = await League.find(
-            {"$or": [{"owner_id": user_id}, {"teams.user_id": user_id}]}
+            {
+                "$or": [
+                    {"owner_id": user_id},
+                    {"commissioner_ids": user_id},
+                    {"teams.user_id": user_id},
+                ]
+            }
         ).to_list()
 
         results = []
@@ -1386,14 +1529,17 @@ class LeagueService:
                     user_team_name = team.team_name
                     break
 
-            # Check if user is the owner
             is_owner = league.owner_id == user_id
+            is_commissioner = LeagueService._is_commissioner(league, user_id)
 
             results.append(
                 LeagueSummary(
                     id=str(league.id),
                     name=league.name,
                     owner_username=owner.username if owner else "Unknown",
+                    commissioner_usernames=await LeagueService._commissioner_usernames(
+                        league
+                    ),
                     status=league.status,
                     format=league.format,
                     team_count=len(league.teams),
@@ -1402,6 +1548,7 @@ class LeagueService:
                     invite_code=league.invite_code,
                     created_at=league.created_at,
                     is_owner=is_owner,
+                    is_commissioner=is_commissioner,
                     user_team_name=user_team_name,
                     current_round=LeagueService._current_round(league),
                 )
@@ -1411,8 +1558,8 @@ class LeagueService:
 
     @staticmethod
     def _user_can_view_league(league: League, user_id: str) -> bool:
-        """Check if user is the owner or has a team in the league."""
-        if league.owner_id == user_id:
+        """Check if user is commissioner or has a team in the league."""
+        if LeagueService._is_commissioner(league, user_id):
             return True
         return any(team.user_id == user_id for team in league.teams)
 
@@ -1538,6 +1685,13 @@ class LeagueService:
             description=league.description,
             owner_id=league.owner_id,
             owner_username=owner.username if owner else "Unknown",
+            commissioner_ids=list(league.commissioner_ids or []),
+            commissioner_usernames=await LeagueService._commissioner_usernames(league),
+            is_commissioner=(
+                LeagueService._is_commissioner(league, viewer_id)
+                if viewer_id is not None
+                else False
+            ),
             invite_code=league.invite_code,
             status=league.status,
             season=league.season,
@@ -1660,6 +1814,7 @@ class LeagueService:
             id=str(league.id),
             name=league.name,
             owner_username=owner.username if owner else "Unknown",
+            commissioner_usernames=await LeagueService._commissioner_usernames(league),
             status=league.status,
             format=league.format,
             team_count=len(league.teams),
@@ -1672,14 +1827,12 @@ class LeagueService:
     async def update_league(
         league_id: str, owner_id: str, request: UpdateLeagueRequest
     ) -> League:
-        """Update league settings (owner only)."""
+        """Update league settings (commissioner only)."""
         league = await _get_league(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
-        if league.owner_id != owner_id:
-            raise InvalidOperationException(
-                "Solo el propietario puede modificar la liga"
-            )
+        if not LeagueService._is_commissioner(league, owner_id):
+            raise InvalidOperationException("Solo un comisario puede modificar la liga")
         if request.name is not None:
             league.name = request.name
         if request.description is not None:
@@ -1690,8 +1843,13 @@ class LeagueService:
                     "No se puede reducir el límite por debajo del número de equipos actuales"
                 )
             league.max_teams = request.max_teams
+        if request.commissioner_usernames is not None:
+            league.commissioner_ids = await LeagueService._resolve_commissioner_ids(
+                league.owner_id,
+                request.commissioner_usernames,
+            )
         await league.save()
-        logger.info(f"League {league_id} updated by owner {owner_id}")
+        logger.info(f"League {league_id} updated by commissioner {owner_id}")
         return league
 
     # ============== League Lifecycle ==============
@@ -1705,8 +1863,8 @@ class LeagueService:
         if not league:
             raise LeagueNotFoundException(league_id)
 
-        if league.owner_id != owner_id:
-            raise InvalidOperationException("Only the owner can start the league")
+        if not LeagueService._is_commissioner(league, owner_id):
+            raise InvalidOperationException("Only a commissioner can start the league")
 
         if league.status != LeagueStatus.DRAFT:
             raise InvalidOperationException("League has already started")
@@ -1783,9 +1941,9 @@ class LeagueService:
 
     @staticmethod
     def _ensure_owner_can_edit_calendar(league: League, user_id: str) -> None:
-        if league.owner_id != user_id:
+        if not LeagueService._is_commissioner(league, user_id):
             raise InvalidOperationException(
-                "Solo el propietario puede editar el calendario"
+                "Solo un comisario puede editar el calendario"
             )
         if league.status != LeagueStatus.ACTIVE:
             raise InvalidOperationException(
@@ -2156,13 +2314,13 @@ class LeagueService:
 
     @staticmethod
     async def delete_league(league_id: str, user_id: str) -> None:
-        """Delete a league (owner only)."""
+        """Delete a league (commissioner only)."""
         league = await _get_league(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
 
-        if league.owner_id != user_id:
-            raise InvalidOperationException("Only the owner can delete the league")
+        if not LeagueService._is_commissioner(league, user_id):
+            raise InvalidOperationException("Only a commissioner can delete the league")
 
         if league.status == LeagueStatus.ACTIVE:
             raise InvalidOperationException(
@@ -2174,15 +2332,13 @@ class LeagueService:
 
     @staticmethod
     async def archive_league(league_id: str, user_id: str) -> None:
-        """Mark a league as completed/archived (owner only)."""
+        """Mark a league as completed/archived (commissioner only)."""
         league = await _get_league(league_id)
         if not league:
             raise LeagueNotFoundException(league_id)
 
-        if league.owner_id != user_id:
-            raise InvalidOperationException(
-                "Solo el propietario puede archivar la liga"
-            )
+        if not LeagueService._is_commissioner(league, user_id):
+            raise InvalidOperationException("Solo un comisario puede archivar la liga")
 
         if league.status == LeagueStatus.DRAFT:
             raise InvalidOperationException(
@@ -2212,8 +2368,8 @@ class LeagueService:
 
     @staticmethod
     def _user_can_manage_match(league: League, match: Match, user_id: str) -> bool:
-        """Check if user is owner, home, or away player."""
-        if league.owner_id == user_id:
+        """Check if user is commissioner, home, or away player."""
+        if LeagueService._is_commissioner(league, user_id):
             return True
         if match.home.user_id == user_id or match.away.user_id == user_id:
             return True
@@ -2454,7 +2610,9 @@ class LeagueService:
         elif match.away.user_id == user_id:
             participant_side = "away"
 
-        is_commissioner = league.owner_id == user_id and participant_side is None
+        is_commissioner = (
+            LeagueService._is_commissioner(league, user_id) and participant_side is None
+        )
         if not is_commissioner and participant_side is None:
             raise InvalidOperationException(
                 "Only match participants or the league owner can submit aftermatch SPP"
@@ -2772,7 +2930,14 @@ class LeagueService:
                     )
                 if event.player_id:
                     _add_spp(
-                        event.team, event.player_id, reward.spp, reward.career_stat
+                        event.team,
+                        event.player_id,
+                        adjusted_spp_reward(
+                            rosters_by_side[event.team].special_rules,
+                            event_type=event.type,
+                            default_spp=reward.spp,
+                        ),
+                        reward.career_stat,
                     )
                 return
 
@@ -3084,6 +3249,18 @@ class LeagueService:
         def _apply_post_match_purchases(team_side: str, team, purchases) -> None:
             roster = rosters_by_side[team_side]
             summary_parts: list[str] = []
+            opponent_side = "away" if team_side == "home" else "home"
+            free_raise_dead_remaining = 0
+
+            if has_masters_of_undeath(roster.special_rules):
+                for injury in request.injuries:
+                    if injury.team != opponent_side:
+                        continue
+                    casualty_result = injury_rules.casualty_result_for(
+                        injury.casualty_roll
+                    )
+                    if casualty_result and casualty_result.code == "dead":
+                        free_raise_dead_remaining += 1
 
             if purchases.rerolls:
                 if team.rerolls + purchases.rerolls > 8:
@@ -3151,16 +3328,32 @@ class LeagueService:
                 base_player = UserTeamService._find_base_player(
                     roster, player_purchase.base_type
                 )
+                purchase_cost = base_player.cost
+                if player_purchase.free:
+                    if not has_masters_of_undeath(roster.special_rules):
+                        raise InvalidOperationException(
+                            f"Cannot apply free player purchase for {team_side}: roster does not have Masters of Undeath"
+                        )
+                    if (base_player.position or "").lower() != "lineman":
+                        raise InvalidOperationException(
+                            f"Cannot apply free player purchase for {team_side}: only Lineman positions are eligible"
+                        )
+                    if free_raise_dead_remaining <= 0:
+                        raise InvalidOperationException(
+                            f"Cannot apply free player purchase for {team_side}: no Raise the Dead slots remain"
+                        )
+                    purchase_cost = 0
+                    free_raise_dead_remaining -= 1
                 can_hire, reason = team.can_hire_player(
                     base_type=player_purchase.base_type,
                     max_allowed=base_player.max,
-                    cost=base_player.cost,
+                    cost=purchase_cost,
                 )
                 if not can_hire:
                     raise InvalidOperationException(reason)
-                if team.treasury < base_player.cost:
+                if team.treasury < purchase_cost:
                     raise InvalidOperationException(
-                        f"Cannot buy player '{player_purchase.base_type}' for {team_side}: insufficient treasury ({team.treasury} < {base_player.cost})"
+                        f"Cannot buy player '{player_purchase.base_type}' for {team_side}: insufficient treasury ({team.treasury} < {purchase_cost})"
                     )
                 new_player = UserTeamService._build_user_player(
                     team=team,
@@ -3170,7 +3363,7 @@ class LeagueService:
                     number=player_purchase.number,
                 )
                 team.players.append(new_player)
-                team.treasury -= base_player.cost
+                team.treasury -= purchase_cost
                 match.events.append(
                     MatchEvent(
                         id=str(uuid.uuid4()),
@@ -3180,7 +3373,12 @@ class LeagueService:
                         player_name=new_player.name,
                         detail=(
                             f"Player purchased: {new_player.name}; type: {player_purchase.base_type}; "
-                            f"cost: {base_player.cost}; treasury: {team.treasury}"
+                            f"cost: {purchase_cost}; treasury: {team.treasury}"
+                            + (
+                                "; special_rule: Masters of Undeath"
+                                if player_purchase.free
+                                else ""
+                            )
                         ),
                         half=0,
                         turn=0,

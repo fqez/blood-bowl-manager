@@ -225,6 +225,10 @@ class League(Document):
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     owner_id: str = Field(..., description="User who created the league")
+    commissioner_ids: list[str] = Field(
+        default_factory=list,
+        description="Additional users with commissioner access",
+    )
     invite_code: str = Field(
         default_factory=lambda: uuid.uuid4().hex[:8].upper(),
         description="Invite code for joining the league",

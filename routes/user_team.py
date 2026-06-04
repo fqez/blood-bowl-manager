@@ -1,6 +1,8 @@
 """Routes for user team endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from auth.jwt_bearer import get_current_user
 from exceptions.exceptions import (
@@ -64,11 +66,19 @@ async def get_team_by_share_code(share_code: str):
 @router.get("/{team_id}", response_model=UserTeamDetail)
 async def get_team(
     team_id: str,
+    league_id: Optional[str] = Query(
+        None,
+        description="League context for commissioner read access",
+    ),
     user_id: str = Depends(get_current_user),
 ):
     """Get full team detail with all players."""
     try:
-        detail = await UserTeamService.get_team_detail(team_id, viewer_id=user_id)
+        detail = await UserTeamService.get_team_detail(
+            team_id,
+            viewer_id=user_id,
+            league_id=league_id,
+        )
     except InvalidOperationException as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
@@ -90,7 +100,11 @@ async def update_team(
     """Update team settings."""
     try:
         await UserTeamService.update_team(team_id, user_id, request)
-        return await UserTeamService.get_team_detail(team_id, viewer_id=user_id)
+        return await UserTeamService.get_team_detail(
+            team_id,
+            viewer_id=user_id,
+            league_id=request.league_id,
+        )
     except TeamNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -175,6 +189,7 @@ async def hire_star_player(
 async def fire_player(
     team_id: str,
     player_id: str,
+    league_id: Optional[str] = Query(default=None),
     user_id: str = Depends(get_current_user),
 ):
     """
@@ -183,7 +198,12 @@ async def fire_player(
     The player is removed and their cost is NOT refunded.
     """
     try:
-        await UserTeamService.fire_player(team_id, user_id, player_id)
+        await UserTeamService.fire_player(
+            team_id,
+            user_id,
+            player_id,
+            league_id=league_id,
+        )
     except TeamNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -243,8 +263,13 @@ async def add_perk_to_player(
             request.perk_id,
             request.perk_name,
             request.category,
+            request.league_id,
         )
-        return await UserTeamService.get_team_detail(team_id, viewer_id=user_id)
+        return await UserTeamService.get_team_detail(
+            team_id,
+            viewer_id=user_id,
+            league_id=request.league_id,
+        )
     except TeamNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -273,7 +298,11 @@ async def apply_player_advancement(
         await UserTeamService.apply_player_advancement(
             team_id, user_id, player_id, request
         )
-        return await UserTeamService.get_team_detail(team_id, viewer_id=user_id)
+        return await UserTeamService.get_team_detail(
+            team_id,
+            viewer_id=user_id,
+            league_id=request.league_id,
+        )
     except TeamNotFoundException:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

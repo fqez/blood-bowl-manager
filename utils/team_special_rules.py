@@ -1,6 +1,6 @@
 """Helpers for team-level selectable special rules."""
 
-from typing import Optional
+from typing import Iterable, Optional
 
 CHAOS_FAVOURED_ROSTERS = {"chaos_chosen", "chaos_renegades"}
 
@@ -22,6 +22,82 @@ FAVOURED_STAR_PLAYER_REQUIREMENTS = {
     "hthark_the_unstoppable": "hashut",
     "zzharg_madeye": "hashut",
 }
+
+_BRAWLIN_BRUTES_ALIASES = (
+    "brawlin brutes",
+    "brutos peleones",
+    "brutos de rina",
+    "brutos de trifulca",
+)
+
+_MASTERS_OF_UNDEATH_ALIASES = (
+    "masters of undeath",
+    "maestros de la no muerte",
+)
+
+
+def _normalize_special_rule(value: str) -> str:
+    normalized = (
+        value.lower()
+        .replace("’", "'")
+        .replace("&", "and")
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ó", "o")
+        .replace("ú", "u")
+        .replace("ü", "u")
+        .replace("ñ", "n")
+    )
+    buffer: list[str] = []
+    inside_parens = 0
+    for char in normalized:
+        if char == "(":
+            inside_parens += 1
+            buffer.append(" ")
+            continue
+        if char == ")":
+            inside_parens = max(0, inside_parens - 1)
+            buffer.append(" ")
+            continue
+        if inside_parens > 0:
+            continue
+        buffer.append(char if char.isalnum() or char == " " else " ")
+    return " ".join("".join(buffer).split())
+
+
+def has_brawlin_brutes(special_rules: Iterable[str]) -> bool:
+    """Return whether a roster has the Brawlin' Brutes rule."""
+    for rule in special_rules:
+        normalized = _normalize_special_rule(rule)
+        if any(alias in normalized for alias in _BRAWLIN_BRUTES_ALIASES):
+            return True
+    return False
+
+
+def has_masters_of_undeath(special_rules: Iterable[str]) -> bool:
+    """Return whether a roster has the Masters of Undeath rule."""
+    for rule in special_rules:
+        normalized = _normalize_special_rule(rule)
+        if any(alias in normalized for alias in _MASTERS_OF_UNDEATH_ALIASES):
+            return True
+    return False
+
+
+def adjusted_spp_reward(
+    special_rules: Iterable[str],
+    *,
+    event_type: str,
+    default_spp: int,
+) -> int:
+    """Return the SPP reward for an event after team-rule adjustments."""
+    if not has_brawlin_brutes(special_rules):
+        return default_spp
+    if event_type == "casualty":
+        return 3
+    if event_type == "touchdown":
+        return 2
+    return default_spp
 
 
 def normalize_favoured_of(value: Optional[str]) -> Optional[str]:

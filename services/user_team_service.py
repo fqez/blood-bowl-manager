@@ -88,6 +88,10 @@ class UserTeamService:
         return league is not None
 
     @staticmethod
+    def _is_league_commissioner(league: League, user_id: str) -> bool:
+        return user_id == league.owner_id or user_id in (league.commissioner_ids or [])
+
+    @staticmethod
     async def _calculate_team_value(
         team: UserTeam, roster: Optional[BaseRoster] = None
     ) -> int:
@@ -432,9 +436,36 @@ class UserTeamService:
             return False
 
         return (
-            league.owner_id == user_id
+            UserTeamService._is_league_commissioner(league, user_id)
             or match.home.user_id == user_id
             or match.away.user_id == user_id
+        )
+
+    @staticmethod
+    async def _can_access_team_via_league_membership(
+        team_id: str,
+        user_id: str,
+        league_id: Optional[str],
+    ) -> bool:
+        if not league_id:
+            return False
+
+        league = await League.get(league_id)
+        if not league or not UserTeamService._is_league_commissioner(league, user_id):
+            return False
+
+        return any(participant.team_id == team_id for participant in league.teams)
+
+    @staticmethod
+    async def _has_commissioner_team_access(
+        team_id: str,
+        user_id: str,
+        league_id: Optional[str],
+    ) -> bool:
+        return await UserTeamService._can_access_team_via_league_membership(
+            team_id,
+            user_id,
+            league_id,
         )
 
     @staticmethod
@@ -469,6 +500,12 @@ class UserTeamService:
         match_id: Optional[str] = None,
         quick_match_id: Optional[str] = None,
     ) -> bool:
+        if await UserTeamService._can_access_team_via_league_membership(
+            team_id,
+            user_id,
+            league_id,
+        ):
+            return True
         if await UserTeamService._can_access_team_via_league_match(
             team_id,
             user_id,
@@ -522,15 +559,23 @@ class UserTeamService:
             return None
 
         if viewer_id is not None and team.user_id != viewer_id:
-            if not await UserTeamService._can_access_team_in_match_context(
+            commissioner_access = await UserTeamService._has_commissioner_team_access(
                 team_id,
                 viewer_id,
-                league_id=league_id,
-                match_id=match_id,
-                quick_match_id=quick_match_id,
+                league_id,
+            )
+            if (
+                not commissioner_access
+                and not await UserTeamService._can_access_team_in_match_context(
+                    team_id,
+                    viewer_id,
+                    league_id=league_id,
+                    match_id=match_id,
+                    quick_match_id=quick_match_id,
+                )
             ):
                 raise InvalidOperationException("Cannot access another user's team")
-            hide_notes = True
+            hide_notes = not commissioner_access
 
         return await UserTeamService._team_to_detail(team, hide_notes=hide_notes)
 
@@ -616,38 +661,60 @@ class UserTeamService:
         team_id: str, user_id: str, request: UpdateTeamRequest
     ) -> UserTeam:
         """Update team settings."""
-        team = await UserTeamService._require_team_owner(team_id, user_id)
+        commissioner_mode = bool(request.commissioner_edit)
 
-        if request.name is not None:
+        if commissioner_mode:
+            if not request.league_id:
+                raise InvalidOperationException(
+                    "League context is required for commissioner edits"
+                )
+            team = await UserTeam.get(team_id)
+            if not team:
+                raise TeamNotFoundException(team_id)
+            if not await UserTeamService._can_access_team_via_league_membership(
+                team_id,
+                user_id,
+                request.league_id,
+            ):
+                raise InvalidOperationException("Cannot access another user's team")
+        else:
+            team = await UserTeamService._require_team_owner(team_id, user_id)
+
+        if request.name is not None and not commissioner_mode:
             await UserTeamService._ensure_roster_can_be_managed(team_id)
 
         # Load base roster for costs
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
         reroll_cost = roster.reroll_cost if roster else 60000
-        reroll_purchase_cost = (
-            reroll_cost * 2
-            if await UserTeamService._is_in_league(team_id)
-            else reroll_cost
-        )
+        reroll_purchase_cost = reroll_cost
+        if not commissioner_mode:
+            reroll_purchase_cost = (
+                reroll_cost * 2
+                if await UserTeamService._is_in_league(team_id)
+                else reroll_cost
+            )
 
-        # Calculate treasury delta for staff changes
+        # Calculate treasury delta for normal coach-side staff changes.
         cost_delta = 0
-        if request.rerolls is not None:
-            diff = request.rerolls - team.rerolls
-            cost_delta += diff * (reroll_purchase_cost if diff > 0 else reroll_cost)
-        if request.cheerleaders is not None:
-            diff = request.cheerleaders - team.cheerleaders
-            cost_delta += diff * 10000
-        if request.assistant_coaches is not None:
-            diff = request.assistant_coaches - team.assistant_coaches
-            cost_delta += diff * 10000
-        if request.apothecary is not None:
-            if request.apothecary and not team.apothecary:
-                if roster and not roster.apothecary_allowed:
-                    raise InvalidOperationException("Apothecary is not allowed")
-                cost_delta += 50000
-            elif not request.apothecary and team.apothecary:
-                cost_delta -= 50000
+        if not commissioner_mode:
+            if request.rerolls is not None:
+                diff = request.rerolls - team.rerolls
+                cost_delta += diff * (reroll_purchase_cost if diff > 0 else reroll_cost)
+            if request.cheerleaders is not None:
+                diff = request.cheerleaders - team.cheerleaders
+                cost_delta += diff * 10000
+            if request.assistant_coaches is not None:
+                diff = request.assistant_coaches - team.assistant_coaches
+                cost_delta += diff * 10000
+            if request.apothecary is not None:
+                if request.apothecary and not team.apothecary:
+                    if roster and not roster.apothecary_allowed:
+                        raise InvalidOperationException("Apothecary is not allowed")
+                    cost_delta += 50000
+                elif not request.apothecary and team.apothecary:
+                    cost_delta -= 50000
+        elif request.apothecary and roster and not roster.apothecary_allowed:
+            raise InvalidOperationException("Apothecary is not allowed")
 
         # Validate treasury
         if cost_delta > 0 and team.treasury < cost_delta:
@@ -666,7 +733,9 @@ class UserTeamService:
         if request.fan_factor is not None:
             team.fan_factor = request.fan_factor
         if request.dedicated_fans is not None:
-            if not await UserTeamService._is_in_league(team_id):
+            if not commissioner_mode and not await UserTeamService._is_in_league(
+                team_id
+            ):
                 raise InvalidOperationException(
                     "Dedicated fans can only change during league play"
                 )
@@ -680,7 +749,8 @@ class UserTeamService:
                 team.base_roster_id, request.favoured_of
             )
 
-        team.treasury -= cost_delta
+        if not commissioner_mode:
+            team.treasury -= cost_delta
         team.team_value = await UserTeamService._calculate_team_value(team, roster)
         team.updated_at = datetime.utcnow()
         await team.save()
@@ -721,7 +791,11 @@ class UserTeamService:
         Player hiring is allowed for teams registered in active leagues; other
         roster management actions remain locked by _ensure_roster_can_be_managed.
         """
-        team = await UserTeamService._require_team_owner(team_id, user_id)
+        team = await UserTeamService._require_team_owner_or_match_access(
+            team_id,
+            user_id,
+            league_id=request.league_id,
+        )
 
         # Get base roster and player type
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
@@ -813,9 +887,13 @@ class UserTeamService:
         team_id: str, user_id: str, request: HireStarPlayerRequest
     ) -> HirePlayerResponse:
         """Hire a star player for a team."""
-        team = await UserTeamService._require_team_owner(team_id, user_id)
+        team = await UserTeamService._require_team_owner_or_match_access(
+            team_id,
+            user_id,
+            league_id=request.league_id,
+        )
 
-        if not request.temporary_for_match:
+        if not request.temporary_for_match and not request.league_id:
             await UserTeamService._ensure_roster_can_be_managed(team_id)
 
         # Fetch star player
@@ -900,9 +978,19 @@ class UserTeamService:
         )
 
     @staticmethod
-    async def fire_player(team_id: str, user_id: str, player_id: str) -> UserTeam:
+    async def fire_player(
+        team_id: str,
+        user_id: str,
+        player_id: str,
+        *,
+        league_id: Optional[str] = None,
+    ) -> UserTeam:
         """Remove a player from a team (no refund)."""
-        team = await UserTeamService._require_team_owner(team_id, user_id)
+        team = await UserTeamService._require_team_owner_or_match_access(
+            team_id,
+            user_id,
+            league_id=league_id,
+        )
 
         player_idx = None
         for i, p in enumerate(team.players):
@@ -929,6 +1017,7 @@ class UserTeamService:
         perk_id: str,
         perk_name: str,
         category: str = None,
+        league_id: Optional[str] = None,
     ) -> UserTeam:
         """Spend SPP to add a chosen Primary skill to a player."""
         return await UserTeamService.apply_player_advancement(
@@ -938,6 +1027,7 @@ class UserTeamService:
             ApplyPlayerAdvancementRequest(
                 advancement_type="choose_primary_skill",
                 perk_id=perk_id,
+                league_id=league_id,
             ),
         )
 
@@ -949,7 +1039,11 @@ class UserTeamService:
         request: ApplyPlayerAdvancementRequest,
     ) -> UserTeam:
         """Spend SPP on an official player advancement."""
-        team = await UserTeamService._require_team_owner(team_id, user_id)
+        team = await UserTeamService._require_team_owner_or_match_access(
+            team_id,
+            user_id,
+            league_id=request.league_id,
+        )
 
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
         if not roster:
