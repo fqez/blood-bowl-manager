@@ -4,7 +4,7 @@ import logging
 import uuid
 from datetime import datetime
 from itertools import combinations
-from typing import Optional
+from typing import Any, Optional
 
 from bson import ObjectId
 
@@ -16,6 +16,7 @@ from exceptions.exceptions import (
 from models.base.dedicated_fans import DedicatedFansRules
 from models.base.expensive_mistake import ExpensiveMistakesRules
 from models.base.injury import InjuryRules
+from models.base.league_points import LeaguePointsRules
 from models.base.roster import BaseRoster
 from models.base.spp import SppRewardsRules
 from models.base.winnings import WinningsRules
@@ -34,7 +35,12 @@ from models.user.user import User
 from models.user_team.team import PlayerInjuryRecord, PlayerStatus, UserTeam
 from schemas.league import (
     AddMatchEventRequest,
+    AftermatchDedicatedFansRequest,
+    AftermatchExpensiveMistakesRequest,
+    AftermatchPlayerPurchaseRequest,
+    AftermatchTeamPurchasesRequest,
     AftermatchTemporaryPlayerDecision,
+    AftermatchWinningsRequest,
     ApplyAftermatchSppRequest,
     CreateLeagueMatchRequest,
     CreateLeagueRequest,
@@ -86,6 +92,92 @@ class LeagueService:
         if pending_rounds:
             return min(pending_rounds)
         return max(m.round for m in league.matches)
+
+    @staticmethod
+    def _is_self_inflicted_casualty(event: MatchEvent) -> bool:
+        detail = event.detail or ""
+        return event.type == "casualty" and "BBM_SELF_INFLICTED:1" in detail
+
+    @staticmethod
+    def _count_casualties_for_league_points(
+        match: Match,
+        team_side: str,
+        rules: LeaguePointsRules,
+    ) -> int:
+        total = 0
+        for event in match.events:
+            if event.type != "casualty" or event.team != team_side:
+                continue
+            if LeagueService._is_self_inflicted_casualty(event):
+                continue
+            if rules.casualty_bonus_requires_spp and not event.player_id:
+                continue
+            total += 1
+        return total
+
+    @staticmethod
+    def _league_points_for_match(
+        match: Match,
+        team_id: str,
+        rules: LeaguePointsRules | None,
+    ) -> int:
+        if match.status != MatchStatus.COMPLETED:
+            return 0
+
+        if match.home.team_id == team_id:
+            team_side = "home"
+            team_score = match.score_home
+            opponent_score = match.score_away
+        elif match.away.team_id == team_id:
+            team_side = "away"
+            team_score = match.score_away
+            opponent_score = match.score_home
+        else:
+            return 0
+
+        if team_score > opponent_score:
+            points = rules.win_points if rules else 3
+        elif team_score < opponent_score:
+            points = rules.loss_points if rules else 0
+        else:
+            points = rules.draw_points if rules else 1
+
+        if not rules:
+            return points
+
+        if team_score >= rules.touchdown_bonus_threshold:
+            points += rules.touchdown_bonus_points
+        if opponent_score == 0:
+            points += rules.shutout_bonus_points
+
+        casualties = LeagueService._count_casualties_for_league_points(
+            match,
+            team_side,
+            rules,
+        )
+        if casualties >= rules.casualty_bonus_threshold:
+            points += rules.casualty_bonus_points
+
+        return points
+
+    @staticmethod
+    def _league_points_by_team(
+        league: League,
+        rules: LeaguePointsRules | None,
+    ) -> dict[str, int]:
+        points_by_team = {standing.team_id: 0 for standing in league.standings}
+
+        for match in league.matches:
+            if match.status != MatchStatus.COMPLETED:
+                continue
+            points_by_team[match.home.team_id] = points_by_team.get(
+                match.home.team_id, 0
+            ) + LeagueService._league_points_for_match(match, match.home.team_id, rules)
+            points_by_team[match.away.team_id] = points_by_team.get(
+                match.away.team_id, 0
+            ) + LeagueService._league_points_for_match(match, match.away.team_id, rules)
+
+        return points_by_team
 
     @staticmethod
     def _is_player_available_for_match(player) -> bool:
@@ -272,7 +364,11 @@ class LeagueService:
 
     @staticmethod
     def _validate_match_player_reference(
-        team: UserTeam, player_id: str | None, field_name: str
+        team: UserTeam,
+        player_id: str | None,
+        field_name: str,
+        squad: set[str] | None = None,
+        match_id: str | None = None,
     ) -> None:
         if not player_id:
             return
@@ -281,10 +377,880 @@ class LeagueService:
             raise InvalidOperationException(
                 f"{field_name} player '{player_id}' not found"
             )
+        is_current_match_temporary = bool(
+            match_id
+            and LeagueService._is_current_match_temporary_player(player, match_id)
+        )
+        if squad and (player_id in squad or is_current_match_temporary):
+            return
         if not LeagueService._is_player_available_for_match(player):
             raise InvalidOperationException(
                 f"{field_name} player '{player.name}' is not available for this match"
             )
+
+    @staticmethod
+    def _aftermatch_team_report_from_request(
+        match: Match,
+        request: ApplyAftermatchSppRequest,
+        team_side: str,
+        user_id: str,
+    ) -> dict[str, Any]:
+        is_home = team_side == "home"
+        winnings = request.winnings
+        dedicated_fans = request.dedicated_fans
+        expensive = (
+            winnings.home_expensive_mistakes
+            if winnings and is_home
+            else winnings.away_expensive_mistakes if winnings else None
+        )
+        purchases = (
+            winnings.home_purchases
+            if winnings and is_home
+            else winnings.away_purchases if winnings else None
+        )
+
+        def _purchase_payload() -> dict[str, Any]:
+            if not purchases:
+                return {}
+            return {
+                "players": [
+                    {
+                        "base_type": player.base_type,
+                        "name": player.name,
+                        "number": player.number,
+                    }
+                    for player in purchases.players
+                ],
+                "rerolls": purchases.rerolls,
+                "assistant_coaches": purchases.assistant_coaches,
+                "cheerleaders": purchases.cheerleaders,
+                "apothecary": purchases.apothecary,
+            }
+
+        temporary_players = [
+            {
+                "player_id": decision.player_id,
+                "decision": decision.decision,
+            }
+            for decision in request.temporary_players
+            if decision.team == team_side
+        ]
+
+        report: dict[str, Any] = {
+            "submitted_by": user_id,
+            "mvp": request.mvp_home if is_home else request.mvp_away,
+            "stalling": bool(
+                winnings.home_stalling
+                if winnings and is_home
+                else winnings.away_stalling if winnings else False
+            ),
+            "temporary_players": temporary_players,
+        }
+
+        if dedicated_fans:
+            report["dedicated_fans_roll"] = (
+                dedicated_fans.home_roll if is_home else dedicated_fans.away_roll
+            )
+        if expensive:
+            report["expensive_mistakes"] = {
+                "roll": expensive.roll,
+                "d3": expensive.d3,
+                "catastrophe_d6_a": expensive.catastrophe_d6_a,
+                "catastrophe_d6_b": expensive.catastrophe_d6_b,
+            }
+        if purchases:
+            report["purchases"] = _purchase_payload()
+
+        return report
+
+    @staticmethod
+    def _aftermatch_request_from_saved_reports(
+        match: Match,
+    ) -> ApplyAftermatchSppRequest:
+        home_report = match.aftermatch_home_report or {}
+        away_report = match.aftermatch_away_report or {}
+
+        def _parse_expensive(
+            payload: dict[str, Any],
+        ) -> AftermatchExpensiveMistakesRequest:
+            return AftermatchExpensiveMistakesRequest(
+                roll=payload.get("roll"),
+                d3=payload.get("d3"),
+                catastrophe_d6_a=payload.get("catastrophe_d6_a"),
+                catastrophe_d6_b=payload.get("catastrophe_d6_b"),
+            )
+
+        def _parse_purchases(payload: dict[str, Any]) -> AftermatchTeamPurchasesRequest:
+            return AftermatchTeamPurchasesRequest(
+                players=[
+                    AftermatchPlayerPurchaseRequest(
+                        base_type=player.get("base_type", ""),
+                        name=player.get("name", ""),
+                        number=player.get("number", 0),
+                    )
+                    for player in payload.get("players", [])
+                ],
+                rerolls=payload.get("rerolls", 0),
+                assistant_coaches=payload.get("assistant_coaches", 0),
+                cheerleaders=payload.get("cheerleaders", 0),
+                apothecary=payload.get("apothecary", False),
+            )
+
+        return ApplyAftermatchSppRequest(
+            mvp_home=home_report.get("mvp"),
+            mvp_away=away_report.get("mvp"),
+            gate=match.gate,
+            post_match_events=[],
+            injuries=[],
+            winnings=AftermatchWinningsRequest(
+                home_touchdowns=match.score_home,
+                away_touchdowns=match.score_away,
+                home_stalling=bool(home_report.get("stalling", False)),
+                away_stalling=bool(away_report.get("stalling", False)),
+                home_expensive_mistakes=_parse_expensive(
+                    home_report.get("expensive_mistakes") or {}
+                ),
+                away_expensive_mistakes=_parse_expensive(
+                    away_report.get("expensive_mistakes") or {}
+                ),
+                home_purchases=_parse_purchases(home_report.get("purchases") or {}),
+                away_purchases=_parse_purchases(away_report.get("purchases") or {}),
+            ),
+            dedicated_fans=AftermatchDedicatedFansRequest(
+                home_roll=home_report.get("dedicated_fans_roll"),
+                away_roll=away_report.get("dedicated_fans_roll"),
+            ),
+            temporary_players=[
+                AftermatchTemporaryPlayerDecision(team="home", **decision)
+                for decision in home_report.get("temporary_players", [])
+            ]
+            + [
+                AftermatchTemporaryPlayerDecision(team="away", **decision)
+                for decision in away_report.get("temporary_players", [])
+            ],
+        )
+
+    @staticmethod
+    def _store_aftermatch_team_report(
+        match: Match,
+        request: ApplyAftermatchSppRequest,
+        team_side: str,
+        user_id: str,
+        submitted_at: datetime,
+    ) -> None:
+        report = LeagueService._aftermatch_team_report_from_request(
+            match,
+            request,
+            team_side,
+            user_id,
+        )
+        if team_side == "home":
+            match.aftermatch_home_report = report
+            match.aftermatch_home_submitted_at = submitted_at
+        else:
+            match.aftermatch_away_report = report
+            match.aftermatch_away_submitted_at = submitted_at
+
+    @staticmethod
+    async def _apply_aftermatch_side_submission(
+        league: League,
+        match: Match,
+        team_side: str,
+        user_id: str,
+        request: ApplyAftermatchSppRequest,
+        submitted_at: datetime,
+    ) -> None:
+        rules = await SppRewardsRules.get("spp_rewards")
+        if not rules:
+            raise InvalidOperationException("SPP reward rules are not available")
+        injury_rules = await InjuryRules.get("injury_rules")
+        if not injury_rules:
+            raise InvalidOperationException("Injury rules are not available")
+
+        winnings_rules = None
+        expensive_rules = None
+        if request.winnings:
+            winnings_rules = await WinningsRules.get("winnings")
+            if not winnings_rules:
+                raise InvalidOperationException("Winnings rules are not available")
+            expensive_rules = await ExpensiveMistakesRules.get("expensive_mistakes")
+            if not expensive_rules:
+                raise InvalidOperationException(
+                    "Expensive Mistakes rules are not available"
+                )
+
+        dedicated_fans_rules = None
+        if request.dedicated_fans:
+            dedicated_fans_rules = await DedicatedFansRules.get("dedicated_fans")
+            if not dedicated_fans_rules:
+                raise InvalidOperationException(
+                    "Dedicated Fans rules are not available"
+                )
+
+        home_team = await UserTeam.get(match.home.team_id)
+        away_team = await UserTeam.get(match.away.team_id)
+        if not home_team:
+            raise TeamNotFoundException(match.home.team_id)
+        if not away_team:
+            raise TeamNotFoundException(match.away.team_id)
+
+        teams_by_side = {"home": home_team, "away": away_team}
+        rosters_by_side = {}
+        for side, team in teams_by_side.items():
+            roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
+            if not roster:
+                raise InvalidOperationException(
+                    f"Base roster '{team.base_roster_id}' not found for {side} team"
+                )
+            rosters_by_side[side] = roster
+
+        team = teams_by_side[team_side]
+        opponent_side = "away" if team_side == "home" else "home"
+        opponent = teams_by_side[opponent_side]
+        squad = set(match.home_squad if team_side == "home" else match.away_squad)
+
+        user = await User.get(user_id)
+        username = user.username if user else "unknown"
+
+        def _get_player(player_id: str):
+            player = next(
+                (candidate for candidate in team.players if candidate.id == player_id),
+                None,
+            )
+            if not player:
+                raise InvalidOperationException(
+                    f"Player '{player_id}' not found in team '{team.name}'"
+                )
+            return player
+
+        def _player_generates_spp(player_id: str) -> bool:
+            return not _get_player(player_id).base_type.startswith("star_")
+
+        def _validate_played_player(player_id: str | None) -> None:
+            if not player_id:
+                return
+            player = _get_player(player_id)
+            is_current_match_temporary = (
+                LeagueService._is_current_match_temporary_player(player, match.id)
+            )
+            if squad and player_id not in squad and not is_current_match_temporary:
+                raise InvalidOperationException(
+                    f"Player '{player.name}' was not selected for this match"
+                )
+            if squad:
+                return
+            if not LeagueService._is_player_available_for_match(player):
+                raise InvalidOperationException(
+                    f"Player '{player.name}' was not available for this match"
+                )
+
+        spp_deltas: dict[str, dict[str, int | bool]] = {}
+        event_rewards = {reward.event_type: reward for reward in rules.event_rewards}
+
+        def _delta(player_id: str) -> dict[str, int | bool]:
+            _get_player(player_id)
+            return spp_deltas.setdefault(
+                player_id,
+                {
+                    "spp": 0,
+                    "completions": 0,
+                    "touchdowns": 0,
+                    "casualties": 0,
+                    "interceptions": 0,
+                    "mvp": False,
+                },
+            )
+
+        def _add_spp(
+            player_id: str | None,
+            amount: int,
+            career_stat: str | None = None,
+        ) -> None:
+            if amount <= 0:
+                return
+            if not player_id:
+                raise InvalidOperationException(
+                    f"SPP event for {team_side} is missing credited player"
+                )
+            if not _player_generates_spp(player_id):
+                return
+            delta = _delta(player_id)
+            delta["spp"] = int(delta["spp"]) + amount
+            if career_stat:
+                delta[career_stat] = int(delta[career_stat]) + 1
+
+        def _detail_has_yes(detail: str | None, label: str) -> bool:
+            normalized = (detail or "").lower()
+            return (
+                f"{label}: sí" in normalized
+                or f"{label}: si" in normalized
+                or f"{label}=true" in normalized
+                or f"{label}=1" in normalized
+            )
+
+        def _is_self_inflicted_event(detail: str | None) -> bool:
+            return any(
+                line.strip() == "BBM_SELF_INFLICTED:1"
+                for line in (detail or "").splitlines()
+            )
+
+        def _score_event(event: MatchEvent) -> None:
+            if event.team != team_side:
+                return
+            if event.type in event_rewards:
+                if event.type == "casualty" and _is_self_inflicted_event(event.detail):
+                    return
+                reward = event_rewards[event.type]
+                if reward.requires_player and not event.player_id:
+                    raise InvalidOperationException(
+                        f"Event '{event.type}' is missing credited player"
+                    )
+                if event.player_id:
+                    _add_spp(event.player_id, reward.spp, reward.career_stat)
+                return
+
+            if event.type == rules.throw_teammate.event_type:
+                landed = _detail_has_yes(event.detail, "cae de pie") or _detail_has_yes(
+                    event.detail, "landed"
+                )
+                if not landed:
+                    return
+                _add_spp(
+                    event.victim_id,
+                    rules.throw_teammate.thrown_player_landed_spp,
+                )
+                superb = _detail_has_yes(event.detail, "soberbio") or _detail_has_yes(
+                    event.detail, "superb"
+                )
+                if superb:
+                    _add_spp(
+                        event.player_id,
+                        rules.throw_teammate.superb_thrower_spp,
+                    )
+
+        requested_mvp = request.mvp_home if team_side == "home" else request.mvp_away
+        if not requested_mvp:
+            raise InvalidOperationException(
+                "MVP selection is required before submitting the post-match report"
+            )
+
+        LeagueService._validate_match_player_reference(
+            team,
+            requested_mvp,
+            "MVP",
+            squad,
+            match.id,
+        )
+        mvp_player = LeagueService._player_by_id(team, requested_mvp)
+        if mvp_player and mvp_player.base_type.startswith("star_"):
+            raise InvalidOperationException("Star Players cannot be MVP")
+        if team_side == "home":
+            match.mvp_home = requested_mvp
+        else:
+            match.mvp_away = requested_mvp
+
+        post_match_events: list[MatchEvent] = []
+        for event_request in request.post_match_events:
+            if event_request.team != team_side:
+                continue
+            _validate_played_player(event_request.player_id)
+            if event_request.victim_id:
+                victim_side = (
+                    event_request.team
+                    if event_request.type == "throw_teammate"
+                    or any(
+                        line.strip() == "BBM_SELF_INFLICTED:1"
+                        for line in (event_request.detail or "").splitlines()
+                    )
+                    else "away" if event_request.team == "home" else "home"
+                )
+                if victim_side == team_side:
+                    _validate_played_player(event_request.victim_id)
+            post_match_events.append(
+                MatchEvent(
+                    id=str(uuid.uuid4()),
+                    type=event_request.type,
+                    team=event_request.team,
+                    player_id=event_request.player_id,
+                    player_name=event_request.player_name,
+                    victim_id=event_request.victim_id,
+                    victim_name=event_request.victim_name,
+                    injury=event_request.injury,
+                    detail=event_request.detail,
+                    half=event_request.half,
+                    turn=event_request.turn,
+                    timestamp=datetime.utcnow(),
+                    created_by=user_id,
+                    created_by_name=username,
+                )
+            )
+
+        for event in [*match.events, *post_match_events]:
+            _score_event(event)
+
+        _validate_played_player(requested_mvp)
+        _add_spp(requested_mvp, rules.mvp_spp)
+        _delta(requested_mvp)["mvp"] = True
+
+        for player_id, delta in spp_deltas.items():
+            player = _get_player(player_id)
+            player.spp += int(delta["spp"])
+            player.career.completions += int(delta["completions"])
+            player.career.touchdowns += int(delta["touchdowns"])
+            player.career.casualties += int(delta["casualties"])
+            player.career.interceptions += int(delta["interceptions"])
+            if bool(delta["mvp"]):
+                player.career.mvp_awards += 1
+
+        def _casualty_result(roll: int):
+            for result in injury_rules.casualty_table:
+                if result.min_roll <= roll <= result.max_roll:
+                    return result
+            raise InvalidOperationException(f"Invalid casualty roll '{roll}'")
+
+        def _lasting_injury_result(roll: int):
+            for result in injury_rules.lasting_injury_table:
+                if result.min_roll <= roll <= result.max_roll:
+                    return result
+            raise InvalidOperationException(f"Invalid lasting injury roll '{roll}'")
+
+        def _apply_stat_reduction(player, stat: str) -> None:
+            if stat == "MA":
+                player.stats.MA = max(1, player.stats.MA - 1)
+            elif stat == "ST":
+                player.stats.ST = max(1, player.stats.ST - 1)
+            elif stat == "AV":
+                player.stats.AV = max(3, player.stats.AV - 1)
+            elif stat == "AG":
+                player.stats.AG = min(7, player.stats.AG + 1)
+            elif stat == "PA" and player.stats.PA is not None:
+                player.stats.PA = min(7, player.stats.PA + 1)
+
+        def _recover_players_who_missed_match() -> None:
+            recovered = []
+            for player in team.players:
+                if (
+                    LeagueService._player_status_value(player)
+                    == PlayerStatus.MISSING_NEXT_GAME.value
+                    and player.id not in squad
+                ):
+                    player.status = PlayerStatus.HEALTHY
+                    recovered.append(player.name)
+            if recovered:
+                match.events.append(
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="player_recovery",
+                        team=team_side,
+                        detail=(
+                            "Players recovered after missing the fixture: "
+                            + ", ".join(recovered)
+                        ),
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    )
+                )
+
+        def _apply_injury(injury_request) -> None:
+            player = _get_player(injury_request.player_id)
+            casualty = _casualty_result(injury_request.casualty_roll)
+            lasting = None
+            if casualty.requires_lasting_injury_roll:
+                if injury_request.lasting_injury_roll is None:
+                    raise InvalidOperationException(
+                        "Lasting Injury result requires a lasting injury D6 roll"
+                    )
+                lasting = _lasting_injury_result(injury_request.lasting_injury_roll)
+                _apply_stat_reduction(player, lasting.stat)
+                player.injuries.append(lasting.code)
+
+            for injury_code in casualty.injury_codes:
+                player.injuries.append(injury_code)
+
+            player.status = PlayerStatus(casualty.player_status)
+            detail = f"Casualty D16 {injury_request.casualty_roll}: {casualty.code}"
+            if lasting:
+                detail += (
+                    f" · Lasting D6 {injury_request.lasting_injury_roll}: "
+                    f"{lasting.code} ({lasting.reduction_label})"
+                )
+            player.injury_history.append(
+                PlayerInjuryRecord(
+                    type="lasting_injury" if lasting else casualty.code,
+                    label=(lasting.label.es if lasting else casualty.label.es)
+                    or (lasting.label.en if lasting else casualty.label.en)
+                    or (lasting.code if lasting else casualty.code),
+                    notes=detail,
+                    roll=injury_request.lasting_injury_roll if lasting else None,
+                    stat=lasting.stat if lasting else None,
+                    reduction=lasting.reduction_label if lasting else None,
+                )
+            )
+            match.events.append(
+                MatchEvent(
+                    id=str(uuid.uuid4()),
+                    type=casualty.code,
+                    team=team_side,
+                    player_id=injury_request.player_id,
+                    player_name=player.name,
+                    injury=lasting.code if lasting else casualty.code,
+                    detail=detail,
+                    half=0,
+                    turn=0,
+                    timestamp=datetime.utcnow(),
+                    created_by=user_id,
+                    created_by_name=username,
+                )
+            )
+
+        _recover_players_who_missed_match()
+
+        for injury_request in request.injuries:
+            if injury_request.team != team_side:
+                continue
+            _validate_played_player(injury_request.player_id)
+            _apply_injury(injury_request)
+
+        def _calculate_winnings(touchdowns: int, stalling: bool) -> int:
+            fan_attendance = team.dedicated_fans + opponent.dedicated_fans
+            fan_base = fan_attendance / winnings_rules.fan_attendance_divisor
+            no_stalling_bonus = 0 if stalling else winnings_rules.no_stalling_bonus
+            return int(
+                (fan_base + touchdowns + no_stalling_bonus)
+                * winnings_rules.gold_multiplier
+            )
+
+        def _expensive_result_code(treasury: int, roll: int) -> str:
+            for band in expensive_rules.bands:
+                if treasury >= band.min_treasury and (
+                    band.max_treasury is None or treasury <= band.max_treasury
+                ):
+                    return band.results[roll - 1]
+            raise InvalidOperationException(
+                f"No Expensive Mistakes band found for treasury '{treasury}'"
+            )
+
+        def _apply_expensive_mistakes(dice) -> tuple[int, str | None]:
+            treasury = team.treasury
+            if treasury < expensive_rules.min_treasury:
+                return treasury, None
+            if dice.roll is None:
+                raise InvalidOperationException(
+                    "Expensive Mistakes D6 roll is required for treasury 100,000+"
+                )
+
+            result_code = _expensive_result_code(treasury, dice.roll)
+            effect = next(
+                (
+                    effect
+                    for effect in expensive_rules.effects
+                    if effect.code == result_code
+                ),
+                None,
+            )
+            calculation = effect.calculation if effect else "none"
+            if calculation == "lose_d3_x_10000":
+                if dice.d3 is None:
+                    raise InvalidOperationException(
+                        "Minor Incident requires an Expensive Mistakes D3 roll"
+                    )
+                return max(0, treasury - (dice.d3 * 10_000)), result_code
+            if calculation == "lose_half_round_down_5000":
+                loss = int((treasury / 2) // 5_000) * 5_000
+                return max(0, treasury - loss), result_code
+            if calculation == "keep_2d6_x_10000":
+                if dice.catastrophe_d6_a is None or dice.catastrophe_d6_b is None:
+                    raise InvalidOperationException(
+                        "Catastrophe requires two Expensive Mistakes D6 rolls"
+                    )
+                kept = (dice.catastrophe_d6_a + dice.catastrophe_d6_b) * 10_000
+                return min(treasury, kept), result_code
+            return treasury, result_code
+
+        def _apply_post_match_purchases(purchases) -> None:
+            roster = rosters_by_side[team_side]
+            summary_parts: list[str] = []
+
+            if purchases.rerolls:
+                if team.rerolls + purchases.rerolls > 8:
+                    raise InvalidOperationException(
+                        f"Cannot buy {purchases.rerolls} rerolls for {team_side}: limit is 8"
+                    )
+                cost = purchases.rerolls * roster.reroll_cost * 2
+                if team.treasury < cost:
+                    raise InvalidOperationException(
+                        f"Cannot buy rerolls for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                    )
+                team.treasury -= cost
+                team.rerolls += purchases.rerolls
+                summary_parts.append(f"rerolls +{purchases.rerolls} ({cost})")
+
+            if purchases.cheerleaders:
+                if team.cheerleaders + purchases.cheerleaders > 6:
+                    raise InvalidOperationException(
+                        f"Cannot buy {purchases.cheerleaders} cheerleaders for {team_side}: limit is 6"
+                    )
+                cost = purchases.cheerleaders * 10_000
+                if team.treasury < cost:
+                    raise InvalidOperationException(
+                        f"Cannot buy cheerleaders for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                    )
+                team.treasury -= cost
+                team.cheerleaders += purchases.cheerleaders
+                summary_parts.append(f"cheerleaders +{purchases.cheerleaders} ({cost})")
+
+            if purchases.assistant_coaches:
+                if team.assistant_coaches + purchases.assistant_coaches > 6:
+                    raise InvalidOperationException(
+                        f"Cannot buy {purchases.assistant_coaches} assistant coaches for {team_side}: limit is 6"
+                    )
+                cost = purchases.assistant_coaches * 10_000
+                if team.treasury < cost:
+                    raise InvalidOperationException(
+                        f"Cannot buy assistant coaches for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                    )
+                team.treasury -= cost
+                team.assistant_coaches += purchases.assistant_coaches
+                summary_parts.append(
+                    f"assistant coaches +{purchases.assistant_coaches} ({cost})"
+                )
+
+            if purchases.apothecary:
+                if team.apothecary:
+                    raise InvalidOperationException(
+                        f"Cannot buy apothecary for {team_side}: team already has one"
+                    )
+                if not roster.apothecary_allowed:
+                    raise InvalidOperationException(
+                        f"Cannot buy apothecary for {team_side}: roster does not allow it"
+                    )
+                cost = 50_000
+                if team.treasury < cost:
+                    raise InvalidOperationException(
+                        f"Cannot buy apothecary for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                    )
+                team.treasury -= cost
+                team.apothecary = True
+                summary_parts.append(f"apothecary (+1) ({cost})")
+
+            for player_purchase in purchases.players:
+                base_player = UserTeamService._find_base_player(
+                    roster, player_purchase.base_type
+                )
+                can_hire, reason = team.can_hire_player(
+                    base_type=player_purchase.base_type,
+                    max_allowed=base_player.max,
+                    cost=base_player.cost,
+                )
+                if not can_hire:
+                    raise InvalidOperationException(reason)
+                if team.treasury < base_player.cost:
+                    raise InvalidOperationException(
+                        f"Cannot buy player '{player_purchase.base_type}' for {team_side}: insufficient treasury ({team.treasury} < {base_player.cost})"
+                    )
+                new_player = UserTeamService._build_user_player(
+                    team=team,
+                    base_player=base_player,
+                    base_type=player_purchase.base_type,
+                    name=player_purchase.name,
+                    number=player_purchase.number,
+                )
+                team.players.append(new_player)
+                team.treasury -= base_player.cost
+                match.events.append(
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="post_match_purchase",
+                        team=team_side,
+                        player_id=new_player.id,
+                        player_name=new_player.name,
+                        detail=(
+                            f"Player purchased: {new_player.name}; type: {player_purchase.base_type}; "
+                            f"cost: {base_player.cost}; treasury: {team.treasury}"
+                        ),
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    )
+                )
+
+            if summary_parts:
+                match.events.append(
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="post_match_purchase",
+                        team=team_side,
+                        detail=(
+                            "Staff purchased: "
+                            + ", ".join(summary_parts)
+                            + f"; treasury: {team.treasury}"
+                        ),
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    )
+                )
+
+        if request.winnings:
+            winnings_touchdowns = (
+                request.winnings.home_touchdowns
+                if team_side == "home"
+                else request.winnings.away_touchdowns
+            )
+            stalling = (
+                request.winnings.home_stalling
+                if team_side == "home"
+                else request.winnings.away_stalling
+            )
+            expensive_dice = (
+                request.winnings.home_expensive_mistakes
+                if team_side == "home"
+                else request.winnings.away_expensive_mistakes
+            )
+            purchases = (
+                request.winnings.home_purchases
+                if team_side == "home"
+                else request.winnings.away_purchases
+            )
+            team_winnings = _calculate_winnings(winnings_touchdowns, stalling)
+            team.treasury += team_winnings
+            decisions = LeagueService._temporary_player_decisions(
+                match,
+                [
+                    decision
+                    for decision in request.temporary_players
+                    if decision.team == team_side
+                ],
+            )
+            LeagueService._finalize_temporary_players(
+                match,
+                {team_side: team},
+                {team_side: rosters_by_side[team_side]},
+                decisions,
+                user_id,
+                username,
+            )
+            _apply_post_match_purchases(purchases)
+            treasury_before_expensive = team.treasury
+            final_treasury, expensive_result = _apply_expensive_mistakes(expensive_dice)
+            team.treasury = final_treasury
+            match.events.append(
+                MatchEvent(
+                    id=str(uuid.uuid4()),
+                    type="winnings",
+                    team=team_side,
+                    detail=(
+                        f"Winnings: {team_winnings}; treasury before Expensive "
+                        f"Mistakes: {treasury_before_expensive}; result: {expensive_result or 'not_required'}; final treasury: {final_treasury}"
+                    ),
+                    half=0,
+                    turn=0,
+                    timestamp=datetime.utcnow(),
+                    created_by=user_id,
+                    created_by_name=username,
+                )
+            )
+        elif request.temporary_players:
+            decisions = LeagueService._temporary_player_decisions(
+                match,
+                [
+                    decision
+                    for decision in request.temporary_players
+                    if decision.team == team_side
+                ],
+            )
+            LeagueService._finalize_temporary_players(
+                match,
+                {team_side: team},
+                {team_side: rosters_by_side[team_side]},
+                decisions,
+                user_id,
+                username,
+            )
+
+        if request.dedicated_fans:
+
+            def _next_dedicated_fans(
+                current: int, roll: int | None, won: bool, lost: bool
+            ) -> int:
+                current = max(
+                    dedicated_fans_rules.min_value,
+                    min(dedicated_fans_rules.max_value, current),
+                )
+                if won:
+                    if roll is None:
+                        raise InvalidOperationException(
+                            "Winning team requires a Dedicated Fans D6 roll"
+                        )
+                    if roll >= current:
+                        return min(dedicated_fans_rules.max_value, current + 1)
+                elif lost:
+                    if roll is None:
+                        raise InvalidOperationException(
+                            "Losing team requires a Dedicated Fans D6 roll"
+                        )
+                    if roll < current:
+                        return max(dedicated_fans_rules.min_value, current - 1)
+                return current
+
+            before = team.dedicated_fans
+            home_touchdowns = (
+                request.winnings.home_touchdowns
+                if request.winnings
+                else match.score_home
+            )
+            away_touchdowns = (
+                request.winnings.away_touchdowns
+                if request.winnings
+                else match.score_away
+            )
+            roll = (
+                request.dedicated_fans.home_roll
+                if team_side == "home"
+                else request.dedicated_fans.away_roll
+            )
+            won = (
+                home_touchdowns > away_touchdowns
+                if team_side == "home"
+                else away_touchdowns > home_touchdowns
+            )
+            lost = (
+                home_touchdowns < away_touchdowns
+                if team_side == "home"
+                else away_touchdowns < home_touchdowns
+            )
+            team.dedicated_fans = _next_dedicated_fans(before, roll, won, lost)
+            match.events.append(
+                MatchEvent(
+                    id=str(uuid.uuid4()),
+                    type="dedicated_fans",
+                    team=team_side,
+                    detail=(
+                        f"Dedicated Fans: {before} → {team.dedicated_fans}; "
+                        f"roll: {roll or 'not_required'}"
+                    ),
+                    half=0,
+                    turn=0,
+                    timestamp=datetime.utcnow(),
+                    created_by=user_id,
+                    created_by_name=username,
+                )
+            )
+
+        match.events.extend(post_match_events)
+        team.team_value = await UserTeamService._calculate_team_value(
+            team, rosters_by_side[team_side]
+        )
+        team.updated_at = datetime.utcnow()
+        await team.save()
+        await LeagueService._clear_match_sent_off_statuses(match)
 
     @staticmethod
     async def _clear_match_sent_off_statuses(match: Match) -> None:
@@ -474,6 +1440,21 @@ class LeagueService:
             for t in league.teams
         ]
 
+        league_points_rules = await LeaguePointsRules.get("league_points")
+        points_by_team = LeagueService._league_points_by_team(
+            league,
+            league_points_rules,
+        )
+        sorted_standings = sorted(
+            league.standings,
+            key=lambda s: (
+                points_by_team.get(s.team_id, 0),
+                s.touchdown_diff,
+                s.touchdowns_for,
+            ),
+            reverse=True,
+        )
+
         standings = [
             LeagueStandingResponse(
                 team_id=s.team_id,
@@ -481,7 +1462,7 @@ class LeagueService:
                 wins=s.wins,
                 draws=s.draws,
                 losses=s.losses,
-                points=s.points,
+                points=points_by_team.get(s.team_id, 0),
                 touchdowns_for=s.touchdowns_for,
                 touchdowns_against=s.touchdowns_against,
                 touchdown_diff=s.touchdown_diff,
@@ -489,7 +1470,7 @@ class LeagueService:
                 casualties_against=s.casualties_against,
                 games_played=s.games_played,
             )
-            for s in league.get_sorted_standings()
+            for s in sorted_standings
         ]
 
         matches = [
@@ -980,6 +1961,7 @@ class LeagueService:
 
         for m in league.matches:
             if m.id == match_id:
+                await LeagueService._recover_players_who_served_mng(league, m)
                 return MatchDetail(
                     id=m.id,
                     round=m.round,
@@ -1042,6 +2024,10 @@ class LeagueService:
                     gate=m.gate,
                     aftermatch_spp_applied_at=m.aftermatch_spp_applied_at,
                     aftermatch_winnings_applied_at=m.aftermatch_winnings_applied_at,
+                    aftermatch_home_report=m.aftermatch_home_report,
+                    aftermatch_away_report=m.aftermatch_away_report,
+                    aftermatch_home_submitted_at=m.aftermatch_home_submitted_at,
+                    aftermatch_away_submitted_at=m.aftermatch_away_submitted_at,
                     started_at=m.started_at,
                     scheduled_at=m.scheduled_at,
                     played_at=m.played_at,
@@ -1081,6 +2067,69 @@ class LeagueService:
             "home": home_detail,
             "away": away_detail,
         }
+
+    @staticmethod
+    async def _recover_players_who_served_mng(league: League, match: Match) -> None:
+        """Clear MNG from players who already missed the team's previous completed fixture."""
+
+        async def _recover_team(team_id: str, team_side: str) -> None:
+            previous_match = max(
+                (
+                    candidate
+                    for candidate in league.matches
+                    if candidate.id != match.id
+                    and candidate.status == MatchStatus.COMPLETED
+                    and candidate.round < match.round
+                    and (
+                        candidate.home.team_id == team_id
+                        or candidate.away.team_id == team_id
+                    )
+                ),
+                key=lambda candidate: (
+                    candidate.round,
+                    candidate.played_at or candidate.started_at or datetime.min,
+                ),
+                default=None,
+            )
+            if not previous_match:
+                return
+
+            previous_squad = set(
+                previous_match.home_squad
+                if previous_match.home.team_id == team_id
+                else previous_match.away_squad
+            )
+            if not previous_squad:
+                return
+
+            team = await UserTeam.get(team_id)
+            if not team:
+                return
+
+            recovered: list[str] = []
+            for player in team.players:
+                if (
+                    LeagueService._player_status_value(player)
+                    == PlayerStatus.MISSING_NEXT_GAME.value
+                    and player.id not in previous_squad
+                ):
+                    player.status = PlayerStatus.HEALTHY.value
+                    recovered.append(player.name)
+
+            if not recovered:
+                return
+
+            team.updated_at = datetime.utcnow()
+            await team.save()
+            logger.info(
+                "Recovered served MNG players for %s before match %s: %s",
+                team_side,
+                match.id,
+                ", ".join(recovered),
+            )
+
+        await _recover_team(match.home.team_id, "home")
+        await _recover_team(match.away.team_id, "away")
 
     # ============== Delete Operations ==============
 
@@ -1264,10 +2313,19 @@ class LeagueService:
         accidental_casualty = LeagueService._is_accidental_casualty_event(
             request.type, request.detail
         )
+
+        def _is_self_inflicted_event(detail: str | None) -> bool:
+            return any(
+                line.strip() == "BBM_SELF_INFLICTED:1"
+                for line in (detail or "").splitlines()
+            )
+
         _validate_live_player(request.team, request.player_id)
         victim_side = (
             request.team
-            if request.type == "throw_teammate" or accidental_casualty
+            if request.type == "throw_teammate"
+            or accidental_casualty
+            or _is_self_inflicted_event(request.detail)
             else "away" if request.team == "home" else "home"
         )
         _validate_live_player(victim_side, request.victim_id)
@@ -1363,6 +2421,107 @@ class LeagueService:
             raise InvalidOperationException(
                 "Only match participants or the league owner can submit aftermatch SPP"
             )
+
+        if match.aftermatch_spp_applied_at is not None:
+            raise InvalidOperationException(
+                "The post-match report has already been finalized and cannot be updated"
+            )
+
+        participant_side = None
+        if match.home.user_id == user_id:
+            participant_side = "home"
+        elif match.away.user_id == user_id:
+            participant_side = "away"
+
+        is_commissioner = league.owner_id == user_id and participant_side is None
+        if not is_commissioner and participant_side is None:
+            raise InvalidOperationException(
+                "Only match participants or the league owner can submit aftermatch SPP"
+            )
+
+        if participant_side:
+            already_submitted = (
+                match.aftermatch_home_submitted_at
+                if participant_side == "home"
+                else match.aftermatch_away_submitted_at
+            )
+            if already_submitted is not None:
+                raise InvalidOperationException(
+                    "Your post-match report has already been submitted and cannot be updated"
+                )
+
+            submitted_at = datetime.utcnow()
+            LeagueService._store_aftermatch_team_report(
+                match,
+                request,
+                participant_side,
+                user_id,
+                submitted_at,
+            )
+            await LeagueService._apply_aftermatch_side_submission(
+                league,
+                match,
+                participant_side,
+                user_id,
+                request,
+                submitted_at,
+            )
+
+            if (
+                match.aftermatch_home_submitted_at is not None
+                and match.aftermatch_away_submitted_at is not None
+            ):
+                match.aftermatch_spp_applied_at = submitted_at
+                match.aftermatch_winnings_applied_at = submitted_at
+
+            await league.save()
+            return await LeagueService.get_match_detail(league_id, match_id)
+
+        if is_commissioner and (
+            match.aftermatch_home_submitted_at is not None
+            or match.aftermatch_away_submitted_at is not None
+        ):
+            pending_sides = [
+                side
+                for side, submitted in (
+                    ("home", match.aftermatch_home_submitted_at),
+                    ("away", match.aftermatch_away_submitted_at),
+                )
+                if submitted is None
+            ]
+            if not pending_sides:
+                raise InvalidOperationException(
+                    "The post-match report has already been submitted by both teams"
+                )
+
+            last_submitted_at = datetime.utcnow()
+            for side in pending_sides:
+                last_submitted_at = datetime.utcnow()
+                LeagueService._store_aftermatch_team_report(
+                    match,
+                    request,
+                    side,
+                    user_id,
+                    last_submitted_at,
+                )
+                await LeagueService._apply_aftermatch_side_submission(
+                    league,
+                    match,
+                    side,
+                    user_id,
+                    request,
+                    last_submitted_at,
+                )
+
+            if (
+                match.aftermatch_home_submitted_at is not None
+                and match.aftermatch_away_submitted_at is not None
+            ):
+                match.aftermatch_spp_applied_at = last_submitted_at
+                match.aftermatch_winnings_applied_at = last_submitted_at
+
+            await league.save()
+            return await LeagueService.get_match_detail(league_id, match_id)
 
         rules = await SppRewardsRules.get("spp_rewards")
         if not rules:
@@ -1484,7 +2643,12 @@ class LeagueService:
                 )
                 victim_side = (
                     event_request.team
-                    if event_request.type == "throw_teammate" or accidental_casualty
+                    if event_request.type == "throw_teammate"
+                    or accidental_casualty
+                    or any(
+                        line.strip() == "BBM_SELF_INFLICTED:1"
+                        for line in (event_request.detail or "").splitlines()
+                    )
                     else "away" if event_request.team == "home" else "home"
                 )
                 _validate_played_player(victim_side, event_request.victim_id)
@@ -1566,10 +2730,18 @@ class LeagueService:
                 or f"{label}=1" in normalized
             )
 
+        def _is_self_inflicted_event(detail: str | None) -> bool:
+            return any(
+                line.strip() == "BBM_SELF_INFLICTED:1"
+                for line in (detail or "").splitlines()
+            )
+
         def _score_event(event: MatchEvent) -> None:
             if event.type in event_rewards:
                 if LeagueService._is_accidental_casualty_event(
                     event.type, event.detail
+                ) or (
+                    event.type == "casualty" and _is_self_inflicted_event(event.detail)
                 ):
                     return
                 reward = event_rewards[event.type]
@@ -1606,7 +2778,11 @@ class LeagueService:
 
         if request.mvp_home is not None:
             LeagueService._validate_match_player_reference(
-                home_team, request.mvp_home, "MVP"
+                home_team,
+                request.mvp_home,
+                "MVP",
+                squads_by_side["home"],
+                match.id,
             )
             player = LeagueService._player_by_id(home_team, request.mvp_home)
             if player and player.base_type.startswith("star_"):
@@ -1614,7 +2790,11 @@ class LeagueService:
             match.mvp_home = request.mvp_home
         if request.mvp_away is not None:
             LeagueService._validate_match_player_reference(
-                away_team, request.mvp_away, "MVP"
+                away_team,
+                request.mvp_away,
+                "MVP",
+                squads_by_side["away"],
+                match.id,
             )
             player = LeagueService._player_by_id(away_team, request.mvp_away)
             if player and player.base_type.startswith("star_"):
@@ -1880,6 +3060,134 @@ class LeagueService:
                 return min(treasury, kept), result_code
             return treasury, result_code
 
+        def _apply_post_match_purchases(team_side: str, team, purchases) -> None:
+            roster = rosters_by_side[team_side]
+            summary_parts: list[str] = []
+
+            if purchases.rerolls:
+                if team.rerolls + purchases.rerolls > 8:
+                    raise InvalidOperationException(
+                        f"Cannot buy {purchases.rerolls} rerolls for {team_side}: limit is 8"
+                    )
+                cost = purchases.rerolls * roster.reroll_cost * 2
+                if team.treasury < cost:
+                    raise InvalidOperationException(
+                        f"Cannot buy rerolls for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                    )
+                team.treasury -= cost
+                team.rerolls += purchases.rerolls
+                summary_parts.append(f"rerolls +{purchases.rerolls} ({cost})")
+
+            if purchases.cheerleaders:
+                if team.cheerleaders + purchases.cheerleaders > 6:
+                    raise InvalidOperationException(
+                        f"Cannot buy {purchases.cheerleaders} cheerleaders for {team_side}: limit is 6"
+                    )
+                cost = purchases.cheerleaders * 10_000
+                if team.treasury < cost:
+                    raise InvalidOperationException(
+                        f"Cannot buy cheerleaders for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                    )
+                team.treasury -= cost
+                team.cheerleaders += purchases.cheerleaders
+                summary_parts.append(f"cheerleaders +{purchases.cheerleaders} ({cost})")
+
+            if purchases.assistant_coaches:
+                if team.assistant_coaches + purchases.assistant_coaches > 6:
+                    raise InvalidOperationException(
+                        f"Cannot buy {purchases.assistant_coaches} assistant coaches for {team_side}: limit is 6"
+                    )
+                cost = purchases.assistant_coaches * 10_000
+                if team.treasury < cost:
+                    raise InvalidOperationException(
+                        f"Cannot buy assistant coaches for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                    )
+                team.treasury -= cost
+                team.assistant_coaches += purchases.assistant_coaches
+                summary_parts.append(
+                    f"assistant coaches +{purchases.assistant_coaches} ({cost})"
+                )
+
+            if purchases.apothecary:
+                if team.apothecary:
+                    raise InvalidOperationException(
+                        f"Cannot buy apothecary for {team_side}: team already has one"
+                    )
+                if not roster.apothecary_allowed:
+                    raise InvalidOperationException(
+                        f"Cannot buy apothecary for {team_side}: roster does not allow it"
+                    )
+                cost = 50_000
+                if team.treasury < cost:
+                    raise InvalidOperationException(
+                        f"Cannot buy apothecary for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                    )
+                team.treasury -= cost
+                team.apothecary = True
+                summary_parts.append(f"apothecary (+1) ({cost})")
+
+            for player_purchase in purchases.players:
+                base_player = UserTeamService._find_base_player(
+                    roster, player_purchase.base_type
+                )
+                can_hire, reason = team.can_hire_player(
+                    base_type=player_purchase.base_type,
+                    max_allowed=base_player.max,
+                    cost=base_player.cost,
+                )
+                if not can_hire:
+                    raise InvalidOperationException(reason)
+                if team.treasury < base_player.cost:
+                    raise InvalidOperationException(
+                        f"Cannot buy player '{player_purchase.base_type}' for {team_side}: insufficient treasury ({team.treasury} < {base_player.cost})"
+                    )
+                new_player = UserTeamService._build_user_player(
+                    team=team,
+                    base_player=base_player,
+                    base_type=player_purchase.base_type,
+                    name=player_purchase.name,
+                    number=player_purchase.number,
+                )
+                team.players.append(new_player)
+                team.treasury -= base_player.cost
+                match.events.append(
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="post_match_purchase",
+                        team=team_side,
+                        player_id=new_player.id,
+                        player_name=new_player.name,
+                        detail=(
+                            f"Player purchased: {new_player.name}; type: {player_purchase.base_type}; "
+                            f"cost: {base_player.cost}; treasury: {team.treasury}"
+                        ),
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    )
+                )
+
+            if summary_parts:
+                match.events.append(
+                    MatchEvent(
+                        id=str(uuid.uuid4()),
+                        type="post_match_purchase",
+                        team=team_side,
+                        detail=(
+                            "Staff purchased: "
+                            + ", ".join(summary_parts)
+                            + f"; treasury: {team.treasury}"
+                        ),
+                        half=0,
+                        turn=0,
+                        timestamp=datetime.utcnow(),
+                        created_by=user_id,
+                        created_by_name=username,
+                    )
+                )
+
         def _apply_winnings() -> None:
             if not request.winnings:
                 return
@@ -1897,8 +3205,30 @@ class LeagueService:
                 request.winnings.away_stalling,
             )
 
-            home_before_expensive = home_team.treasury + home_winnings
-            away_before_expensive = away_team.treasury + away_winnings
+            home_team.treasury += home_winnings
+            away_team.treasury += away_winnings
+
+            decisions = LeagueService._temporary_player_decisions(
+                match, request.temporary_players
+            )
+            LeagueService._finalize_temporary_players(
+                match,
+                teams_by_side,
+                rosters_by_side,
+                decisions,
+                user_id,
+                username,
+            )
+
+            _apply_post_match_purchases(
+                "home", home_team, request.winnings.home_purchases
+            )
+            _apply_post_match_purchases(
+                "away", away_team, request.winnings.away_purchases
+            )
+
+            home_before_expensive = home_team.treasury
+            away_before_expensive = away_team.treasury
             home_final, home_expensive = _apply_expensive_mistakes(
                 home_before_expensive, request.winnings.home_expensive_mistakes
             )
@@ -2030,6 +3360,8 @@ class LeagueService:
         _apply_dedicated_fans()
 
         def _apply_temporary_players() -> None:
+            if request.winnings:
+                return
             decisions = LeagueService._temporary_player_decisions(
                 match, request.temporary_players
             )
@@ -2067,6 +3399,22 @@ class LeagueService:
         match.aftermatch_spp_applied_at = now
         if request.winnings:
             match.aftermatch_winnings_applied_at = now
+        if request.mvp_home is not None:
+            match.aftermatch_home_report = {
+                **(match.aftermatch_home_report or {}),
+                "mvp": request.mvp_home,
+            }
+            match.aftermatch_home_submitted_at = (
+                match.aftermatch_home_submitted_at or now
+            )
+        if request.mvp_away is not None:
+            match.aftermatch_away_report = {
+                **(match.aftermatch_away_report or {}),
+                "mvp": request.mvp_away,
+            }
+            match.aftermatch_away_submitted_at = (
+                match.aftermatch_away_submitted_at or now
+            )
 
         await home_team.save()
         await away_team.save()

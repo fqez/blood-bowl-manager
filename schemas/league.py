@@ -1,7 +1,7 @@
 """Schemas for league endpoints."""
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -142,6 +142,10 @@ class MatchDetail(BaseModel):
     gate: int
     aftermatch_spp_applied_at: Optional[datetime] = None
     aftermatch_winnings_applied_at: Optional[datetime] = None
+    aftermatch_home_report: dict[str, Any] = Field(default_factory=dict)
+    aftermatch_away_report: dict[str, Any] = Field(default_factory=dict)
+    aftermatch_home_submitted_at: Optional[datetime] = None
+    aftermatch_away_submitted_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     scheduled_at: Optional[datetime] = None
     played_at: Optional[datetime] = None
@@ -192,6 +196,24 @@ class AftermatchExpensiveMistakesRequest(BaseModel):
     catastrophe_d6_b: Optional[int] = Field(default=None, ge=1, le=6)
 
 
+class AftermatchPlayerPurchaseRequest(BaseModel):
+    """Permanent player purchase resolved before Expensive Mistakes."""
+
+    base_type: str
+    name: Optional[str] = Field(default=None, max_length=50)
+    number: Optional[int] = Field(default=None, ge=1, le=99)
+
+
+class AftermatchTeamPurchasesRequest(BaseModel):
+    """Post-match roster and staff purchases for one team."""
+
+    players: list[AftermatchPlayerPurchaseRequest] = Field(default_factory=list)
+    rerolls: int = Field(default=0, ge=0, le=8)
+    cheerleaders: int = Field(default=0, ge=0, le=6)
+    assistant_coaches: int = Field(default=0, ge=0, le=6)
+    apothecary: bool = False
+
+
 class AftermatchWinningsRequest(BaseModel):
     """Inputs for backend-owned winnings and treasury persistence."""
 
@@ -199,6 +221,12 @@ class AftermatchWinningsRequest(BaseModel):
     away_touchdowns: int = Field(default=0, ge=0)
     home_stalling: bool = False
     away_stalling: bool = False
+    home_purchases: AftermatchTeamPurchasesRequest = Field(
+        default_factory=AftermatchTeamPurchasesRequest
+    )
+    away_purchases: AftermatchTeamPurchasesRequest = Field(
+        default_factory=AftermatchTeamPurchasesRequest
+    )
     home_expensive_mistakes: AftermatchExpensiveMistakesRequest = Field(
         default_factory=AftermatchExpensiveMistakesRequest
     )

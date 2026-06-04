@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
 
 from beanie import Document
 from pydantic import BaseModel, Field
@@ -181,6 +181,10 @@ class Match(BaseModel):
     # Post-match persistence guards
     aftermatch_spp_applied_at: Optional[datetime] = None
     aftermatch_winnings_applied_at: Optional[datetime] = None
+    aftermatch_home_report: dict[str, Any] = Field(default_factory=dict)
+    aftermatch_away_report: dict[str, Any] = Field(default_factory=dict)
+    aftermatch_home_submitted_at: Optional[datetime] = None
+    aftermatch_away_submitted_at: Optional[datetime] = None
 
     # Timing
     started_at: Optional[datetime] = None

@@ -3,8 +3,8 @@
 import pytest
 
 from models.base.roster import BasePlayer, BaseRoster, BaseStats
-from models.league.league import Match, MatchTeamInfo
-from models.user_team.team import PlayerStats, UserPlayer, UserTeam
+from models.league.league import League, Match, MatchStatus, MatchTeamInfo
+from models.user_team.team import PlayerStats, PlayerStatus, UserPlayer, UserTeam
 from services.league_service import LeagueService
 
 
@@ -33,6 +33,7 @@ def _player(
     *,
     temporary: bool,
     temporary_match_id: str | None = None,
+    status: str = "healthy",
 ) -> UserPlayer:
     return UserPlayer(
         id=player_id,
@@ -41,6 +42,7 @@ def _player(
         number=number,
         current_value=50000,
         stats=PlayerStats(MA=6, ST=3, AG=3, PA=4, AV=9),
+        status=status,
         temporary_for_match=temporary,
         temporary_match_id=temporary_match_id,
         journeyman=temporary,
@@ -105,3 +107,80 @@ async def test_finalize_temporary_players_sweeps_roster_and_keeps_only_keep_deci
     assert home.treasury == 50000
     assert [event.type for event in match.events].count("temporary_player_keep") == 1
     assert [event.type for event in match.events].count("temporary_player_release") == 2
+
+
+@pytest.mark.anyio
+async def test_recover_players_who_served_mng_before_next_match_detail(monkeypatch):
+    served_player = _player(
+        "served-mng",
+        1,
+        temporary=False,
+        status=PlayerStatus.MISSING_NEXT_GAME.value,
+    )
+    active_player = _player("active", 2, temporary=False)
+    team = UserTeam(
+        user_id="coach",
+        base_roster_id="human",
+        name="Home",
+        players=[served_player, active_player],
+    )
+    opponent = UserTeam(
+        user_id="coach-2",
+        base_roster_id="human",
+        name="Away",
+        players=[_player("opp", 3, temporary=False)],
+    )
+    previous_match = Match(
+        id="match-1",
+        round=1,
+        status=MatchStatus.COMPLETED,
+        home=MatchTeamInfo(
+            team_id="home-team",
+            team_name="Home",
+            user_id="coach",
+            username="Coach",
+            base_roster_id="human",
+        ),
+        away=MatchTeamInfo(
+            team_id="away-team",
+            team_name="Away",
+            user_id="coach-2",
+            username="Coach 2",
+            base_roster_id="human",
+        ),
+        home_squad=["active"],
+        away_squad=["opp"],
+    )
+    next_match = Match(
+        id="match-2",
+        round=2,
+        status=MatchStatus.SCHEDULED,
+        home=previous_match.home,
+        away=previous_match.away,
+    )
+    league = League(
+        name="League",
+        owner_id="owner",
+        matches=[previous_match, next_match],
+    )
+
+    saved_ids: list[str] = []
+
+    async def fake_get(team_id: str):
+        if team_id == "home-team":
+            return team
+        if team_id == "away-team":
+            return opponent
+        return None
+
+    async def fake_save(self):
+        saved_ids.append(self.id)
+
+    monkeypatch.setattr(UserTeam, "get", staticmethod(fake_get))
+    monkeypatch.setattr(UserTeam, "save", fake_save)
+
+    await LeagueService._recover_players_who_served_mng(league, next_match)
+
+    assert served_player.status == PlayerStatus.HEALTHY.value
+    assert active_player.status == PlayerStatus.HEALTHY.value
+    assert saved_ids == [team.id]
