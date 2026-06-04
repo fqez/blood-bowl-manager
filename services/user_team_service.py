@@ -915,7 +915,7 @@ class UserTeamService:
             )
 
         # Check roster space
-        if len(team.players) >= 16:
+        if team.permanent_player_count() >= 16:
             raise InvalidOperationException("Roster is full (max 16 players)")
 
         # Check treasury
@@ -1264,7 +1264,11 @@ class UserTeamService:
         if request.number is not None:
             # Check number is not already taken by another player
             for p in team.players:
-                if p.id != player_id and p.number == request.number:
+                if (
+                    p.id != player_id
+                    and not UserTeamService._is_dead_player(p)
+                    and p.number == request.number
+                ):
                     raise InvalidOperationException(
                         f"Jersey number {request.number} is already taken"
                     )
@@ -1379,11 +1383,20 @@ class UserTeamService:
     @staticmethod
     def _next_available_number(team: UserTeam) -> int:
         """Find next available jersey number."""
-        used = {p.number for p in team.players}
+        used = {
+            p.number
+            for p in team.players
+            if not UserTeamService._is_dead_player(p)
+        }
         for n in range(1, 100):
             if n not in used:
                 return n
         return random.randint(1, 99)
+
+    @staticmethod
+    def _is_dead_player(player: UserPlayer) -> bool:
+        status = player.status.value if hasattr(player.status, "value") else player.status
+        return status == PlayerStatus.DEAD.value
 
     @staticmethod
     def _find_base_player(roster: BaseRoster, base_type: str) -> BasePlayer:
@@ -1501,7 +1514,10 @@ class UserTeamService:
     ) -> UserPlayer:
         """Create a user player from a base roster player."""
         jersey_number = number or UserTeamService._next_available_number(team)
-        if any(player.number == jersey_number for player in team.players):
+        if any(
+            player.number == jersey_number and not UserTeamService._is_dead_player(player)
+            for player in team.players
+        ):
             raise InvalidOperationException(
                 f"Jersey number {jersey_number} is already taken"
             )

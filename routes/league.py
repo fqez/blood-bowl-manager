@@ -18,6 +18,7 @@ from schemas.league import (
     FinalizeAftermatchRostersRequest,
     JoinLeagueRequest,
     LeagueByCodePreview,
+    LeagueDashboardResponse,
     LeagueDetail,
     LeagueSummary,
     MatchDetail,
@@ -84,6 +85,26 @@ async def get_league(league_id: str, user_id: str = Depends(get_current_user)):
         )
 
     return detail
+
+
+@router.get("/{league_id}/dashboard-stats", response_model=LeagueDashboardResponse)
+async def get_league_dashboard_stats(
+    league_id: str,
+    user_id: str = Depends(get_current_user),
+):
+    """Get backend-computed analytics used by the league dashboard."""
+    try:
+        return await LeagueService.get_league_dashboard_stats(
+            league_id,
+            viewer_id=user_id,
+        )
+    except LeagueNotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"League '{league_id}' not found",
+        )
+    except InvalidOperationException as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
 @router.get("/by-code/{invite_code}", response_model=LeagueByCodePreview)

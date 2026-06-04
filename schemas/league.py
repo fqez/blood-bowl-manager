@@ -448,3 +448,76 @@ class LeagueDetail(BaseModel):
     created_at: datetime
     started_at: Optional[datetime] = None
     ended_at: Optional[datetime] = None
+
+
+class LeagueDashboardTeamRow(BaseModel):
+    """Aggregated team row for league dashboard views."""
+
+    team_id: str
+    team_name: str
+    points: int
+    games_played: int
+    wins: int
+    draws: int
+    losses: int
+    touchdowns_for: int
+    touchdowns_against: int
+    touchdown_diff: int
+    casualties_for: int
+    casualties_against: int
+    win_rate: float = Field(default=0.0, ge=0)
+
+
+class LeagueDashboardRoundRow(BaseModel):
+    """Per-round aggregate used by the league dashboard."""
+
+    round: int = Field(..., ge=1)
+    matches_total: int = Field(default=0, ge=0)
+    matches_played: int = Field(default=0, ge=0)
+    touchdowns: int = Field(default=0, ge=0)
+    casualties: int = Field(default=0, ge=0)
+
+
+class LeagueDashboardResponse(BaseModel):
+    """League-wide analytics for the stats dashboard."""
+
+    league_id: str
+    league_name: str
+    generated_at: datetime
+    current_round: Optional[int] = None
+
+    total_matches: int = Field(default=0, ge=0)
+    played_matches: int = Field(default=0, ge=0)
+    in_progress_matches: int = Field(default=0, ge=0)
+    scheduled_matches: int = Field(default=0, ge=0)
+    completion_ratio: float = Field(default=0.0, ge=0)
+
+    total_touchdowns: int = Field(default=0, ge=0)
+    total_casualties: int = Field(default=0, ge=0)
+    avg_touchdowns_per_match: float = Field(default=0.0, ge=0)
+    avg_casualties_per_match: float = Field(default=0.0, ge=0)
+
+    home_wins: int = Field(default=0, ge=0)
+    away_wins: int = Field(default=0, ge=0)
+    draws: int = Field(default=0, ge=0)
+    home_win_rate: float = Field(default=0.0, ge=0)
+    away_win_rate: float = Field(default=0.0, ge=0)
+    draw_rate: float = Field(default=0.0, ge=0)
+
+    avg_home_turn_seconds: float = Field(default=0.0, ge=0)
+    avg_away_turn_seconds: float = Field(default=0.0, ge=0)
+    avg_home_rerolls_used: float = Field(default=0.0, ge=0)
+    avg_away_rerolls_used: float = Field(default=0.0, ge=0)
+
+    touchdowns_by_round: list[int] = Field(default_factory=list)
+    casualties_by_round: list[int] = Field(default_factory=list)
+    rounds: list[LeagueDashboardRoundRow] = Field(default_factory=list)
+
+    outcome_distribution: dict[str, int] = Field(default_factory=dict)
+    score_bucket_distribution: dict[str, int] = Field(default_factory=dict)
+    event_type_counts: dict[str, int] = Field(default_factory=dict)
+    injury_type_counts: dict[str, int] = Field(default_factory=dict)
+
+    top_by_points: list[LeagueDashboardTeamRow] = Field(default_factory=list)
+    top_attack: list[LeagueDashboardTeamRow] = Field(default_factory=list)
+    top_violence: list[LeagueDashboardTeamRow] = Field(default_factory=list)

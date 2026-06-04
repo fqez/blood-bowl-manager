@@ -232,13 +232,26 @@ class UserTeam(Document):
             ignored_player_types=ignored_player_types,
         ).team_value
 
+    @staticmethod
+    def _is_dead_player(player: UserPlayer) -> bool:
+        status = player.status.value if isinstance(player.status, PlayerStatus) else player.status
+        return status == PlayerStatus.DEAD.value
+
     def permanent_player_count(self) -> int:
-        """Count non-temporary players on the Team Draft List."""
-        return sum(1 for p in self.players if not p.temporary_for_match)
+        """Count non-temporary, non-dead players on the Team Draft List."""
+        return sum(
+            1
+            for p in self.players
+            if not p.temporary_for_match and not self._is_dead_player(p)
+        )
 
     def get_player_count_by_type(self, base_type: str) -> int:
-        """Count how many players of a specific type are hired."""
-        return sum(1 for p in self.players if p.base_type == base_type)
+        """Count how many living players of a specific type are hired."""
+        return sum(
+            1
+            for p in self.players
+            if p.base_type == base_type and not self._is_dead_player(p)
+        )
 
     def can_hire_player(
         self, base_type: str, max_allowed: int, cost: int

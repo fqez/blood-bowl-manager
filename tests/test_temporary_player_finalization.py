@@ -110,6 +110,60 @@ async def test_finalize_temporary_players_sweeps_roster_and_keeps_only_keep_deci
 
 
 @pytest.mark.anyio
+async def test_finalize_temporary_players_allows_keep_when_only_dead_players_fill_cap(
+    client_test,
+):
+    match = Match(
+        id="match-2",
+        round=1,
+        home=MatchTeamInfo(
+            team_id="home-team",
+            team_name="Home",
+            user_id="coach",
+            username="Coach",
+            base_roster_id="human",
+        ),
+        away=MatchTeamInfo(
+            team_id="away-team",
+            team_name="Away",
+            user_id="coach-2",
+            username="Coach 2",
+            base_roster_id="human",
+        ),
+    )
+    home = UserTeam(
+        user_id="coach",
+        base_roster_id="human",
+        name="Home",
+        treasury=100000,
+        players=[
+            *[_player(f"alive-{index}", index + 1, temporary=False) for index in range(15)],
+            _player("dead-1", 16, temporary=False, status=PlayerStatus.DEAD.value),
+            _player("rookie-1", 17, temporary=True, temporary_match_id="old-id"),
+        ],
+    )
+    away = UserTeam(
+        user_id="coach-2",
+        base_roster_id="human",
+        name="Away",
+        players=[],
+    )
+
+    LeagueService._finalize_temporary_players(
+        match,
+        {"home": home, "away": away},
+        {"home": _base_roster(), "away": _base_roster()},
+        {("home", "rookie-1"): "keep"},
+        "coach",
+        "Coach",
+    )
+
+    assert any(player.id == "rookie-1" and not player.temporary_for_match for player in home.players)
+    assert home.treasury == 50000
+    assert [event.type for event in match.events].count("temporary_player_keep") == 1
+
+
+@pytest.mark.anyio
 async def test_recover_players_who_served_mng_before_next_match_detail(monkeypatch):
     served_player = _player(
         "served-mng",

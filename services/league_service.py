@@ -2,6 +2,7 @@
 
 import logging
 import uuid
+from collections import Counter
 from datetime import datetime
 from itertools import combinations
 from typing import Any, Optional
@@ -44,6 +45,9 @@ from schemas.league import (
     ApplyAftermatchSppRequest,
     CreateLeagueMatchRequest,
     CreateLeagueRequest,
+    LeagueDashboardResponse,
+    LeagueDashboardRoundRow,
+    LeagueDashboardTeamRow,
     LeagueByCodePreview,
     LeagueDetail,
     LeagueRulesRequest,
@@ -396,6 +400,12 @@ class LeagueService:
                     1
                     for team_player in next_players
                     if not team_player.temporary_for_match
+                    and (
+                        team_player.status.value
+                        if isinstance(team_player.status, PlayerStatus)
+                        else team_player.status
+                    )
+                    != PlayerStatus.DEAD.value
                 )
                 if permanent_count >= 16:
                     raise InvalidOperationException(
@@ -1711,6 +1721,236 @@ class LeagueService:
             created_at=league.created_at,
             started_at=league.started_at,
             ended_at=league.ended_at,
+        )
+
+    @staticmethod
+    async def get_league_dashboard_stats(
+        league_id: str,
+        *,
+        viewer_id: Optional[str] = None,
+    ) -> LeagueDashboardResponse:
+        """Return backend-computed league analytics for the stats dashboard."""
+        league = await _get_league(league_id)
+        if not league:
+            raise LeagueNotFoundException(league_id)
+
+        if viewer_id is not None and not LeagueService._user_can_view_league(
+            league, viewer_id
+        ):
+            raise InvalidOperationException("You do not have access to this league")
+
+        league_points_rules = await LeaguePointsRules.get("league_points")
+        points_by_team = LeagueService._league_points_by_team(league, league_points_rules)
+
+        def _team_row(standing: LeagueStanding) -> LeagueDashboardTeamRow:
+            games_played = standing.games_played
+            win_rate = round((standing.wins / games_played) * 100, 2) if games_played else 0.0
+            return LeagueDashboardTeamRow(
+                team_id=standing.team_id,
+                team_name=standing.team_name,
+                points=points_by_team.get(standing.team_id, 0),
+                games_played=games_played,
+                wins=standing.wins,
+                draws=standing.draws,
+                losses=standing.losses,
+                touchdowns_for=standing.touchdowns_for,
+                touchdowns_against=standing.touchdowns_against,
+                touchdown_diff=standing.touchdown_diff,
+                casualties_for=standing.casualties_for,
+                casualties_against=standing.casualties_against,
+                win_rate=win_rate,
+            )
+
+        standings_by_points = sorted(
+            league.standings,
+            key=lambda s: (
+                points_by_team.get(s.team_id, 0),
+                s.touchdown_diff,
+                s.touchdowns_for,
+            ),
+            reverse=True,
+        )
+        standings_by_attack = sorted(
+            league.standings,
+            key=lambda s: (s.touchdowns_for, s.touchdown_diff),
+            reverse=True,
+        )
+        standings_by_violence = sorted(
+            league.standings,
+            key=lambda s: (s.casualties_for, s.casualties_for - s.casualties_against),
+            reverse=True,
+        )
+
+        matches = list(league.matches)
+        played_matches = [m for m in matches if m.status == MatchStatus.COMPLETED]
+        in_progress_matches = [m for m in matches if m.status == MatchStatus.IN_PROGRESS]
+        scheduled_matches = [m for m in matches if m.status == MatchStatus.SCHEDULED]
+
+        home_wins = 0
+        away_wins = 0
+        draws = 0
+        total_touchdowns = 0
+        total_casualties = 0
+
+        event_type_counts: Counter[str] = Counter()
+        injury_type_counts: Counter[str] = Counter()
+        score_bucket_distribution: Counter[str] = Counter()
+
+        max_round = max((match.round for match in matches), default=0)
+        touchdowns_by_round = [0] * max_round
+        casualties_by_round = [0] * max_round
+        matches_by_round = [0] * max_round
+        played_by_round = [0] * max_round
+
+        for match in matches:
+            if match.round >= 1 and match.round <= max_round:
+                matches_by_round[match.round - 1] += 1
+
+        for match in played_matches:
+            if match.score_home > match.score_away:
+                home_wins += 1
+            elif match.score_away > match.score_home:
+                away_wins += 1
+            else:
+                draws += 1
+
+            touchdowns_in_match = match.score_home + match.score_away
+            total_touchdowns += touchdowns_in_match
+
+            if touchdowns_in_match <= 1:
+                score_bucket_distribution["closed"] += 1
+            elif touchdowns_in_match <= 3:
+                score_bucket_distribution["balanced"] += 1
+            else:
+                score_bucket_distribution["shootout"] += 1
+
+            casualties_in_match = 0
+            for event in match.events:
+                event_type_counts[event.type] += 1
+                if event.injury:
+                    injury_type_counts[event.injury] += 1
+                if event.type in {
+                    "badly_hurt",
+                    "serious_injury",
+                    "lasting_injury",
+                    "rip",
+                    "ko",
+                    "stun",
+                }:
+                    injury_type_counts[event.type] += 1
+
+                if (
+                    event.type == "casualty"
+                    and event.team in {"home", "away"}
+                    and not LeagueService._is_self_inflicted_casualty(event)
+                ):
+                    casualties_in_match += 1
+
+            total_casualties += casualties_in_match
+
+            if match.round >= 1 and match.round <= max_round:
+                idx = match.round - 1
+                played_by_round[idx] += 1
+                touchdowns_by_round[idx] += touchdowns_in_match
+                casualties_by_round[idx] += casualties_in_match
+
+        played_count = len(played_matches)
+        total_count = len(matches)
+
+        home_turn_seconds = [
+            second
+            for match in played_matches
+            for second in match.home_turn_seconds
+            if second >= 0
+        ]
+        away_turn_seconds = [
+            second
+            for match in played_matches
+            for second in match.away_turn_seconds
+            if second >= 0
+        ]
+
+        round_rows = [
+            LeagueDashboardRoundRow(
+                round=round_number,
+                matches_total=matches_by_round[round_number - 1],
+                matches_played=played_by_round[round_number - 1],
+                touchdowns=touchdowns_by_round[round_number - 1],
+                casualties=casualties_by_round[round_number - 1],
+            )
+            for round_number in range(1, max_round + 1)
+        ]
+
+        outcome_distribution = {
+            "home_win": home_wins,
+            "away_win": away_wins,
+            "draw": draws,
+        }
+
+        return LeagueDashboardResponse(
+            league_id=str(league.id),
+            league_name=league.name,
+            generated_at=datetime.utcnow(),
+            current_round=LeagueService._current_round(league),
+            total_matches=total_count,
+            played_matches=played_count,
+            in_progress_matches=len(in_progress_matches),
+            scheduled_matches=len(scheduled_matches),
+            completion_ratio=round((played_count / total_count), 4) if total_count else 0,
+            total_touchdowns=total_touchdowns,
+            total_casualties=total_casualties,
+            avg_touchdowns_per_match=round((total_touchdowns / played_count), 2)
+            if played_count
+            else 0,
+            avg_casualties_per_match=round((total_casualties / played_count), 2)
+            if played_count
+            else 0,
+            home_wins=home_wins,
+            away_wins=away_wins,
+            draws=draws,
+            home_win_rate=round((home_wins / played_count) * 100, 2)
+            if played_count
+            else 0,
+            away_win_rate=round((away_wins / played_count) * 100, 2)
+            if played_count
+            else 0,
+            draw_rate=round((draws / played_count) * 100, 2) if played_count else 0,
+            avg_home_turn_seconds=round(
+                sum(home_turn_seconds) / len(home_turn_seconds), 2
+            )
+            if home_turn_seconds
+            else 0,
+            avg_away_turn_seconds=round(
+                sum(away_turn_seconds) / len(away_turn_seconds), 2
+            )
+            if away_turn_seconds
+            else 0,
+            avg_home_rerolls_used=round(
+                sum(match.rerolls_used_home for match in played_matches) / played_count,
+                2,
+            )
+            if played_count
+            else 0,
+            avg_away_rerolls_used=round(
+                sum(match.rerolls_used_away for match in played_matches) / played_count,
+                2,
+            )
+            if played_count
+            else 0,
+            touchdowns_by_round=touchdowns_by_round,
+            casualties_by_round=casualties_by_round,
+            rounds=round_rows,
+            outcome_distribution=outcome_distribution,
+            score_bucket_distribution={
+                "closed": score_bucket_distribution.get("closed", 0),
+                "balanced": score_bucket_distribution.get("balanced", 0),
+                "shootout": score_bucket_distribution.get("shootout", 0),
+            },
+            event_type_counts=dict(event_type_counts),
+            injury_type_counts=dict(injury_type_counts),
+            top_by_points=[_team_row(standing) for standing in standings_by_points[:5]],
+            top_attack=[_team_row(standing) for standing in standings_by_attack[:5]],
+            top_violence=[_team_row(standing) for standing in standings_by_violence[:5]],
         )
 
     # ============== Team Management ==============
