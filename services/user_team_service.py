@@ -1452,9 +1452,7 @@ class UserTeamService:
     def _next_available_number(team: UserTeam) -> int:
         """Find next available jersey number."""
         used = {
-            p.number
-            for p in team.players
-            if not UserTeamService._is_dead_player(p)
+            p.number for p in team.players if not UserTeamService._is_dead_player(p)
         }
         for n in range(1, 100):
             if n not in used:
@@ -1463,7 +1461,9 @@ class UserTeamService:
 
     @staticmethod
     def _is_dead_player(player: UserPlayer) -> bool:
-        status = player.status.value if hasattr(player.status, "value") else player.status
+        status = (
+            player.status.value if hasattr(player.status, "value") else player.status
+        )
         return status == PlayerStatus.DEAD.value
 
     @staticmethod
@@ -1623,7 +1623,8 @@ class UserTeamService:
         """Create a user player from a base roster player."""
         jersey_number = number or UserTeamService._next_available_number(team)
         if any(
-            player.number == jersey_number and not UserTeamService._is_dead_player(player)
+            player.number == jersey_number
+            and not UserTeamService._is_dead_player(player)
             for player in team.players
         ):
             raise InvalidOperationException(
