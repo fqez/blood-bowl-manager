@@ -177,15 +177,27 @@ class UserTeam(Document):
         name = "user_teams"
 
     def calculate_team_value_breakdown(
-        self, reroll_cost: int = 0
+        self,
+        reroll_cost: int = 0,
+        ignored_player_types: Optional[set[str]] = None,
     ) -> TeamValueBreakdown:
         """Calculate official TV and CTV from current roster state."""
-        player_value = sum(p.current_value for p in self.players)
+        ignored_player_types = ignored_player_types or set()
+        player_value = sum(
+            p.current_value
+            for p in self.players
+            if (p.status.value if isinstance(p.status, PlayerStatus) else p.status)
+            != PlayerStatus.DEAD.value
+            and p.base_type not in ignored_player_types
+        )
         unavailable_player_value = sum(
             p.current_value
             for p in self.players
             if (p.status.value if isinstance(p.status, PlayerStatus) else p.status)
+            != PlayerStatus.DEAD.value
+            and (p.status.value if isinstance(p.status, PlayerStatus) else p.status)
             != PlayerStatus.HEALTHY.value
+            and p.base_type not in ignored_player_types
         )
         reroll_value = self.rerolls * reroll_cost
         assistant_coach_value = self.assistant_coaches * 10000
@@ -209,9 +221,16 @@ class UserTeam(Document):
             current_team_value=max(0, team_value - unavailable_player_value),
         )
 
-    def calculate_team_value(self, reroll_cost: int = 0) -> int:
+    def calculate_team_value(
+        self,
+        reroll_cost: int = 0,
+        ignored_player_types: Optional[set[str]] = None,
+    ) -> int:
         """Calculate official full Team Value."""
-        return self.calculate_team_value_breakdown(reroll_cost=reroll_cost).team_value
+        return self.calculate_team_value_breakdown(
+            reroll_cost=reroll_cost,
+            ignored_player_types=ignored_player_types,
+        ).team_value
 
     def permanent_player_count(self) -> int:
         """Count non-temporary players on the Team Draft List."""

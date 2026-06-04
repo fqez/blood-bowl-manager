@@ -103,7 +103,16 @@ class UserTeamService:
             roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
 
         reroll_cost = roster.reroll_cost if roster else 0
-        return team.calculate_team_value_breakdown(reroll_cost=reroll_cost)
+        ignored_player_types = {
+            player.type
+            for player in (roster.players if roster else [])
+            if any("low cost linemen" in rule.lower() for rule in roster.special_rules)
+            and player.position.lower() == "lineman"
+        }
+        return team.calculate_team_value_breakdown(
+            reroll_cost=reroll_cost,
+            ignored_player_types=ignored_player_types,
+        )
 
     @staticmethod
     def _eligible_player_count(team: UserTeam) -> int:

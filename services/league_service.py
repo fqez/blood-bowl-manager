@@ -190,7 +190,23 @@ class LeagueService:
     @staticmethod
     def _event_detail_has_flag(detail: Optional[str], flag: str) -> bool:
         normalized = (detail or "").lower().replace(" ", "")
-        return f"{flag.lower()}=true" in normalized
+        normalized_lines = [
+            line.strip().lower().replace(" ", "")
+            for line in (detail or "").splitlines()
+            if line.strip()
+        ]
+        flag_name = flag.lower()
+        truthy_values = {"true", "1", "yes", "y", "si", "sí"}
+
+        if f"bbm_{flag_name}:1" in normalized_lines:
+            return True
+        if f"{flag_name}=true" in normalized:
+            return True
+        return any(
+            line.startswith(f"{flag_name}:")
+            and line.split(":", 1)[1].split("(", 1)[0] in truthy_values
+            for line in normalized_lines
+        )
 
     @staticmethod
     def _is_accidental_casualty_event(event_type: str, detail: Optional[str]) -> bool:
@@ -698,7 +714,12 @@ class LeagueService:
             if event.team != team_side:
                 return
             if event.type in event_rewards:
-                if event.type == "casualty" and _is_self_inflicted_event(event.detail):
+                if LeagueService._is_accidental_casualty_event(
+                    event.type, event.detail
+                ) or (
+                    event.type == "casualty"
+                    and _is_self_inflicted_event(event.detail)
+                ):
                     return
                 reward = event_rewards[event.type]
                 if reward.requires_player and not event.player_id:
