@@ -80,7 +80,7 @@
             "_id": "diving_catch",
             "name": {
                 "en": "Diving Catch",
-                "es": "Recepción Divina"
+                "es": "Recepción Heróica"
             },
             "family": "agility",
             "type": "active",
@@ -98,7 +98,7 @@
             "_id": "diving_tackle",
             "name": {
                 "en": "Diving Tackle",
-                "es": "Placaje Defensivo"
+                "es": "Placaje Heróico"
             },
             "family": "agility",
             "type": "active",
@@ -134,7 +134,7 @@
             "_id": "defensive",
             "name": {
                 "en": "Defensive",
-                "es": "Defensivo"
+                "es": "Romper Defensas"
             },
             "family": "agility",
             "type": "active",
@@ -152,7 +152,7 @@
             "_id": "hit_and_run",
             "name": {
                 "en": "Hit and Run",
-                "es": "Golpear Y Correr"
+                "es": "Golpe a la Carrera"
             },
             "family": "agility",
             "type": "active",
@@ -170,7 +170,7 @@
             "_id": "jump_up",
             "name": {
                 "en": "Jump Up",
-                "es": "Brinco"
+                "es": "En pie de un salto"
             },
             "family": "agility",
             "type": "active",
@@ -188,7 +188,7 @@
             "_id": "leap",
             "name": {
                 "en": "Leap",
-                "es": "Salto"
+                "es": "Saltar"
             },
             "family": "agility",
             "type": "active",
@@ -206,7 +206,7 @@
             "_id": "safe_pair_of_hands",
             "name": {
                 "en": "Safe Pair of Hands",
-                "es": "Manos Seguras"
+                "es": "Proteger el Cuero"
             },
             "family": "agility",
             "type": "active",
@@ -224,7 +224,7 @@
             "_id": "sidestep",
             "name": {
                 "en": "Sidestep",
-                "es": "Mantenerse Firme"
+                "es": "Echarse a un Lado"
             },
             "family": "agility",
             "type": "active",
@@ -242,7 +242,7 @@
             "_id": "sprint",
             "name": {
                 "en": "Sprint",
-                "es": "Sprint"
+                "es": "Esprintar"
             },
             "family": "agility",
             "type": "active",
@@ -278,7 +278,7 @@
             "_id": "dirty_player",
             "name": {
                 "en": "Dirty Player",
-                "es": "Jugador Sucio"
+                "es": "Jugar Sucio"
             },
             "family": "devious",
             "type": "active",
@@ -296,7 +296,7 @@
             "_id": "eye_gouge",
             "name": {
                 "en": "Eye Gouge",
-                "es": "Sacar Ojos"
+                "es": "Piquete de Ojos"
             },
             "family": "devious",
             "type": "active",
@@ -314,7 +314,7 @@
             "_id": "fumblerooski",
             "name": {
                 "en": "Fumblerooski",
-                "es": "Fumblerooski"
+                "es": "Dejada"
             },
             "family": "devious",
             "type": "active",
@@ -350,7 +350,7 @@
             "_id": "lone_fouler",
             "name": {
                 "en": "Lone Fouler",
-                "es": "Infractor Solitario"
+                "es": "Agresor Discreto"
             },
             "family": "devious",
             "type": "active",
@@ -368,7 +368,7 @@
             "_id": "pile_driver",
             "name": {
                 "en": "Pile Driver",
-                "es": "Martinete"
+                "es": "Crujir"
             },
             "family": "devious",
             "type": "active",
@@ -386,7 +386,7 @@
             "_id": "put_the_boot_in",
             "name": {
                 "en": "Put the Boot in",
-                "es": "Dar Caña"
+                "es": "Meter la Bota"
             },
             "family": "devious",
             "type": "active",
@@ -440,7 +440,7 @@
             "_id": "shadowing",
             "name": {
                 "en": "Shadowing",
-                "es": "Sombra"
+                "es": "Perseguir"
             },
             "family": "devious",
             "type": "active",
@@ -458,7 +458,7 @@
             "_id": "sneaky_git",
             "name": {
                 "en": "Sneaky Git",
-                "es": "Compinche Taimado"
+                "es": "Furtivo"
             },
             "family": "devious",
             "type": "active",
@@ -494,7 +494,7 @@
             "_id": "block",
             "name": {
                 "en": "Block",
-                "es": "Placaje"
+                "es": "Placar"
             },
             "family": "general",
             "type": "active",
@@ -602,7 +602,7 @@
             "_id": "steady_footing",
             "name": {
                 "en": "Steady Footing",
-                "es": "Pisada Firme"
+                "es": "Equilibrio Firme"
             },
             "family": "general",
             "type": "active",
@@ -663,7 +663,7 @@
             "mandatory": false,
             "description": {
                 "en": "When an opposition player attempts to Dodge away from a square in this player’s Tackle Zone, they cannot use the Dodge Skill. Additionally, when this player performs a Block Action, the opponent does not count as having the Dodge Skill if a Stumble result is selected.",
-                "es": "Cuando un oponente intente Esquivar para salir de la Zona de Defensa de este jugador, no podrá usar la habilidad Esquivar. Además, cuando este jugador realice un Placaje, el oponente no podrá usar Esquivar si se selecciona un resultado de Tropezón."
+                "es": "Cuando un oponente intente Esquivar para salir de la Zona de Defensa de este jugador, no podrá usar la habilidad Esquivar. Además, cuando este jugador realice un Placaje, el oponente no podrá usar Esquivar si se selecciona un resultado de Desequilibrado."
             },
             "kind": "skill",
             "use": "active",
@@ -674,7 +674,7 @@
             "_id": "taunt",
             "name": {
                 "en": "Taunt",
-                "es": "Provocación"
+                "es": "Provocar"
             },
             "family": "general",
             "type": "active",
@@ -692,7 +692,7 @@
             "_id": "wrestle",
             "name": {
                 "en": "Wrestle",
-                "es": "Forcejeo"
+                "es": "Forcejear"
             },
             "family": "general",
             "type": "active",
@@ -818,7 +818,7 @@
             "_id": "iron_hard_skin",
             "name": {
                 "en": "Iron Hard Skin",
-                "es": "Piel Dura Como El Hierro"
+                "es": "Piel Férrea"
             },
             "family": "mutation",
             "type": "passive",
@@ -926,7 +926,7 @@
             "_id": "accurate",
             "name": {
                 "en": "Accurate",
-                "es": "Preciso"
+                "es": "Precisión"
             },
             "family": "passing",
             "type": "active",
@@ -944,7 +944,7 @@
             "_id": "cannoneer",
             "name": {
                 "en": "Cannoneer",
-                "es": "Artillero"
+                "es": "Cañonero"
             },
             "family": "passing",
             "type": "active",
@@ -962,7 +962,7 @@
             "_id": "cloud_burster",
             "name": {
                 "en": "Cloud Burster",
-                "es": "Rompenubes"
+                "es": "Partenubes"
             },
             "family": "passing",
             "type": "active",
@@ -980,7 +980,7 @@
             "_id": "dump_off",
             "name": {
                 "en": "Dump-off",
-                "es": "Descarga"
+                "es": "Pase Precipitado"
             },
             "family": "passing",
             "type": "active",
@@ -998,7 +998,7 @@
             "_id": "give_and_go",
             "name": {
                 "en": "Give and Go",
-                "es": "Pasa Y Corre"
+                "es": "Pasar Y Seguir"
             },
             "family": "passing",
             "type": "active",
@@ -1016,14 +1016,14 @@
             "_id": "hail_mary_pass",
             "name": {
                 "en": "Hail Mary Pass",
-                "es": "Pase a La Desesperada"
+                "es": "Pase a lo Loco"
             },
             "family": "passing",
             "type": "active",
             "mandatory": false,
             "description": {
                 "en": "When this player performs a Pass Action or a Throw Bomb Special Action, they may declare any square on the pitch as the target square rather than using the Range Ruler. Make a Passing Ability Test as normal treating the throw as a Long Bomb, and treating any result of an Accurate Pass as an Inaccurate Pass. A Hail Mary Pass cannot be Intercepted.",
-                "es": "Cuando este jugador realiza una Acción de Pase o una Acción Especial de Lanzar Bomba, puede declarar cualquier casilla del campo como casilla objetivo en lugar de usar la Regla de Pase. Realiza una Prueba de Atributo de Pasar normal tratando el lanzamiento como una Bomba Larga, y tratando cualquier resultado de Pase Preciso como un Pase Impreciso. Un Pase a la Desesperada no puede ser Interceptado."
+                "es": "Cuando este jugador realiza una Acción de Pase o una Acción Especial de Lanzar Bomba, puede declarar cualquier casilla del campo como casilla objetivo en lugar de usar la Regla de Pase. Realiza una Prueba de Atributo de Pasar normal tratando el lanzamiento como una Bomba Larga, y tratando cualquier resultado de Pase Preciso como un Pase Impreciso. Un Pase a lo Loco no puede ser Interceptado."
             },
             "kind": "skill",
             "use": "active",
@@ -1070,7 +1070,7 @@
             "_id": "on_the_ball",
             "name": {
                 "en": "On the Ball",
-                "es": "En Guardia"
+                "es": "Atento al Balón"
             },
             "family": "passing",
             "type": "active",
@@ -1106,7 +1106,7 @@
             "_id": "punt",
             "name": {
                 "en": "Punt",
-                "es": "Despeje"
+                "es": "Patada de Despeje"
             },
             "family": "passing",
             "type": "active",
@@ -1142,7 +1142,7 @@
             "_id": "arm_bar",
             "name": {
                 "en": "Arm Bar",
-                "es": "Brazo Armado"
+                "es": "Llave de Brazo"
             },
             "family": "strength",
             "type": "active",
@@ -1160,7 +1160,7 @@
             "_id": "brawler",
             "name": {
                 "en": "Brawler",
-                "es": "Peleón"
+                "es": "Luchador"
             },
             "family": "strength",
             "type": "active",
@@ -1178,7 +1178,7 @@
             "_id": "break_tackle",
             "name": {
                 "en": "Break Tackle",
-                "es": "Esquiva Total"
+                "es": "Abrirse paso"
             },
             "family": "strength",
             "type": "active",
@@ -1196,7 +1196,7 @@
             "_id": "bullseye",
             "name": {
                 "en": "Bullseye",
-                "es": "En El Blanco"
+                "es": "Ojo de Halcón"
             },
             "family": "strength",
             "type": "active",
@@ -1214,7 +1214,7 @@
             "_id": "grab",
             "name": {
                 "en": "Grab",
-                "es": "Presa"
+                "es": "Apartar"
             },
             "family": "strength",
             "type": "active",
@@ -1250,7 +1250,7 @@
             "_id": "juggernaut",
             "name": {
                 "en": "Juggernaut",
-                "es": "Demoledor"
+                "es": "Imparable"
             },
             "family": "strength",
             "type": "active",
@@ -1268,7 +1268,7 @@
             "_id": "mighty_blow",
             "name": {
                 "en": "Mighty Blow",
-                "es": "Golpe Poderoso"
+                "es": "Golpe Mortífero"
             },
             "family": "strength",
             "type": "active",
@@ -1340,7 +1340,7 @@
             "_id": "thick_skull",
             "name": {
                 "en": "Thick Skull",
-                "es": "Cráneo Resistente"
+                "es": "Cabeza Dura"
             },
             "family": "strength",
             "type": "passive",
@@ -1466,7 +1466,7 @@
             "_id": "bone_head",
             "name": {
                 "en": "Bone Head",
-                "es": "Cabeza Hueca"
+                "es": "Estúpido"
             },
             "family": "trait",
             "type": "passive",
@@ -1484,7 +1484,7 @@
             "_id": "breathe_fire",
             "name": {
                 "en": "Breathe Fire",
-                "es": "Escupir Fuego"
+                "es": "Exhalar Fuego"
             },
             "family": "trait",
             "type": "active",
@@ -1610,7 +1610,7 @@
             "_id": "kick_team_mate",
             "name": {
                 "en": "Kick Team-mate",
-                "es": "Patear Compañero"
+                "es": "Chutar Compañero"
             },
             "family": "trait",
             "type": "passive",
@@ -1646,7 +1646,7 @@
             "_id": "my_ball",
             "name": {
                 "en": "My Ball",
-                "es": "¡mío!"
+                "es": "El Balón es Mío"
             },
             "family": "trait",
             "type": "passive",
@@ -1664,7 +1664,7 @@
             "_id": "no_ball",
             "name": {
                 "en": "No Ball",
-                "es": "Sin Balón"
+                "es": "El Balón ni Verlo"
             },
             "family": "trait",
             "type": "passive",
@@ -1682,7 +1682,7 @@
             "_id": "pick_me_up",
             "name": {
                 "en": "Pick-me-up",
-                "es": "¡levántame!"
+                "es": "Levantar Compañero"
             },
             "family": "trait",
             "type": "active",
@@ -1697,10 +1697,10 @@
             "elite": true
         },
         {
-            "_id": "plague_ridden",
+            "_id": "infected",
             "name": {
-                "en": "Plague Ridden",
-                "es": "Infestado Por La Peste"
+                "en": "Infected",
+                "es": "Infectado"
             },
             "family": "trait",
             "type": "passive",
@@ -1718,7 +1718,7 @@
             "_id": "pogo",
             "name": {
                 "en": "Pogo",
-                "es": "Pogo"
+                "es": "Pogo Saltarín"
             },
             "family": "trait",
             "type": "active",
@@ -1736,7 +1736,7 @@
             "_id": "projectile_vomit",
             "name": {
                 "en": "Projectile Vomit",
-                "es": "Vómito Proyectil"
+                "es": "Proyectil Vómito"
             },
             "family": "trait",
             "type": "active",
@@ -1790,7 +1790,7 @@
             "_id": "right_stuff",
             "name": {
                 "en": "Right Stuff",
-                "es": "Agallas"
+                "es": "Humanoide Bala"
             },
             "family": "trait",
             "type": "passive",
@@ -1826,7 +1826,7 @@
             "_id": "stab",
             "name": {
                 "en": "Stab",
-                "es": "Puñalada"
+                "es": "Apuñalar"
             },
             "family": "trait",
             "type": "active",
@@ -1862,7 +1862,7 @@
             "_id": "swoop",
             "name": {
                 "en": "Swoop",
-                "es": "Caída Controlada"
+                "es": "Planear"
             },
             "family": "trait",
             "type": "active",
@@ -1916,7 +1916,7 @@
             "_id": "timmm_ber",
             "name": {
                 "en": "Timmm-ber!",
-                "es": "¡arri-ba!"
+                "es": "¡Tronco Va!"
             },
             "family": "trait",
             "type": "passive",
@@ -1934,7 +1934,7 @@
             "_id": "titchy",
             "name": {
                 "en": "Titchy",
-                "es": "Diminuto"
+                "es": "Canijo"
             },
             "family": "trait",
             "type": "passive",
@@ -1952,7 +1952,7 @@
             "_id": "trickster",
             "name": {
                 "en": "Trickster",
-                "es": "Bromista"
+                "es": "Embustero"
             },
             "family": "trait",
             "type": "active",
@@ -1970,7 +1970,7 @@
             "_id": "unchannelled_fury",
             "name": {
                 "en": "Unchannelled Fury",
-                "es": "Furia Descontrolada"
+                "es": "Ira Descontrolada"
             },
             "family": "trait",
             "type": "passive",
@@ -1988,7 +1988,7 @@
             "_id": "unsteady",
             "name": {
                 "en": "Unsteady",
-                "es": "Inestable"
+                "es": "Tembloroso"
             },
             "family": "trait",
             "type": "passive",

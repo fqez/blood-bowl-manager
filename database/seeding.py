@@ -2,6 +2,7 @@
 
 import json
 import re
+from datetime import datetime
 from pathlib import Path
 
 from models.base.advancement import (
@@ -39,6 +40,7 @@ from models.base.spp import SppEventReward, SppRewardsRules, ThrowTeammateReward
 from models.base.star_player import SpecialAbility, StarPlayer, StarPlayerStats
 from models.base.winnings import WinningsRules
 from models.team.perk import Perk
+from models.user_team.team import UserTeam
 from utils.logging_config import get_db_logger
 
 logger = get_db_logger()
@@ -95,11 +97,37 @@ def get_english_text(value) -> str:
     return str(value or "").split(" / ", 1)[0].strip()
 
 
+def get_localized_text(value, fallback: str = "") -> str:
+    """Return Spanish text when available, otherwise English or fallback."""
+    if isinstance(value, dict):
+        text = value.get("es") or value.get("en") or fallback
+        return str(text or fallback).strip()
+    return str(value or fallback).strip()
+
+
 def slugify(value: str) -> str:
     """Convert display text to snake_case identifiers."""
     value = re.sub(r"\([^)]*\)", "", get_english_text(value))
     value = value.replace("'", "").replace("’", "")
     return re.sub(r"_+", "_", re.sub(r"[^A-Za-z0-9]+", "_", value).strip("_").lower())
+
+
+def normalize_catalog_perk_id(value: str | None) -> str:
+    """Normalize embedded perk references to canonical underscore IDs."""
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    if raw.startswith("perk-"):
+        normalized = raw.removeprefix("perk-").replace("-", "_")
+    elif re.fullmatch(r"[a-z0-9_]+", raw):
+        normalized = raw
+    else:
+        normalized = slugify(raw)
+
+    aliases = {
+        "plague_ridden": "infected",
+    }
+    return aliases.get(normalized, normalized)
 
 
 def extract_perk_parameter(value: str) -> str | None:
@@ -254,7 +282,7 @@ def convert_front_team_to_roster(team_data: dict, perk_lookup: dict) -> BaseRost
             player_perks.append(
                 BasePerk(
                     id=perk_id,
-                    name=perk_info.get("name", perk_name),
+                    name=perk_info.get("display_name", perk_name),
                     parameter=perk_parameter,
                     category=perk_info.get("category", "G"),
                 )
@@ -345,11 +373,7 @@ async def seed_perks(skills_data: dict) -> dict[str, dict]:
         await upsert_catalog_document(Perk, perk)
 
         lookup_data = {
-            "name": (
-                skill.get("name", {}).get("en", skill["_id"])
-                if isinstance(skill.get("name"), dict)
-                else skill.get("name", skill["_id"])
-            ),
+            "display_name": get_localized_text(skill.get("name"), skill["_id"]),
             "category": FAMILY_TO_SYMBOL.get(family, "G"),
         }
         perk_lookup[skill["_id"]] = lookup_data
@@ -375,7 +399,7 @@ def convert_team_to_roster(team_data: dict, perk_lookup: dict) -> BaseRoster:
             char_perks.append(
                 BasePerk(
                     id=perk_id,
-                    name=perk_info.get("name", perk_name),
+                    name=perk_info.get("display_name", perk_name),
                     parameter=perk_parameter,
                     category=perk_info.get("category", "G"),
                 )
@@ -478,6 +502,48 @@ async def seed_star_players(star_players_data: list):
         await StarPlayer.find({"_id": {"$nin": list(canonical_ids)}}).delete()
 
     logger.info(f"Upserted {len(star_players_data)} star players")
+
+
+async def reconcile_user_team_perk_names(perk_lookup: dict[str, dict]):
+    """Refresh embedded user-team perk names from the canonical skills catalog."""
+    teams = await UserTeam.find_all().to_list()
+    updated_teams = 0
+
+    for team in teams:
+        changed = False
+        for player in team.players:
+            for perk in player.perks:
+                canonical_id = normalize_catalog_perk_id(perk.id or perk.name)
+                if not canonical_id:
+                    continue
+
+                perk_info = (
+                    perk_lookup.get(canonical_id)
+                    or perk_lookup.get(perk.id)
+                    or perk_lookup.get(f"perk-{canonical_id.replace('_', '-')}")
+                )
+                if not perk_info:
+                    continue
+
+                display_name = perk_info.get("display_name", perk.name)
+                category = perk_info.get("category", perk.category)
+
+                if perk.id != canonical_id:
+                    perk.id = canonical_id
+                    changed = True
+                if perk.name != display_name:
+                    perk.name = display_name
+                    changed = True
+                if category and perk.category != category:
+                    perk.category = category
+                    changed = True
+
+        if changed:
+            team.updated_at = datetime.utcnow()
+            await team.save()
+            updated_teams += 1
+
+    logger.info(f"Reconciled perk names in {updated_teams} user teams")
 
 
 async def seed_expensive_mistakes_rules():
@@ -1739,6 +1805,7 @@ async def auto_seed_database():
         perk_lookup = await seed_perks(skills_data)
         await seed_base_rosters(teams_data, perk_lookup)
         await seed_star_players(star_players_data)
+        await reconcile_user_team_perk_names(perk_lookup)
         await seed_expensive_mistakes_rules()
         await seed_spp_rewards_rules()
         await seed_advancement_rules()

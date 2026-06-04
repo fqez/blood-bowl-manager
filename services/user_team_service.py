@@ -860,7 +860,7 @@ class UserTeamService:
             if request.mercenary:
                 new_player.current_value = base_player.cost + 30_000
             elif not UserTeamService._has_loner_perk(new_player.perks):
-                new_player.perks.append(UserTeamService._journeyman_loner_perk())
+                new_player.perks.append(await UserTeamService._journeyman_loner_perk())
 
         # Update team
         team.players.append(new_player)
@@ -947,14 +947,7 @@ class UserTeamService:
                 PA=star.stats.PA,
                 AV=star.stats.AV,
             ),
-            perks=[
-                PlayerPerk(
-                    id=UserTeamService._normal_key(s),
-                    name=UserTeamService._strip_perk_parameter(s),
-                    parameter=UserTeamService._extract_perk_parameter(s),
-                )
-                for s in star.skills
-            ],
+            perks=[await UserTeamService._perk_from_star_skill(s) for s in star.skills],
             image=star.image,
         )
         if request.temporary_for_match:
@@ -1435,7 +1428,11 @@ class UserTeamService:
     def _normal_key(value: str) -> str:
         stripped = UserTeamService._strip_perk_parameter(value)
         normalized = re.sub(r"[^a-z0-9]+", "-", stripped.lower().strip())
-        return normalized.strip("-").replace("perk-", "")
+        normalized = normalized.strip("-").replace("perk-", "")
+        aliases = {
+            "plague-ridden": "infected",
+        }
+        return aliases.get(normalized, normalized)
 
     @staticmethod
     def _is_loner_perk(perk: PlayerPerk) -> bool:
@@ -1457,12 +1454,18 @@ class UserTeamService:
         )
 
     @staticmethod
-    def _journeyman_loner_perk() -> PlayerPerk:
+    async def _journeyman_loner_perk() -> PlayerPerk:
+        perk = await UserTeamService._find_advancement_perk(
+            UserTeamService.JOURNEYMAN_LONER_ID
+        )
         return PlayerPerk(
             id=UserTeamService.JOURNEYMAN_LONER_ID,
-            name="Loner",
+            name=UserTeamService._localized_name(
+                perk.name if perk else None,
+                "Solitario",
+            ),
             parameter=UserTeamService.JOURNEYMAN_LONER_PARAMETER,
-            category="T",
+            category=UserTeamService._family_symbol(perk.family) if perk else "T",
         )
 
     @staticmethod
@@ -1488,12 +1491,27 @@ class UserTeamService:
 
     @staticmethod
     async def _find_advancement_perk(perk_id: str) -> Perk | None:
-        perk = await Perk.get(perk_id)
+        direct_aliases = {
+            "plague_ridden": "infected",
+            "plague-ridden": "infected",
+            "perk-plague-ridden": "infected",
+        }
+        perk = await Perk.get(direct_aliases.get(perk_id, perk_id))
         if perk:
             return perk
 
+        normalized_id = perk_id.removeprefix("perk-").replace("-", "_")
+        normalized_id = direct_aliases.get(normalized_id, normalized_id)
+
+        if normalized_id != perk_id:
+            perk = await Perk.get(normalized_id)
+            if perk:
+                return perk
+
         if perk_id.startswith("perk-"):
-            normalized_id = perk_id.removeprefix("perk-").replace("-", "_")
+            return await Perk.get(normalized_id)
+
+        if "-" in perk_id:
             return await Perk.get(normalized_id)
 
         return None
@@ -1502,7 +1520,22 @@ class UserTeamService:
     def _localized_name(name: dict | None, fallback: str) -> str:
         if not name:
             return fallback
-        return name.get("en") or name.get("es") or fallback
+        return name.get("es") or name.get("en") or fallback
+
+    @staticmethod
+    async def _perk_from_star_skill(raw_skill: str) -> PlayerPerk:
+        stored_perk_id = UserTeamService._normal_key(raw_skill).replace("-", "_")
+        perk = await UserTeamService._find_advancement_perk(stored_perk_id)
+
+        return PlayerPerk(
+            id=stored_perk_id,
+            name=UserTeamService._localized_name(
+                perk.name if perk else None,
+                UserTeamService._strip_perk_parameter(raw_skill),
+            ),
+            parameter=UserTeamService._extract_perk_parameter(raw_skill),
+            category=UserTeamService._family_symbol(perk.family) if perk else None,
+        )
 
     @staticmethod
     def _build_user_player(

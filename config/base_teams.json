@@ -2361,7 +2361,7 @@
                 },
                 "skills_traits": [
                     "Decay / Descomposición",
-                    "Plague Ridden / Infecto"
+                    "Infected / Infecto"
                 ],
                 "categories": {
                     "primary": "D, G, M",
@@ -2381,7 +2381,7 @@
                 },
                 "skills_traits": [
                     "Horns / Cuernos",
-                    "Plague Ridden / Infecto",
+                    "Infected / Infecto",
                     "Regeneration / Regeneración",
                     "Steady Footing / Paso Firme",
                     "Thick Skull / Cabeza Dura"
@@ -2405,7 +2405,7 @@
                 "skills_traits": [
                     "Disturbing Presence / Presencia Perturbadora",
                     "Foul Appearance / Apariencia Asquerosa",
-                    "Plague Ridden / Infecto",
+                    "Infected / Infecto",
                     "Regeneration / Regeneración",
                     "Stand Firm / Mantenerse Firme",
                     "Unsteady / Inestable"
@@ -2432,7 +2432,7 @@
                     "Loner (4+) / Solitario (4+)",
                     "Mighty Blow / Golpe Mortífero",
                     "Pick-me-up / Reanimar",
-                    "Plague Ridden / Infecto",
+                    "Infected / Infecto",
                     "Really Stupid / Estúpido de Remate",
                     "Regeneration / Regeneración",
                     "Tentacles / Tentáculos"

@@ -149,7 +149,7 @@
             "Disturbing Presence",
             "Foul Appearance",
             "Loner (4+)",
-            "Plague Ridden",
+            "Infected",
             "Regeneration"
         ],
         "special_ability": {
@@ -948,7 +948,7 @@
             "Loner (4+)",
             "Monstrous Mouth",
             "Nurgle's Rot",
-            "Plague Ridden",
+            "Infected",
             "Regeneration"
         ],
         "special_ability": {
