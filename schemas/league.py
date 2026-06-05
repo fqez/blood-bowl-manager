@@ -83,6 +83,8 @@ class MatchSummary(BaseModel):
     kickoff_event: Optional[str] = None
     current_half: int = 0
     current_turn: int = 0
+    aftermatch_home_submitted_at: Optional[datetime] = None
+    aftermatch_away_submitted_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     scheduled_at: Optional[datetime] = None
     played_at: Optional[datetime] = None

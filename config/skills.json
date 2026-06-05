@@ -128,7 +128,7 @@
             "kind": "skill",
             "use": "active",
             "required": false,
-            "elite": false
+            "elite": true
         },
         {
             "_id": "defensive",
@@ -506,7 +506,7 @@
             "kind": "skill",
             "use": "active",
             "required": false,
-            "elite": false
+            "elite": true
         },
         {
             "_id": "dauntless",
@@ -1244,7 +1244,7 @@
             "kind": "skill",
             "use": "active",
             "required": false,
-            "elite": false
+            "elite": true
         },
         {
             "_id": "juggernaut",
@@ -1280,7 +1280,7 @@
             "kind": "skill",
             "use": "active",
             "required": false,
-            "elite": false
+            "elite": true
         },
         {
             "_id": "multiple_block",
@@ -1370,7 +1370,7 @@
             "kind": "trait",
             "use": "active",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "animal_savagery",
@@ -1388,7 +1388,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "animosity",
@@ -1406,7 +1406,7 @@
             "kind": "trait",
             "use": "active",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "ball_and_chain",
@@ -1424,7 +1424,7 @@
             "kind": "trait",
             "use": "active",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "bloodlust",
@@ -1442,7 +1442,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "bombardier",
@@ -1460,7 +1460,7 @@
             "kind": "trait",
             "use": "active",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "bone_head",
@@ -1478,7 +1478,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "breathe_fire",
@@ -1496,7 +1496,7 @@
             "kind": "trait",
             "use": "active",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "chainsaw",
@@ -1514,7 +1514,7 @@
             "kind": "trait",
             "use": "active",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "decay",
@@ -1532,7 +1532,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "drunkard",
@@ -1550,7 +1550,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "hatred",
@@ -1568,7 +1568,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "hypnotic_gaze",
@@ -1586,7 +1586,7 @@
             "kind": "trait",
             "use": "active",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "insignificant",
@@ -1604,7 +1604,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "kick_team_mate",
@@ -1622,7 +1622,7 @@
             "kind": "trait",
             "use": "passive",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "loner",
@@ -1640,7 +1640,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "my_ball",
@@ -1658,7 +1658,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "no_ball",
@@ -1676,7 +1676,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "pick_me_up",
@@ -1694,7 +1694,7 @@
             "kind": "trait",
             "use": "active",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "infected",
@@ -1712,7 +1712,7 @@
             "kind": "trait",
             "use": "passive",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "pogo",
@@ -1730,7 +1730,7 @@
             "kind": "trait",
             "use": "active",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "projectile_vomit",
@@ -1748,7 +1748,7 @@
             "kind": "trait",
             "use": "active",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "really_stupid",
@@ -1766,7 +1766,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "regeneration",
@@ -1784,7 +1784,7 @@
             "kind": "trait",
             "use": "passive",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "right_stuff",
@@ -1802,7 +1802,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "secret_weapon",
@@ -1820,7 +1820,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "stab",
@@ -1838,7 +1838,7 @@
             "kind": "trait",
             "use": "active",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "stunty",
@@ -1856,7 +1856,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "swoop",
@@ -1874,7 +1874,7 @@
             "kind": "trait",
             "use": "active",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "take_root",
@@ -1892,7 +1892,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "throw_team_mate",
@@ -1910,7 +1910,7 @@
             "kind": "trait",
             "use": "active",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "timmm_ber",
@@ -1928,7 +1928,7 @@
             "kind": "trait",
             "use": "passive",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "titchy",
@@ -1946,7 +1946,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "trickster",
@@ -1964,7 +1964,7 @@
             "kind": "trait",
             "use": "active",
             "required": false,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "unchannelled_fury",
@@ -1982,7 +1982,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         },
         {
             "_id": "unsteady",
@@ -2000,7 +2000,7 @@
             "kind": "trait",
             "use": "passive",
             "required": true,
-            "elite": true
+            "elite": false
         }
     ]
 }

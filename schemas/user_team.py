@@ -152,6 +152,7 @@ class AddPerkRequest(BaseModel):
 
     perk_id: str
     perk_name: str
+    parameter: Optional[str] = None
     category: Optional[str] = None
     league_id: Optional[str] = None
 

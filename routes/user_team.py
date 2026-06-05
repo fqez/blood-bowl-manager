@@ -262,6 +262,7 @@ async def add_perk_to_player(
             player_id,
             request.perk_id,
             request.perk_name,
+            request.parameter,
             request.category,
             request.league_id,
         )

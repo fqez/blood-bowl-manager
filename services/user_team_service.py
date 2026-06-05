@@ -63,6 +63,7 @@ class UserTeamService:
 
     JOURNEYMAN_LONER_ID = "loner"
     JOURNEYMAN_LONER_PARAMETER = "4+"
+    ELITE_SKILL_VALUE_BONUS = 10_000
 
     FAMILY_TO_SYMBOL = {
         "agility": "A",
@@ -1009,20 +1010,83 @@ class UserTeamService:
         player_id: str,
         perk_id: str,
         perk_name: str,
+        parameter: Optional[str] = None,
         category: str = None,
         league_id: Optional[str] = None,
     ) -> UserTeam:
-        """Spend SPP to add a chosen Primary skill to a player."""
-        return await UserTeamService.apply_player_advancement(
+        """Add a perk to a player.
+
+        Skills still use the official advancement flow. Traits may be granted
+        manually by special rules and can carry a parameter such as Hatred (X).
+        """
+        perk = await UserTeamService._find_advancement_perk(perk_id)
+        if not perk:
+            raise InvalidOperationException(f"Perk '{perk_id}' not found")
+
+        perk_kind = (perk.kind or "").lower()
+        category_key = (category or "").lower()
+        if perk_kind != "trait" and category_key not in {"trait", "t"}:
+            return await UserTeamService.apply_player_advancement(
+                team_id,
+                user_id,
+                player_id,
+                ApplyPlayerAdvancementRequest(
+                    advancement_type="choose_primary_skill",
+                    perk_id=perk_id,
+                    league_id=league_id,
+                ),
+            )
+
+        team = await UserTeamService._require_team_owner_or_match_access(
             team_id,
             user_id,
-            player_id,
-            ApplyPlayerAdvancementRequest(
-                advancement_type="choose_primary_skill",
-                perk_id=perk_id,
-                league_id=league_id,
-            ),
+            league_id=league_id,
         )
+
+        roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
+        if not roster:
+            raise InvalidOperationException("Team roster not found")
+
+        player = UserTeamService._find_team_player(team, player_id)
+        if player.status == "dead":
+            raise InvalidOperationException("Dead players cannot gain traits")
+
+        stored_perk_id = str(perk.id)
+        normalized_perk_id = UserTeamService._normal_key(stored_perk_id)
+        perk_parameter = parameter.strip() if parameter and parameter.strip() else None
+        normalized_parameter = (perk_parameter or "").strip().lower()
+
+        if any(
+            UserTeamService._normal_key(pk.id) == normalized_perk_id
+            and (pk.parameter or "").strip().lower() == normalized_parameter
+            for pk in player.perks
+        ):
+            raise InvalidOperationException("Player already has this trait")
+
+        family = perk.family or category
+        name = UserTeamService._localized_name(perk.name, stored_perk_id)
+        player.perks.append(
+            PlayerPerk(
+                id=stored_perk_id,
+                name=name,
+                parameter=perk_parameter,
+                category=family,
+            )
+        )
+        label = f"Rasgo por regla: {name}"
+        if perk_parameter:
+            label = f"{label} ({perk_parameter})"
+        player.injury_history.append(
+            PlayerInjuryRecord(
+                type="advancement",
+                label=label,
+                notes="Anadido por regla especial",
+            )
+        )
+        team.team_value = await UserTeamService._calculate_team_value(team, roster)
+        team.updated_at = datetime.utcnow()
+        await team.save()
+        return team
 
     @staticmethod
     async def apply_player_advancement(
@@ -1172,7 +1236,10 @@ class UserTeamService:
 
         name = UserTeamService._localized_name(perk.name, stored_perk_id)
         player.perks.append(PlayerPerk(id=stored_perk_id, name=name, category=family))
-        return UserTeamService._value_increase(rules, value_key)
+        value_increase = UserTeamService._value_increase(rules, value_key)
+        if perk.elite:
+            value_increase += UserTeamService.ELITE_SKILL_VALUE_BONUS
+        return value_increase
 
     @staticmethod
     def _resolve_random_primary_skill_perk_id(

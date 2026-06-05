@@ -45,10 +45,10 @@ from schemas.league import (
     ApplyAftermatchSppRequest,
     CreateLeagueMatchRequest,
     CreateLeagueRequest,
+    LeagueByCodePreview,
     LeagueDashboardResponse,
     LeagueDashboardRoundRow,
     LeagueDashboardTeamRow,
-    LeagueByCodePreview,
     LeagueDetail,
     LeagueRulesRequest,
     LeagueStandingResponse,
@@ -1676,6 +1676,8 @@ class LeagueService:
                 kickoff_event=m.kickoff_event,
                 current_half=m.current_half,
                 current_turn=m.current_turn,
+                aftermatch_home_submitted_at=m.aftermatch_home_submitted_at,
+                aftermatch_away_submitted_at=m.aftermatch_away_submitted_at,
                 current_team=m.current_team,
                 home_turn=m.home_turn,
                 away_turn=m.away_turn,
@@ -1740,11 +1742,15 @@ class LeagueService:
             raise InvalidOperationException("You do not have access to this league")
 
         league_points_rules = await LeaguePointsRules.get("league_points")
-        points_by_team = LeagueService._league_points_by_team(league, league_points_rules)
+        points_by_team = LeagueService._league_points_by_team(
+            league, league_points_rules
+        )
 
         def _team_row(standing: LeagueStanding) -> LeagueDashboardTeamRow:
             games_played = standing.games_played
-            win_rate = round((standing.wins / games_played) * 100, 2) if games_played else 0.0
+            win_rate = (
+                round((standing.wins / games_played) * 100, 2) if games_played else 0.0
+            )
             return LeagueDashboardTeamRow(
                 team_id=standing.team_id,
                 team_name=standing.team_name,
@@ -1783,7 +1789,9 @@ class LeagueService:
 
         matches = list(league.matches)
         played_matches = [m for m in matches if m.status == MatchStatus.COMPLETED]
-        in_progress_matches = [m for m in matches if m.status == MatchStatus.IN_PROGRESS]
+        in_progress_matches = [
+            m for m in matches if m.status == MatchStatus.IN_PROGRESS
+        ]
         scheduled_matches = [m for m in matches if m.status == MatchStatus.SCHEDULED]
 
         home_wins = 0
@@ -1896,47 +1904,55 @@ class LeagueService:
             played_matches=played_count,
             in_progress_matches=len(in_progress_matches),
             scheduled_matches=len(scheduled_matches),
-            completion_ratio=round((played_count / total_count), 4) if total_count else 0,
+            completion_ratio=(
+                round((played_count / total_count), 4) if total_count else 0
+            ),
             total_touchdowns=total_touchdowns,
             total_casualties=total_casualties,
-            avg_touchdowns_per_match=round((total_touchdowns / played_count), 2)
-            if played_count
-            else 0,
-            avg_casualties_per_match=round((total_casualties / played_count), 2)
-            if played_count
-            else 0,
+            avg_touchdowns_per_match=(
+                round((total_touchdowns / played_count), 2) if played_count else 0
+            ),
+            avg_casualties_per_match=(
+                round((total_casualties / played_count), 2) if played_count else 0
+            ),
             home_wins=home_wins,
             away_wins=away_wins,
             draws=draws,
-            home_win_rate=round((home_wins / played_count) * 100, 2)
-            if played_count
-            else 0,
-            away_win_rate=round((away_wins / played_count) * 100, 2)
-            if played_count
-            else 0,
+            home_win_rate=(
+                round((home_wins / played_count) * 100, 2) if played_count else 0
+            ),
+            away_win_rate=(
+                round((away_wins / played_count) * 100, 2) if played_count else 0
+            ),
             draw_rate=round((draws / played_count) * 100, 2) if played_count else 0,
-            avg_home_turn_seconds=round(
-                sum(home_turn_seconds) / len(home_turn_seconds), 2
-            )
-            if home_turn_seconds
-            else 0,
-            avg_away_turn_seconds=round(
-                sum(away_turn_seconds) / len(away_turn_seconds), 2
-            )
-            if away_turn_seconds
-            else 0,
-            avg_home_rerolls_used=round(
-                sum(match.rerolls_used_home for match in played_matches) / played_count,
-                2,
-            )
-            if played_count
-            else 0,
-            avg_away_rerolls_used=round(
-                sum(match.rerolls_used_away for match in played_matches) / played_count,
-                2,
-            )
-            if played_count
-            else 0,
+            avg_home_turn_seconds=(
+                round(sum(home_turn_seconds) / len(home_turn_seconds), 2)
+                if home_turn_seconds
+                else 0
+            ),
+            avg_away_turn_seconds=(
+                round(sum(away_turn_seconds) / len(away_turn_seconds), 2)
+                if away_turn_seconds
+                else 0
+            ),
+            avg_home_rerolls_used=(
+                round(
+                    sum(match.rerolls_used_home for match in played_matches)
+                    / played_count,
+                    2,
+                )
+                if played_count
+                else 0
+            ),
+            avg_away_rerolls_used=(
+                round(
+                    sum(match.rerolls_used_away for match in played_matches)
+                    / played_count,
+                    2,
+                )
+                if played_count
+                else 0
+            ),
             touchdowns_by_round=touchdowns_by_round,
             casualties_by_round=casualties_by_round,
             rounds=round_rows,
@@ -1950,7 +1966,9 @@ class LeagueService:
             injury_type_counts=dict(injury_type_counts),
             top_by_points=[_team_row(standing) for standing in standings_by_points[:5]],
             top_attack=[_team_row(standing) for standing in standings_by_attack[:5]],
-            top_violence=[_team_row(standing) for standing in standings_by_violence[:5]],
+            top_violence=[
+                _team_row(standing) for standing in standings_by_violence[:5]
+            ],
         )
 
     # ============== Team Management ==============

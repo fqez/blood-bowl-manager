@@ -68,3 +68,10 @@ class BaseRosterDetail(BaseModel):
     players: list[BasePlayerResponse]
     icon: Optional[str] = None
     wallpaper: Optional[str] = None
+
+
+class BaseRosterHatredKeywordsResponse(BaseModel):
+    """Roster-specific valid keywords for Hatred(X)."""
+
+    roster_id: str
+    keywords: list[str]
