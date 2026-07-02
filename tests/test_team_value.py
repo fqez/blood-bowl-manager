@@ -47,6 +47,46 @@ def test_team_value_excludes_dead_players_from_base_value():
     assert breakdown.current_team_value == 50000
 
 
+def test_match_inducement_team_value_excludes_current_match_temporary_players():
+    team = UserTeam.model_construct(
+        user_id="coach",
+        base_roster_id="human",
+        name="Humans",
+        players=[
+            _player("lineman-1", 1, 50000, PlayerStatus.HEALTHY.value),
+            _player("lineman-2", 2, 70000, PlayerStatus.HEALTHY.value),
+            UserPlayer(
+                id="star-1",
+                base_type="star_griff",
+                name="Griff",
+                number=16,
+                current_value=280000,
+                stats=PlayerStats(MA=7, ST=4, AG=2, PA=3, AV=9),
+                status=PlayerStatus.HEALTHY.value,
+                temporary_for_match=True,
+                temporary_match_id="match-1",
+            ),
+        ],
+        rerolls=1,
+        assistant_coaches=0,
+        cheerleaders=0,
+        apothecary=False,
+    )
+    roster = BaseRoster.model_construct(
+        id="human",
+        name="Humans",
+        reroll_cost=50000,
+        apothecary_allowed=True,
+        tier=2,
+        special_rules=[],
+        players=[],
+    )
+
+    ctv = UserTeamService._match_inducement_team_value(team, roster, "match-1")
+
+    assert ctv == 170000
+
+
 @pytest.mark.anyio
 async def test_team_value_excludes_low_cost_linemen_from_ve_and_vae():
     team = UserTeam.model_construct(

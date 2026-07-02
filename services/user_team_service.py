@@ -4,6 +4,7 @@ import logging
 import random
 import re
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
@@ -13,6 +14,7 @@ from exceptions.exceptions import (
     TeamNotFoundException,
 )
 from models.base.advancement import AdvancementRules
+from models.base.inducement import InducementRules
 from models.base.injury import InjuryRules
 from models.base.roster import BasePlayer, BaseRoster
 from models.base.star_player import StarPlayer
@@ -56,6 +58,18 @@ from utils.team_special_rules import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class _MatchInducementBudgetSnapshot:
+    petty_cash: int
+    treasury_allowance: int
+    total_available: int
+    spent: int
+    treasury_contribution: int
+    remaining: int
+    is_favorite: bool
+    is_tied: bool
 
 
 class UserTeamService:
@@ -118,6 +132,358 @@ class UserTeamService:
             reroll_cost=reroll_cost,
             ignored_player_types=ignored_player_types,
         )
+
+    @staticmethod
+    def _normalize_inducement_rule(value: str) -> str:
+        return " ".join(
+            re.sub(r"[^a-z0-9]+", " ", value.lower().replace("&", "and")).split()
+        )
+
+    @staticmethod
+    def _team_has_inducement_rule(
+        roster: BaseRoster, team: UserTeam, rule: str
+    ) -> bool:
+        required = UserTeamService._normalize_inducement_rule(rule)
+        special_rules = effective_special_rules(
+            roster.special_rules,
+            team.base_roster_id,
+            team.favoured_of,
+        )
+        for current_rule in special_rules:
+            normalized = UserTeamService._normalize_inducement_rule(current_rule)
+            if (
+                normalized == required
+                or normalized in required
+                or required in normalized
+            ):
+                return True
+        return False
+
+    @staticmethod
+    def _inducement_cost_option_specificity(applies_to: str) -> int:
+        if applies_to == "any":
+            return 0
+        if applies_to.startswith("roster:") or applies_to.startswith("special_rule:"):
+            return 2
+        return 1
+
+    @staticmethod
+    def _inducement_cost_option_applies(
+        option, team: UserTeam, roster: BaseRoster
+    ) -> bool:
+        applies_to = option.applies_to
+        if applies_to == "any":
+            return True
+        if applies_to.startswith("special_rule:"):
+            return UserTeamService._team_has_inducement_rule(
+                roster,
+                team,
+                applies_to.removeprefix("special_rule:"),
+            )
+        if applies_to.startswith("roster:"):
+            roster_id = UserTeamService._normalize_inducement_rule(
+                applies_to.removeprefix("roster:")
+            )
+            return (
+                UserTeamService._normalize_inducement_rule(team.base_roster_id)
+                == roster_id
+                or UserTeamService._normalize_inducement_rule(roster.id) == roster_id
+            )
+        return False
+
+    @staticmethod
+    def _resolve_inducement_cost(
+        rule, team: UserTeam, roster: BaseRoster
+    ) -> Optional[int]:
+        if not rule.cost_options:
+            return rule.cost
+
+        applicable = [
+            option
+            for option in rule.cost_options
+            if UserTeamService._inducement_cost_option_applies(option, team, roster)
+        ]
+        if not applicable:
+            return rule.cost
+
+        applicable.sort(
+            key=lambda option: (
+                -UserTeamService._inducement_cost_option_specificity(option.applies_to),
+                option.cost,
+            )
+        )
+        return applicable[0].cost
+
+    @staticmethod
+    def _temporary_match_hire_spend(team: UserTeam, match_id: str) -> int:
+        total = 0
+        for player in team.players:
+            if not player.temporary_for_match or player.temporary_match_id != match_id:
+                continue
+            if player.base_type.startswith("star_") or not player.journeyman:
+                total += player.current_value
+        return total
+
+    @staticmethod
+    def _match_inducement_team_value(
+        team: UserTeam,
+        roster: BaseRoster,
+        match_id: str,
+    ) -> int:
+        ignored_player_types = {
+            player.type
+            for player in roster.players
+            if any("low cost linemen" in rule.lower() for rule in roster.special_rules)
+            and player.position.lower() == "lineman"
+        }
+        player_value = 0
+        unavailable_player_value = 0
+        for player in team.players:
+            status = (
+                player.status.value
+                if hasattr(player.status, "value")
+                else player.status
+            )
+            if status == PlayerStatus.DEAD.value:
+                continue
+            if player.temporary_for_match and player.temporary_match_id == match_id:
+                continue
+            if player.base_type in ignored_player_types:
+                continue
+            player_value += player.current_value
+            if status != PlayerStatus.HEALTHY.value:
+                unavailable_player_value += player.current_value
+
+        reroll_value = team.rerolls * roster.reroll_cost
+        assistant_coach_value = team.assistant_coaches * 10_000
+        cheerleader_value = team.cheerleaders * 10_000
+        apothecary_value = 50_000 if team.apothecary else 0
+        team_value = (
+            player_value
+            + reroll_value
+            + assistant_coach_value
+            + cheerleader_value
+            + apothecary_value
+        )
+        return max(0, team_value - unavailable_player_value)
+
+    @staticmethod
+    def _inducement_purchase_spend(
+        team: UserTeam,
+        roster: BaseRoster,
+        purchases: dict[str, int],
+        rules: Optional[InducementRules],
+    ) -> int:
+        if not rules or not purchases:
+            return 0
+
+        total = 0
+        rule_by_id = {rule.id: rule for rule in rules.inducements}
+        for rule_id, count in purchases.items():
+            if count <= 0:
+                continue
+            rule = rule_by_id.get(rule_id)
+            if not rule:
+                continue
+            cost = UserTeamService._resolve_inducement_cost(rule, team, roster)
+            if cost is not None:
+                total += cost * count
+        return total
+
+    @staticmethod
+    def _treasury_contribution_for_match_spend(
+        spent: int,
+        petty_cash: int,
+        treasury_allowance: int,
+        *,
+        is_favorite: bool,
+    ) -> int:
+        if spent <= 0:
+            return 0
+        if is_favorite:
+            return spent
+        excess = spent - petty_cash
+        if excess <= 0:
+            return 0
+        return excess if excess <= treasury_allowance else treasury_allowance
+
+    @staticmethod
+    async def _match_inducement_budget_for_team(
+        team: UserTeam,
+        *,
+        league_id: str,
+        match_id: str,
+    ) -> _MatchInducementBudgetSnapshot:
+        team_id = str(team.id)
+        league = await League.get(league_id)
+        if not league:
+            raise InvalidOperationException(f"League '{league_id}' not found")
+
+        match = next((item for item in league.matches if item.id == match_id), None)
+        if not match:
+            raise InvalidOperationException(f"Match '{match_id}' not found")
+
+        if team_id not in {match.home.team_id, match.away.team_id}:
+            raise InvalidOperationException("Team is not part of the specified match")
+
+        home_team = await UserTeam.get(match.home.team_id)
+        if not home_team:
+            raise TeamNotFoundException(match.home.team_id)
+        away_team = await UserTeam.get(match.away.team_id)
+        if not away_team:
+            raise TeamNotFoundException(match.away.team_id)
+
+        home_roster = await BaseRoster.find_one(
+            BaseRoster.id == home_team.base_roster_id
+        )
+        if not home_roster:
+            raise InvalidOperationException("Home team roster not found")
+        away_roster = await BaseRoster.find_one(
+            BaseRoster.id == away_team.base_roster_id
+        )
+        if not away_roster:
+            raise InvalidOperationException("Away team roster not found")
+
+        rules = await InducementRules.get("inducements")
+        home_ctv = UserTeamService._match_inducement_team_value(
+            home_team,
+            home_roster,
+            match_id,
+        )
+        away_ctv = UserTeamService._match_inducement_team_value(
+            away_team,
+            away_roster,
+            match_id,
+        )
+        home_spent = UserTeamService._temporary_match_hire_spend(
+            home_team,
+            match_id,
+        ) + UserTeamService._inducement_purchase_spend(
+            home_team,
+            home_roster,
+            match.home_inducement_purchases,
+            rules,
+        )
+        away_spent = UserTeamService._temporary_match_hire_spend(
+            away_team,
+            match_id,
+        ) + UserTeamService._inducement_purchase_spend(
+            away_team,
+            away_roster,
+            match.away_inducement_purchases,
+            rules,
+        )
+
+        selected_is_home = team_id == match.home.team_id
+        selected_team = home_team if selected_is_home else away_team
+        selected_ctv = home_ctv if selected_is_home else away_ctv
+        opponent_ctv = away_ctv if selected_is_home else home_ctv
+        selected_spent = home_spent if selected_is_home else away_spent
+        inducements_allowed = league.rules.inducements if league.rules else True
+
+        if not inducements_allowed or home_ctv == away_ctv:
+            return _MatchInducementBudgetSnapshot(
+                petty_cash=0,
+                treasury_allowance=0,
+                total_available=0,
+                spent=selected_spent,
+                treasury_contribution=0,
+                remaining=0,
+                is_favorite=False,
+                is_tied=True,
+            )
+
+        home_is_favorite = home_ctv > away_ctv
+        selected_is_favorite = selected_is_home == home_is_favorite
+
+        if selected_is_favorite:
+            total_available = selected_team.treasury
+            remaining = total_available - selected_spent
+            return _MatchInducementBudgetSnapshot(
+                petty_cash=0,
+                treasury_allowance=total_available,
+                total_available=total_available,
+                spent=selected_spent,
+                treasury_contribution=selected_spent,
+                remaining=remaining if remaining > 0 else 0,
+                is_favorite=True,
+                is_tied=False,
+            )
+
+        ctv_difference = abs(home_ctv - away_ctv)
+        favorite_spent = home_spent if home_is_favorite else away_spent
+        petty_cash = ctv_difference + favorite_spent
+        treasury_allowance = (
+            min(selected_team.treasury, 50_000) if selected_team.treasury > 0 else 0
+        )
+        treasury_contribution = UserTeamService._treasury_contribution_for_match_spend(
+            selected_spent,
+            petty_cash,
+            treasury_allowance,
+            is_favorite=False,
+        )
+        total_available = petty_cash + treasury_allowance
+        remaining = total_available - selected_spent
+        return _MatchInducementBudgetSnapshot(
+            petty_cash=petty_cash,
+            treasury_allowance=treasury_allowance,
+            total_available=total_available,
+            spent=selected_spent,
+            treasury_contribution=treasury_contribution,
+            remaining=remaining if remaining > 0 else 0,
+            is_favorite=False,
+            is_tied=False,
+        )
+
+    @staticmethod
+    async def _temporary_match_treasury_charge(
+        team: UserTeam,
+        *,
+        league_id: Optional[str],
+        match_id: Optional[str],
+        cost: int,
+    ) -> int:
+        if cost <= 0:
+            return 0
+        if not league_id or not match_id:
+            if team.treasury < cost:
+                raise InvalidOperationException(
+                    f"Insufficient treasury ({team.treasury} < {cost})"
+                )
+            return cost
+
+        budget = await UserTeamService._match_inducement_budget_for_team(
+            team,
+            league_id=league_id,
+            match_id=match_id,
+        )
+        if budget.remaining < cost:
+            raise InvalidOperationException(
+                f"Insufficient inducement funds ({budget.remaining} < {cost})"
+            )
+
+        return 0
+
+    @staticmethod
+    async def _temporary_match_treasury_contribution(
+        team: UserTeam,
+        *,
+        league_id: str,
+        match_id: str,
+    ) -> int:
+        budget = await UserTeamService._match_inducement_budget_for_team(
+            team,
+            league_id=league_id,
+            match_id=match_id,
+        )
+        contribution = budget.treasury_contribution
+        if contribution <= 0:
+            return 0
+        if team.treasury < contribution:
+            raise InvalidOperationException(
+                f"Insufficient treasury ({team.treasury} < {contribution})"
+            )
+        return contribution
 
     @staticmethod
     def _eligible_player_count(team: UserTeam) -> int:
@@ -804,6 +1170,7 @@ class UserTeamService:
             raise InvalidOperationException("Team roster not found")
 
         base_player = UserTeamService._find_base_player(roster, request.base_type)
+        treasury_charge = 0
 
         if request.temporary_for_match:
             if request.mercenary:
@@ -815,10 +1182,14 @@ class UserTeamService:
                         f"Maximum available {request.base_type} reached ({base_player.max})"
                     )
                 mercenary_cost = base_player.cost + 30_000
-                if team.treasury < mercenary_cost:
-                    raise InvalidOperationException(
-                        f"Insufficient treasury ({team.treasury} < {mercenary_cost})"
+                treasury_charge = (
+                    await UserTeamService._temporary_match_treasury_charge(
+                        team,
+                        league_id=request.league_id,
+                        match_id=request.temporary_match_id,
+                        cost=mercenary_cost,
                     )
+                )
             else:
                 if base_player.position.lower() != "lineman":
                     raise InvalidOperationException(
@@ -866,7 +1237,7 @@ class UserTeamService:
         # Update team
         team.players.append(new_player)
         if request.temporary_for_match and request.mercenary:
-            team.treasury -= new_player.current_value
+            team.treasury -= treasury_charge
         elif not request.temporary_for_match:
             team.treasury -= base_player.cost
         team.team_value = await UserTeamService._calculate_team_value(team, roster)
@@ -919,11 +1290,14 @@ class UserTeamService:
         if team.permanent_player_count() >= 16:
             raise InvalidOperationException("Roster is full (max 16 players)")
 
-        # Check treasury
-        if team.treasury < star.cost:
-            raise InvalidOperationException(
-                f"Insufficient treasury ({team.treasury} < {star.cost})"
-            )
+        treasury_charge = await UserTeamService._temporary_match_treasury_charge(
+            team,
+            league_id=request.league_id if request.temporary_for_match else None,
+            match_id=(
+                request.temporary_match_id if request.temporary_for_match else None
+            ),
+            cost=star.cost,
+        )
 
         # Check not already hired
         for p in team.players:
@@ -956,7 +1330,7 @@ class UserTeamService:
             new_player.temporary_match_id = request.temporary_match_id
 
         team.players.append(new_player)
-        team.treasury -= star.cost
+        team.treasury -= treasury_charge
         team.team_value = await UserTeamService._calculate_team_value(team)
         team.updated_at = datetime.utcnow()
         await team.save()

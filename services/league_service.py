@@ -1283,6 +1283,14 @@ class LeagueService:
                 if team_side == "home"
                 else request.winnings.away_purchases
             )
+            inducement_charge = (
+                await UserTeamService._temporary_match_treasury_contribution(
+                    team,
+                    league_id=str(league.id),
+                    match_id=match.id,
+                )
+            )
+            team.treasury -= inducement_charge
             team_winnings = _calculate_winnings(winnings_touchdowns, stalling)
             team.treasury += team_winnings
             decisions = LeagueService._temporary_player_decisions(
@@ -1311,7 +1319,7 @@ class LeagueService:
                     type="winnings",
                     team=team_side,
                     detail=(
-                        f"Winnings: {team_winnings}; treasury before Expensive "
+                        f"Inducements charged: {inducement_charge}; Winnings: {team_winnings}; treasury before Expensive "
                         f"Mistakes: {treasury_before_expensive}; result: {expensive_result or 'not_required'}; final treasury: {final_treasury}"
                     ),
                     half=0,
@@ -3665,7 +3673,7 @@ class LeagueService:
                     )
                 )
 
-        def _apply_winnings() -> None:
+        async def _apply_winnings() -> None:
             if not request.winnings:
                 return
 
@@ -3681,6 +3689,24 @@ class LeagueService:
                 request.winnings.away_touchdowns,
                 request.winnings.away_stalling,
             )
+
+            home_inducement_charge = (
+                await UserTeamService._temporary_match_treasury_contribution(
+                    home_team,
+                    league_id=str(league.id),
+                    match_id=match.id,
+                )
+            )
+            away_inducement_charge = (
+                await UserTeamService._temporary_match_treasury_contribution(
+                    away_team,
+                    league_id=str(league.id),
+                    match_id=match.id,
+                )
+            )
+
+            home_team.treasury -= home_inducement_charge
+            away_team.treasury -= away_inducement_charge
 
             home_team.treasury += home_winnings
             away_team.treasury += away_winnings
@@ -3722,7 +3748,7 @@ class LeagueService:
                         type="winnings",
                         team="home",
                         detail=(
-                            f"Winnings: {home_winnings}; treasury before Expensive "
+                            f"Inducements charged: {home_inducement_charge}; Winnings: {home_winnings}; treasury before Expensive "
                             f"Mistakes: {home_before_expensive}; result: {home_expensive or 'not_required'}; final treasury: {home_final}"
                         ),
                         half=0,
@@ -3736,7 +3762,7 @@ class LeagueService:
                         type="winnings",
                         team="away",
                         detail=(
-                            f"Winnings: {away_winnings}; treasury before Expensive "
+                            f"Inducements charged: {away_inducement_charge}; Winnings: {away_winnings}; treasury before Expensive "
                             f"Mistakes: {away_before_expensive}; result: {away_expensive or 'not_required'}; final treasury: {away_final}"
                         ),
                         half=0,
@@ -3748,7 +3774,7 @@ class LeagueService:
                 ]
             )
 
-        _apply_winnings()
+        await _apply_winnings()
 
         def _next_dedicated_fans(
             current: int, roll: int | None, won: bool, lost: bool
