@@ -1045,7 +1045,11 @@ class UserTeamService:
             ):
                 raise InvalidOperationException("Cannot access another user's team")
         else:
-            team = await UserTeamService._require_team_owner(team_id, user_id)
+            team = await UserTeamService._require_team_owner_or_match_access(
+                team_id,
+                user_id,
+                league_id=request.league_id,
+            )
 
         if request.name is not None and not commissioner_mode:
             await UserTeamService._ensure_roster_can_be_managed(team_id)
