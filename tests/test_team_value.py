@@ -3,8 +3,8 @@ from datetime import datetime
 import pytest
 
 from models.base.roster import BasePlayer, BaseRoster, BaseStats
-from schemas.user_team import TeamLeagueMembership
 from models.user_team.team import PlayerStats, PlayerStatus, UserPlayer, UserTeam
+from schemas.user_team import TeamLeagueMembership
 from services.user_team_service import (
     UserTeamService,
     _MatchInducementBudgetSnapshot,
@@ -125,6 +125,10 @@ async def test_get_team_detail_does_not_save_on_read(monkeypatch):
         assert team_id == "6a46857521cee6c29691a93d"
         return team
 
+    async def fake_rosters_by_ids(roster_ids):
+        assert roster_ids == ["human"]
+        return {"human": roster}
+
     async def fake_find_roster(*_args, **_kwargs):
         return roster
 
@@ -199,8 +203,9 @@ async def test_get_teams_by_user_does_not_query_active_league_per_team(monkeypat
     def fake_find(*_args, **_kwargs):
         return _FindResult()
 
-    async def fake_find_roster(*_args, **_kwargs):
-        return roster
+    async def fake_rosters_by_ids(roster_ids):
+        assert roster_ids == ["human"]
+        return {"human": roster}
 
     async def fake_memberships_by_team_ids(team_ids):
         assert team_ids == ["team-1"]
@@ -220,8 +225,7 @@ async def test_get_teams_by_user_does_not_query_active_league_per_team(monkeypat
 
     monkeypatch.setattr(UserTeam, "user_id", "user_id", raising=False)
     monkeypatch.setattr(UserTeam, "find", fake_find)
-    monkeypatch.setattr(BaseRoster, "id", "id", raising=False)
-    monkeypatch.setattr(BaseRoster, "find_one", fake_find_roster)
+    monkeypatch.setattr(UserTeamService, "_rosters_by_ids", fake_rosters_by_ids)
     monkeypatch.setattr(
         UserTeamService,
         "_league_memberships_by_team_ids",

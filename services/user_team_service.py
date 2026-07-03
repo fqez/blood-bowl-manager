@@ -111,6 +111,14 @@ class UserTeamService:
         return league is not None
 
     @staticmethod
+    async def _rosters_by_ids(roster_ids: list[str]) -> dict[str, BaseRoster]:
+        if not roster_ids:
+            return {}
+
+        rosters = await BaseRoster.find({"_id": {"$in": roster_ids}}).to_list()
+        return {str(roster.id): roster for roster in rosters}
+
+    @staticmethod
     def _is_league_commissioner(league: League, user_id: str) -> bool:
         return user_id == league.owner_id or user_id in (league.commissioner_ids or [])
 
@@ -883,11 +891,14 @@ class UserTeamService:
         teams = await UserTeam.find(UserTeam.user_id == user_id).to_list()
         team_ids = [str(team.id) for team in teams]
         memberships = await UserTeamService._league_memberships_by_team_ids(team_ids)
+        rosters = await UserTeamService._rosters_by_ids(
+            list({team.base_roster_id for team in teams})
+        )
 
         summaries: list[UserTeamSummary] = []
         for t in teams:
             team_id = str(t.id)
-            roster = await BaseRoster.find_one(BaseRoster.id == t.base_roster_id)
+            roster = rosters.get(t.base_roster_id)
             await UserTeamService._sync_team_value(t, roster, persist=False)
             value_breakdown = await UserTeamService._calculate_team_value_breakdown(
                 t, roster
