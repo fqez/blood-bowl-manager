@@ -698,22 +698,29 @@ class UserTeamService:
         if not team_ids:
             return memberships
 
-        leagues = await League.find({"teams.team_id": {"$in": team_ids}}).to_list()
+        cursor = League.get_motor_collection().find(
+            {"teams.team_id": {"$in": team_ids}},
+            {
+                "_id": 1,
+                "name": 1,
+                "status": 1,
+                "season": 1,
+                "teams.team_id": 1,
+            },
+        )
+        leagues = await cursor.to_list(length=None)
         team_id_set = set(team_ids)
         for league in leagues:
             membership = TeamLeagueMembership(
-                id=str(league.id),
-                name=league.name,
-                status=(
-                    league.status.value
-                    if hasattr(league.status, "value")
-                    else league.status
-                ),
-                season=league.season,
+                id=str(league.get("_id")),
+                name=league.get("name", ""),
+                status=str(league.get("status", "")),
+                season=int(league.get("season", 0)),
             )
-            for team in league.teams:
-                if team.team_id in team_id_set:
-                    memberships.setdefault(team.team_id, []).append(membership)
+            for team in league.get("teams", []):
+                team_id = team.get("team_id")
+                if team_id in team_id_set:
+                    memberships.setdefault(team_id, []).append(membership)
 
         return memberships
 
@@ -886,6 +893,7 @@ class UserTeamService:
                 t, roster
             )
             share_code = await UserTeamService._ensure_share_code(t, persist=False)
+            team_memberships = memberships.get(team_id, [])
             summaries.append(
                 UserTeamSummary(
                     id=str(t.id),
@@ -895,8 +903,9 @@ class UserTeamService:
                     current_team_value=value_breakdown.current_team_value,
                     treasury=t.treasury,
                     player_count=len(t.players),
-                    can_manage_roster=not await UserTeamService._is_in_active_league(
-                        team_id
+                    can_manage_roster=not any(
+                        membership.status == LeagueStatus.ACTIVE.value
+                        for membership in team_memberships
                     ),
                     share_code=share_code,
                     favoured_of=t.favoured_of,
@@ -905,7 +914,7 @@ class UserTeamService:
                         t.base_roster_id,
                         t.favoured_of,
                     ),
-                    league_memberships=memberships.get(team_id, []),
+                    league_memberships=team_memberships,
                     icon=t.icon,
                     created_at=t.created_at,
                 )

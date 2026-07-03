@@ -1,6 +1,9 @@
+from datetime import datetime
+
 import pytest
 
 from models.base.roster import BasePlayer, BaseRoster, BaseStats
+from schemas.user_team import TeamLeagueMembership
 from models.user_team.team import PlayerStats, PlayerStatus, UserPlayer, UserTeam
 from services.user_team_service import (
     UserTeamService,
@@ -157,6 +160,85 @@ async def test_get_team_detail_does_not_save_on_read(monkeypatch):
     assert detail.id == "6a46857521cee6c29691a93d"
     assert detail.team_value == 100000
     assert detail.share_code == "6A468575"
+
+
+@pytest.mark.anyio
+async def test_get_teams_by_user_does_not_query_active_league_per_team(monkeypatch):
+    team = UserTeam.model_construct(
+        id="team-1",
+        user_id="coach",
+        base_roster_id="human",
+        name="Humans",
+        treasury=50000,
+        team_value=0,
+        share_code="TEAM0001",
+        rerolls=1,
+        assistant_coaches=0,
+        cheerleaders=0,
+        apothecary=False,
+        dedicated_fans=1,
+        favoured_of=None,
+        icon=None,
+        created_at=datetime.utcnow(),
+        players=[_player("lineman-1", 1, 50000)],
+    )
+    roster = BaseRoster.model_construct(
+        id="human",
+        name="Humans",
+        reroll_cost=50000,
+        apothecary_allowed=True,
+        tier=2,
+        special_rules=[],
+        players=[],
+    )
+
+    class _FindResult:
+        async def to_list(self):
+            return [team]
+
+    def fake_find(*_args, **_kwargs):
+        return _FindResult()
+
+    async def fake_find_roster(*_args, **_kwargs):
+        return roster
+
+    async def fake_memberships_by_team_ids(team_ids):
+        assert team_ids == ["team-1"]
+        return {
+            "team-1": [
+                TeamLeagueMembership(
+                    id="league-1",
+                    name="Liga",
+                    status="active",
+                    season=1,
+                )
+            ]
+        }
+
+    async def fail_is_in_active_league(*_args, **_kwargs):
+        raise AssertionError("get_teams_by_user should reuse fetched memberships")
+
+    monkeypatch.setattr(UserTeam, "user_id", "user_id", raising=False)
+    monkeypatch.setattr(UserTeam, "find", fake_find)
+    monkeypatch.setattr(BaseRoster, "id", "id", raising=False)
+    monkeypatch.setattr(BaseRoster, "find_one", fake_find_roster)
+    monkeypatch.setattr(
+        UserTeamService,
+        "_league_memberships_by_team_ids",
+        fake_memberships_by_team_ids,
+    )
+    monkeypatch.setattr(
+        UserTeamService,
+        "_is_in_active_league",
+        fail_is_in_active_league,
+    )
+
+    summaries = await UserTeamService.get_teams_by_user("coach")
+
+    assert len(summaries) == 1
+    assert summaries[0].id == "team-1"
+    assert summaries[0].can_manage_roster is False
+    assert len(summaries[0].league_memberships) == 1
 
 
 @pytest.mark.anyio
