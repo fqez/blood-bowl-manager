@@ -173,7 +173,14 @@ async def test_temporary_match_treasury_contribution_still_raises_without_legacy
         fake_budget,
     )
 
-    with pytest.raises(Exception, match=r"Insufficient treasury \(0 < 40000\)"):
+    with pytest.raises(
+        Exception,
+        match=(
+            r"Insufficient treasury "
+            r"\[source=user_team_service\.temporary_match_treasury_contribution\] "
+            r"\(0 < 40000; match_id=match-1; legacy_live_charge=0\)"
+        ),
+    ):
         await UserTeamService._temporary_match_treasury_contribution(
             team,
             league_id="league-1",

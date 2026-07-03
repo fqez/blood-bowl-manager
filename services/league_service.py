@@ -413,7 +413,9 @@ class LeagueService:
                     )
                 if team.treasury < player.current_value:
                     raise InvalidOperationException(
-                        f"Cannot keep '{player.name}': insufficient treasury ({team.treasury} < {player.current_value})"
+                        f"Cannot keep '{player.name}': insufficient treasury "
+                        f"[source=league_service.finalize_temporary_players.keep_player] "
+                        f"({team.treasury} < {player.current_value})"
                     )
 
                 team.treasury -= player.current_value
@@ -1125,7 +1127,9 @@ class LeagueService:
                 cost = purchases.rerolls * roster.reroll_cost * 2
                 if team.treasury < cost:
                     raise InvalidOperationException(
-                        f"Cannot buy rerolls for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                        f"Cannot buy rerolls for {team_side}: insufficient treasury "
+                        f"[source=league_service.side_submission.post_match.rerolls] "
+                        f"({team.treasury} < {cost})"
                     )
                 team.treasury -= cost
                 team.rerolls += purchases.rerolls
@@ -1139,7 +1143,9 @@ class LeagueService:
                 cost = purchases.cheerleaders * 10_000
                 if team.treasury < cost:
                     raise InvalidOperationException(
-                        f"Cannot buy cheerleaders for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                        f"Cannot buy cheerleaders for {team_side}: insufficient treasury "
+                        f"[source=league_service.side_submission.post_match.cheerleaders] "
+                        f"({team.treasury} < {cost})"
                     )
                 team.treasury -= cost
                 team.cheerleaders += purchases.cheerleaders
@@ -1153,7 +1159,9 @@ class LeagueService:
                 cost = purchases.assistant_coaches * 10_000
                 if team.treasury < cost:
                     raise InvalidOperationException(
-                        f"Cannot buy assistant coaches for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                        f"Cannot buy assistant coaches for {team_side}: insufficient treasury "
+                        f"[source=league_service.side_submission.post_match.assistant_coaches] "
+                        f"({team.treasury} < {cost})"
                     )
                 team.treasury -= cost
                 team.assistant_coaches += purchases.assistant_coaches
@@ -1173,7 +1181,9 @@ class LeagueService:
                 cost = 50_000
                 if team.treasury < cost:
                     raise InvalidOperationException(
-                        f"Cannot buy apothecary for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                        f"Cannot buy apothecary for {team_side}: insufficient treasury "
+                        f"[source=league_service.side_submission.post_match.apothecary] "
+                        f"({team.treasury} < {cost})"
                     )
                 team.treasury -= cost
                 team.apothecary = True
@@ -1208,7 +1218,10 @@ class LeagueService:
                     raise InvalidOperationException(reason)
                 if team.treasury < purchase_cost:
                     raise InvalidOperationException(
-                        f"Cannot buy player '{player_purchase.base_type}' for {team_side}: insufficient treasury ({team.treasury} < {purchase_cost})"
+                        f"Cannot buy player '{player_purchase.base_type}' for {team_side}: "
+                        f"insufficient treasury "
+                        f"[source=league_service.side_submission.post_match.player] "
+                        f"({team.treasury} < {purchase_cost})"
                     )
                 new_player = UserTeamService._build_user_player(
                     team=team,
@@ -3536,7 +3549,9 @@ class LeagueService:
                 cost = purchases.rerolls * roster.reroll_cost * 2
                 if team.treasury < cost:
                     raise InvalidOperationException(
-                        f"Cannot buy rerolls for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                        f"Cannot buy rerolls for {team_side}: insufficient treasury "
+                        f"[source=league_service.full_submission.post_match.rerolls] "
+                        f"({team.treasury} < {cost})"
                     )
                 team.treasury -= cost
                 team.rerolls += purchases.rerolls
@@ -3550,7 +3565,9 @@ class LeagueService:
                 cost = purchases.cheerleaders * 10_000
                 if team.treasury < cost:
                     raise InvalidOperationException(
-                        f"Cannot buy cheerleaders for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                        f"Cannot buy cheerleaders for {team_side}: insufficient treasury "
+                        f"[source=league_service.full_submission.post_match.cheerleaders] "
+                        f"({team.treasury} < {cost})"
                     )
                 team.treasury -= cost
                 team.cheerleaders += purchases.cheerleaders
@@ -3564,7 +3581,9 @@ class LeagueService:
                 cost = purchases.assistant_coaches * 10_000
                 if team.treasury < cost:
                     raise InvalidOperationException(
-                        f"Cannot buy assistant coaches for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                        f"Cannot buy assistant coaches for {team_side}: insufficient treasury "
+                        f"[source=league_service.full_submission.post_match.assistant_coaches] "
+                        f"({team.treasury} < {cost})"
                     )
                 team.treasury -= cost
                 team.assistant_coaches += purchases.assistant_coaches
@@ -3584,7 +3603,9 @@ class LeagueService:
                 cost = 50_000
                 if team.treasury < cost:
                     raise InvalidOperationException(
-                        f"Cannot buy apothecary for {team_side}: insufficient treasury ({team.treasury} < {cost})"
+                        f"Cannot buy apothecary for {team_side}: insufficient treasury "
+                        f"[source=league_service.full_submission.post_match.apothecary] "
+                        f"({team.treasury} < {cost})"
                     )
                 team.treasury -= cost
                 team.apothecary = True
@@ -3619,7 +3640,10 @@ class LeagueService:
                     raise InvalidOperationException(reason)
                 if team.treasury < purchase_cost:
                     raise InvalidOperationException(
-                        f"Cannot buy player '{player_purchase.base_type}' for {team_side}: insufficient treasury ({team.treasury} < {purchase_cost})"
+                        f"Cannot buy player '{player_purchase.base_type}' for {team_side}: "
+                        f"insufficient treasury "
+                        f"[source=league_service.full_submission.post_match.player] "
+                        f"({team.treasury} < {purchase_cost})"
                     )
                 new_player = UserTeamService._build_user_player(
                     team=team,

@@ -265,7 +265,10 @@ class UserTeam(Document):
             return False, f"Maximum {base_type} reached ({max_allowed})"
 
         if self.treasury < cost:
-            return False, f"Insufficient treasury ({self.treasury} < {cost})"
+            return False, (
+                f"Insufficient treasury [source=user_team.can_hire_player] "
+                f"({self.treasury} < {cost})"
+            )
 
         return True, "OK"
 

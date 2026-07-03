@@ -689,7 +689,11 @@ async def test_commissioner_cannot_spend_reserved_inducement_treasury_on_hire(
 
     with pytest.raises(
         InvalidOperationException,
-        match=r"Insufficient treasury \(10000 < 40000\)",
+        match=(
+            r"Insufficient treasury "
+            r"\[source=user_team_service\.hire_player\.available_treasury\] "
+            r"\(10000 < 40000\)"
+        ),
     ):
         await UserTeamService.hire_player(
             "team-1",

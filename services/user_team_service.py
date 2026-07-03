@@ -471,7 +471,9 @@ class UserTeamService:
         if not league_id or not match_id:
             if team.treasury < cost:
                 raise InvalidOperationException(
-                    f"Insufficient treasury ({team.treasury} < {cost})"
+                    "Insufficient treasury "
+                    "[source=user_team_service.temporary_match_treasury_charge.direct] "
+                    f"({team.treasury} < {cost})"
                 )
             return cost
 
@@ -512,7 +514,10 @@ class UserTeamService:
             return 0
         if team.treasury < contribution:
             raise InvalidOperationException(
-                f"Insufficient treasury ({team.treasury} < {contribution})"
+                "Insufficient treasury "
+                "[source=user_team_service.temporary_match_treasury_contribution] "
+                f"({team.treasury} < {contribution}; match_id={match_id}; "
+                f"legacy_live_charge={legacy_live_charge})"
             )
         return contribution
 
@@ -1317,7 +1322,9 @@ class UserTeamService:
             )
             if available_treasury < base_player.cost:
                 raise InvalidOperationException(
-                    f"Insufficient treasury ({available_treasury} < {base_player.cost})"
+                    "Insufficient treasury "
+                    "[source=user_team_service.hire_player.available_treasury] "
+                    f"({available_treasury} < {base_player.cost})"
                 )
 
         new_player = UserTeamService._build_user_player(
@@ -1401,7 +1408,9 @@ class UserTeamService:
             )
             if available_treasury < star.cost:
                 raise InvalidOperationException(
-                    f"Insufficient treasury ({available_treasury} < {star.cost})"
+                    "Insufficient treasury "
+                    "[source=user_team_service.hire_star_player.available_treasury] "
+                    f"({available_treasury} < {star.cost})"
                 )
 
         treasury_charge = await UserTeamService._temporary_match_treasury_charge(
