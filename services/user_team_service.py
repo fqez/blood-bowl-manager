@@ -18,7 +18,7 @@ from models.base.inducement import InducementRules
 from models.base.injury import InjuryRules
 from models.base.roster import BasePlayer, BaseRoster
 from models.base.star_player import StarPlayer
-from models.league.league import League, LeagueStatus, MatchStatus
+from models.league.league import League, LeagueStatus, Match, MatchStatus
 from models.quick_match.quick_match import QuickMatch
 from models.team.perk import Perk
 from models.user.user import User
@@ -345,19 +345,42 @@ class UserTeamService:
             raise InvalidOperationException("Away team roster not found")
 
         rules = await InducementRules.get("inducements")
+        return UserTeamService._match_inducement_budget_for_state(
+            team_id=team_id,
+            league=league,
+            match=match,
+            home_team=home_team,
+            away_team=away_team,
+            home_roster=home_roster,
+            away_roster=away_roster,
+            rules=rules,
+        )
+
+    @staticmethod
+    def _match_inducement_budget_for_state(
+        *,
+        team_id: str,
+        league: League,
+        match: Match,
+        home_team: UserTeam,
+        away_team: UserTeam,
+        home_roster: BaseRoster,
+        away_roster: BaseRoster,
+        rules: Optional[InducementRules],
+    ) -> _MatchInducementBudgetSnapshot:
         home_ctv = UserTeamService._match_inducement_team_value(
             home_team,
             home_roster,
-            match_id,
+            match.id,
         )
         away_ctv = UserTeamService._match_inducement_team_value(
             away_team,
             away_roster,
-            match_id,
+            match.id,
         )
         home_spent = UserTeamService._temporary_match_hire_spend(
             home_team,
-            match_id,
+            match.id,
         ) + UserTeamService._inducement_purchase_spend(
             home_team,
             home_roster,
@@ -366,7 +389,7 @@ class UserTeamService:
         )
         away_spent = UserTeamService._temporary_match_hire_spend(
             away_team,
-            match_id,
+            match.id,
         ) + UserTeamService._inducement_purchase_spend(
             away_team,
             away_roster,
@@ -477,6 +500,14 @@ class UserTeamService:
             match_id=match_id,
         )
         contribution = budget.treasury_contribution
+        if contribution <= 0:
+            return 0
+        legacy_live_charge = UserTeamService._temporary_match_hire_spend(
+            team,
+            match_id,
+        )
+        if legacy_live_charge > 0:
+            contribution = max(contribution - legacy_live_charge, 0)
         if contribution <= 0:
             return 0
         if team.treasury < contribution:

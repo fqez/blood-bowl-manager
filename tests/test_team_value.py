@@ -2,7 +2,10 @@ import pytest
 
 from models.base.roster import BasePlayer, BaseRoster, BaseStats
 from models.user_team.team import PlayerStats, PlayerStatus, UserPlayer, UserTeam
-from services.user_team_service import UserTeamService
+from services.user_team_service import (
+    UserTeamService,
+    _MatchInducementBudgetSnapshot,
+)
 
 
 def _player(
@@ -85,6 +88,97 @@ def test_match_inducement_team_value_excludes_current_match_temporary_players():
     ctv = UserTeamService._match_inducement_team_value(team, roster, "match-1")
 
     assert ctv == 170000
+
+
+@pytest.mark.anyio
+async def test_temporary_match_treasury_contribution_uses_legacy_live_charge_credit(
+    monkeypatch,
+):
+    team = UserTeam.model_construct(
+        id="team-1",
+        user_id="coach",
+        base_roster_id="human",
+        name="Humans",
+        treasury=0,
+        players=[
+            UserPlayer(
+                id="star-1",
+                base_type="star_griff",
+                name="Griff",
+                number=16,
+                current_value=40000,
+                stats=PlayerStats(MA=7, ST=4, AG=2, PA=3, AV=9),
+                status=PlayerStatus.HEALTHY.value,
+                temporary_for_match=True,
+                temporary_match_id="match-1",
+            )
+        ],
+    )
+
+    async def fake_budget(*_args, **_kwargs):
+        return _MatchInducementBudgetSnapshot(
+            petty_cash=0,
+            treasury_allowance=40000,
+            total_available=40000,
+            spent=40000,
+            treasury_contribution=40000,
+            remaining=0,
+            is_favorite=True,
+            is_tied=False,
+        )
+
+    monkeypatch.setattr(
+        UserTeamService,
+        "_match_inducement_budget_for_team",
+        fake_budget,
+    )
+
+    contribution = await UserTeamService._temporary_match_treasury_contribution(
+        team,
+        league_id="league-1",
+        match_id="match-1",
+    )
+
+    assert contribution == 0
+
+
+@pytest.mark.anyio
+async def test_temporary_match_treasury_contribution_still_raises_without_legacy_credit(
+    monkeypatch,
+):
+    team = UserTeam.model_construct(
+        id="team-1",
+        user_id="coach",
+        base_roster_id="human",
+        name="Humans",
+        treasury=0,
+        players=[],
+    )
+
+    async def fake_budget(*_args, **_kwargs):
+        return _MatchInducementBudgetSnapshot(
+            petty_cash=0,
+            treasury_allowance=40000,
+            total_available=40000,
+            spent=40000,
+            treasury_contribution=40000,
+            remaining=0,
+            is_favorite=True,
+            is_tied=False,
+        )
+
+    monkeypatch.setattr(
+        UserTeamService,
+        "_match_inducement_budget_for_team",
+        fake_budget,
+    )
+
+    with pytest.raises(Exception, match=r"Insufficient treasury \(0 < 40000\)"):
+        await UserTeamService._temporary_match_treasury_contribution(
+            team,
+            league_id="league-1",
+            match_id="match-1",
+        )
 
 
 @pytest.mark.anyio
