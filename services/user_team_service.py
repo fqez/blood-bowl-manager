@@ -657,7 +657,10 @@ class UserTeamService:
 
     @staticmethod
     async def _sync_team_value(
-        team: UserTeam, roster: Optional[BaseRoster] = None
+        team: UserTeam,
+        roster: Optional[BaseRoster] = None,
+        *,
+        persist: bool = True,
     ) -> int:
         normalized = False
         if team.cheerleaders > 6:
@@ -676,8 +679,9 @@ class UserTeamService:
         breakdown = await UserTeamService._calculate_team_value_breakdown(team, roster)
         if normalized or team.team_value != breakdown.team_value:
             team.team_value = breakdown.team_value
-            team.updated_at = datetime.utcnow()
-            await team.save()
+            if persist:
+                team.updated_at = datetime.utcnow()
+                await team.save()
         return breakdown.team_value
 
     @staticmethod
@@ -716,32 +720,35 @@ class UserTeamService:
         )
 
     @staticmethod
-    async def _ensure_share_code(team: UserTeam) -> str:
+    async def _ensure_share_code(team: UserTeam, *, persist: bool = True) -> str:
         share_code = getattr(team, "share_code", None)
         if share_code:
             normalized = str(share_code).upper()
             if normalized != share_code:
                 team.share_code = normalized
-                team.updated_at = datetime.utcnow()
-                await team.save()
+                if persist:
+                    team.updated_at = datetime.utcnow()
+                    await team.save()
             return normalized
 
         legacy_candidate = str(team.id).replace("-", "")[:8].upper()
         if len(legacy_candidate) == 8:
-            existing = await UserTeam.find_one(UserTeam.share_code == legacy_candidate)
+            existing = await UserTeam.find_one({"share_code": legacy_candidate})
             if not existing or str(existing.id) == str(team.id):
                 team.share_code = legacy_candidate
-                team.updated_at = datetime.utcnow()
-                await team.save()
+                if persist:
+                    team.updated_at = datetime.utcnow()
+                    await team.save()
                 return legacy_candidate
 
         while True:
             candidate = uuid.uuid4().hex[:8].upper()
-            existing = await UserTeam.find_one(UserTeam.share_code == candidate)
+            existing = await UserTeam.find_one({"share_code": candidate})
             if not existing:
                 team.share_code = candidate
-                team.updated_at = datetime.utcnow()
-                await team.save()
+                if persist:
+                    team.updated_at = datetime.utcnow()
+                    await team.save()
                 return candidate
 
     @staticmethod
@@ -870,11 +877,11 @@ class UserTeamService:
         for t in teams:
             team_id = str(t.id)
             roster = await BaseRoster.find_one(BaseRoster.id == t.base_roster_id)
-            await UserTeamService._sync_team_value(t, roster)
+            await UserTeamService._sync_team_value(t, roster, persist=False)
             value_breakdown = await UserTeamService._calculate_team_value_breakdown(
                 t, roster
             )
-            share_code = await UserTeamService._ensure_share_code(t)
+            share_code = await UserTeamService._ensure_share_code(t, persist=False)
             summaries.append(
                 UserTeamSummary(
                     id=str(t.id),
@@ -1112,13 +1119,13 @@ class UserTeamService:
         team_id = str(team.id)
 
         roster = await BaseRoster.find_one(BaseRoster.id == team.base_roster_id)
-        await UserTeamService._sync_team_value(team, roster)
+        await UserTeamService._sync_team_value(team, roster, persist=False)
         value_breakdown = await UserTeamService._calculate_team_value_breakdown(
             team, roster
         )
 
         players = [UserTeamService._player_to_response(p) for p in team.players]
-        share_code = await UserTeamService._ensure_share_code(team)
+        share_code = await UserTeamService._ensure_share_code(team, persist=False)
 
         return UserTeamDetail(
             id=str(team.id),

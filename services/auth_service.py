@@ -111,6 +111,22 @@ class AuthService:
             user.refresh_tokens = []
             await user.save()
 
+    async def logout_by_refresh_token(self, refresh_token: str) -> None:
+        """Revoke all refresh tokens for the user identified by a valid refresh token."""
+        try:
+            payload = self.token_service.decode_token(refresh_token)
+        except ValueError:
+            raise ValueError("Invalid or expired refresh token")
+
+        if payload.get("type") != "refresh":
+            raise ValueError("Invalid token type")
+
+        user_id = payload.get("sub")
+        if not user_id:
+            raise ValueError("Invalid token payload")
+
+        await self.logout(user_id)
+
     async def _generate_and_store_tokens(
         self,
         user: User,

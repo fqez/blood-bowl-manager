@@ -92,6 +92,74 @@ def test_match_inducement_team_value_excludes_current_match_temporary_players():
 
 
 @pytest.mark.anyio
+async def test_get_team_detail_does_not_save_on_read(monkeypatch):
+    team = UserTeam.model_construct(
+        id="6a46857521cee6c29691a93d",
+        user_id="coach",
+        base_roster_id="human",
+        name="Humans",
+        treasury=50000,
+        team_value=0,
+        share_code=None,
+        rerolls=1,
+        assistant_coaches=0,
+        cheerleaders=0,
+        apothecary=False,
+        dedicated_fans=1,
+        players=[_player("lineman-1", 1, 50000)],
+    )
+    roster = BaseRoster.model_construct(
+        id="human",
+        name="Humans",
+        reroll_cost=50000,
+        apothecary_allowed=True,
+        tier=2,
+        special_rules=[],
+        players=[],
+    )
+
+    async def fake_get_team(team_id):
+        assert team_id == "6a46857521cee6c29691a93d"
+        return team
+
+    async def fake_find_roster(*_args, **_kwargs):
+        return roster
+
+    async def fake_find_one(*_args, **_kwargs):
+        return None
+
+    async def fake_memberships(*_args, **_kwargs):
+        return []
+
+    async def fake_is_in_active_league(*_args, **_kwargs):
+        return False
+
+    async def fail_save():
+        raise AssertionError("save should not be called during team detail reads")
+
+    monkeypatch.setattr(UserTeam, "get", fake_get_team)
+    monkeypatch.setattr(UserTeam, "find_one", fake_find_one)
+    monkeypatch.setattr(BaseRoster, "id", "id", raising=False)
+    monkeypatch.setattr(BaseRoster, "find_one", fake_find_roster)
+    monkeypatch.setattr(UserTeamService, "_league_memberships", fake_memberships)
+    monkeypatch.setattr(
+        UserTeamService,
+        "_is_in_active_league",
+        fake_is_in_active_league,
+    )
+    object.__setattr__(team, "save", fail_save)
+
+    detail = await UserTeamService.get_team_detail(
+        "6a46857521cee6c29691a93d",
+        viewer_id="coach",
+    )
+
+    assert detail.id == "6a46857521cee6c29691a93d"
+    assert detail.team_value == 100000
+    assert detail.share_code == "6A468575"
+
+
+@pytest.mark.anyio
 async def test_temporary_match_treasury_contribution_uses_legacy_live_charge_credit(
     monkeypatch,
 ):

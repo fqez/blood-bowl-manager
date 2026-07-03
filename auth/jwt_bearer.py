@@ -6,9 +6,13 @@ class JWTBearer(HTTPBearer):
     def __init__(self, auto_error: bool = True):
         super().__init__(auto_error=auto_error)
 
-    async def __call__(self, request: Request) -> str:
-        credentials: HTTPAuthorizationCredentials = await super().__call__(request)
-        if not credentials or credentials.scheme != "Bearer":
+    async def __call__(self, request: Request) -> str | None:
+        credentials: HTTPAuthorizationCredentials | None = await super().__call__(
+            request
+        )
+        if not credentials:
+            return None
+        if credentials.scheme != "Bearer":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Invalid authentication scheme",
@@ -43,3 +47,24 @@ async def get_current_user(token: str = Depends(JWTBearer())) -> str:
         )
 
     return user_id
+
+
+async def get_current_user_optional(
+    token: str | None = Depends(JWTBearer(auto_error=False)),
+) -> str | None:
+    """Best-effort JWT validation for routes that can fall back to other auth data."""
+    if not token:
+        return None
+
+    from auth.token_service import TokenService
+
+    try:
+        payload = TokenService().decode_token(token)
+    except ValueError:
+        return None
+
+    if payload.get("type") != "access":
+        return None
+
+    user_id = payload.get("sub")
+    return user_id if user_id else None

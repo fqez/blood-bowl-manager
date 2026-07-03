@@ -2,10 +2,11 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from auth.jwt_bearer import get_current_user
+from auth.jwt_bearer import get_current_user, get_current_user_optional
 from models.user.user import User
 from schemas.auth import (
     LoginRequest,
+    LogoutRequest,
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
@@ -63,9 +64,27 @@ async def refresh_token(req: RefreshRequest, request: Request):
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(current_user_id: str = Depends(get_current_user)):
-    """Logout: revoke all refresh tokens for the current user."""
-    await _service.logout(current_user_id)
+async def logout(
+    req: LogoutRequest | None = None,
+    current_user_id: str | None = Depends(get_current_user_optional),
+):
+    """Logout: revoke all refresh tokens using access auth or a refresh token fallback."""
+    if current_user_id:
+        await _service.logout(current_user_id)
+        return
+
+    if req and req.refresh_token:
+        try:
+            await _service.logout_by_refresh_token(req.refresh_token)
+            return
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Not authenticated",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 @router.get("/me", response_model=UserProfile)
