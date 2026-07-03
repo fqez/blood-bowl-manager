@@ -5,6 +5,7 @@ from models.user_team.team import PlayerStats, PlayerStatus, UserPlayer, UserTea
 from services.user_team_service import (
     UserTeamService,
     _MatchInducementBudgetSnapshot,
+    _TemporaryMatchTreasurySettlement,
 )
 
 
@@ -140,6 +141,52 @@ async def test_temporary_match_treasury_contribution_uses_legacy_live_charge_cre
     )
 
     assert contribution == 0
+
+
+@pytest.mark.anyio
+async def test_temporary_match_treasury_settlement_allows_shortfall_when_requested(
+    monkeypatch,
+):
+    team = UserTeam.model_construct(
+        id="team-1",
+        user_id="coach",
+        base_roster_id="human",
+        name="Humans",
+        treasury=0,
+        players=[],
+    )
+
+    async def fake_budget(*_args, **_kwargs):
+        return _MatchInducementBudgetSnapshot(
+            petty_cash=0,
+            treasury_allowance=40000,
+            total_available=40000,
+            spent=40000,
+            treasury_contribution=40000,
+            remaining=0,
+            is_favorite=True,
+            is_tied=False,
+        )
+
+    monkeypatch.setattr(
+        UserTeamService,
+        "_match_inducement_budget_for_team",
+        fake_budget,
+    )
+
+    settlement = await UserTeamService._temporary_match_treasury_settlement(
+        team,
+        league_id="league-1",
+        match_id="match-1",
+        allow_shortfall=True,
+    )
+
+    assert settlement == _TemporaryMatchTreasurySettlement(
+        expected_contribution=40000,
+        charged_contribution=0,
+        shortfall=40000,
+        legacy_live_charge=0,
+    )
 
 
 @pytest.mark.anyio

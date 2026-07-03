@@ -1296,14 +1296,15 @@ class LeagueService:
                 if team_side == "home"
                 else request.winnings.away_purchases
             )
-            inducement_charge = (
-                await UserTeamService._temporary_match_treasury_contribution(
+            inducement_settlement = (
+                await UserTeamService._temporary_match_treasury_settlement(
                     team,
                     league_id=str(league.id),
                     match_id=match.id,
+                    allow_shortfall=True,
                 )
             )
-            team.treasury -= inducement_charge
+            team.treasury -= inducement_settlement.charged_contribution
             team_winnings = _calculate_winnings(winnings_touchdowns, stalling)
             team.treasury += team_winnings
             decisions = LeagueService._temporary_player_decisions(
@@ -1332,7 +1333,10 @@ class LeagueService:
                     type="winnings",
                     team=team_side,
                     detail=(
-                        f"Inducements charged: {inducement_charge}; Winnings: {team_winnings}; treasury before Expensive "
+                        f"Inducements expected: {inducement_settlement.expected_contribution}; "
+                        f"charged: {inducement_settlement.charged_contribution}; "
+                        f"shortfall: {inducement_settlement.shortfall}; "
+                        f"Winnings: {team_winnings}; treasury before Expensive "
                         f"Mistakes: {treasury_before_expensive}; result: {expensive_result or 'not_required'}; final treasury: {final_treasury}"
                     ),
                     half=0,
@@ -3714,23 +3718,25 @@ class LeagueService:
                 request.winnings.away_stalling,
             )
 
-            home_inducement_charge = (
-                await UserTeamService._temporary_match_treasury_contribution(
+            home_inducement_settlement = (
+                await UserTeamService._temporary_match_treasury_settlement(
                     home_team,
                     league_id=str(league.id),
                     match_id=match.id,
+                    allow_shortfall=True,
                 )
             )
-            away_inducement_charge = (
-                await UserTeamService._temporary_match_treasury_contribution(
+            away_inducement_settlement = (
+                await UserTeamService._temporary_match_treasury_settlement(
                     away_team,
                     league_id=str(league.id),
                     match_id=match.id,
+                    allow_shortfall=True,
                 )
             )
 
-            home_team.treasury -= home_inducement_charge
-            away_team.treasury -= away_inducement_charge
+            home_team.treasury -= home_inducement_settlement.charged_contribution
+            away_team.treasury -= away_inducement_settlement.charged_contribution
 
             home_team.treasury += home_winnings
             away_team.treasury += away_winnings
@@ -3772,7 +3778,10 @@ class LeagueService:
                         type="winnings",
                         team="home",
                         detail=(
-                            f"Inducements charged: {home_inducement_charge}; Winnings: {home_winnings}; treasury before Expensive "
+                            f"Inducements expected: {home_inducement_settlement.expected_contribution}; "
+                            f"charged: {home_inducement_settlement.charged_contribution}; "
+                            f"shortfall: {home_inducement_settlement.shortfall}; "
+                            f"Winnings: {home_winnings}; treasury before Expensive "
                             f"Mistakes: {home_before_expensive}; result: {home_expensive or 'not_required'}; final treasury: {home_final}"
                         ),
                         half=0,
@@ -3786,7 +3795,10 @@ class LeagueService:
                         type="winnings",
                         team="away",
                         detail=(
-                            f"Inducements charged: {away_inducement_charge}; Winnings: {away_winnings}; treasury before Expensive "
+                            f"Inducements expected: {away_inducement_settlement.expected_contribution}; "
+                            f"charged: {away_inducement_settlement.charged_contribution}; "
+                            f"shortfall: {away_inducement_settlement.shortfall}; "
+                            f"Winnings: {away_winnings}; treasury before Expensive "
                             f"Mistakes: {away_before_expensive}; result: {away_expensive or 'not_required'}; final treasury: {away_final}"
                         ),
                         half=0,

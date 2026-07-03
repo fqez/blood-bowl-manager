@@ -72,6 +72,14 @@ class _MatchInducementBudgetSnapshot:
     is_tied: bool
 
 
+@dataclass(frozen=True)
+class _TemporaryMatchTreasurySettlement:
+    expected_contribution: int
+    charged_contribution: int
+    shortfall: int
+    legacy_live_charge: int
+
+
 class UserTeamService:
     """Service for managing user teams."""
 
@@ -496,6 +504,22 @@ class UserTeamService:
         league_id: str,
         match_id: str,
     ) -> int:
+        settlement = await UserTeamService._temporary_match_treasury_settlement(
+            team,
+            league_id=league_id,
+            match_id=match_id,
+            allow_shortfall=False,
+        )
+        return settlement.charged_contribution
+
+    @staticmethod
+    async def _temporary_match_treasury_settlement(
+        team: UserTeam,
+        *,
+        league_id: str,
+        match_id: str,
+        allow_shortfall: bool,
+    ) -> _TemporaryMatchTreasurySettlement:
         budget = await UserTeamService._match_inducement_budget_for_team(
             team,
             league_id=league_id,
@@ -511,7 +535,20 @@ class UserTeamService:
         if legacy_live_charge > 0:
             contribution = max(contribution - legacy_live_charge, 0)
         if contribution <= 0:
-            return 0
+            return _TemporaryMatchTreasurySettlement(
+                expected_contribution=0,
+                charged_contribution=0,
+                shortfall=0,
+                legacy_live_charge=legacy_live_charge,
+            )
+        if allow_shortfall:
+            charged = min(team.treasury, contribution)
+            return _TemporaryMatchTreasurySettlement(
+                expected_contribution=contribution,
+                charged_contribution=charged,
+                shortfall=contribution - charged,
+                legacy_live_charge=legacy_live_charge,
+            )
         if team.treasury < contribution:
             raise InvalidOperationException(
                 "Insufficient treasury "
@@ -519,7 +556,12 @@ class UserTeamService:
                 f"({team.treasury} < {contribution}; match_id={match_id}; "
                 f"legacy_live_charge={legacy_live_charge})"
             )
-        return contribution
+        return _TemporaryMatchTreasurySettlement(
+            expected_contribution=contribution,
+            charged_contribution=contribution,
+            shortfall=0,
+            legacy_live_charge=legacy_live_charge,
+        )
 
     @staticmethod
     async def _pending_match_treasury_reservation(
