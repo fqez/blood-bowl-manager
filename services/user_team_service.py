@@ -527,7 +527,12 @@ class UserTeamService:
         )
         contribution = budget.treasury_contribution
         if contribution <= 0:
-            return 0
+            return _TemporaryMatchTreasurySettlement(
+                expected_contribution=0,
+                charged_contribution=0,
+                shortfall=0,
+                legacy_live_charge=0,
+            )
         legacy_live_charge = UserTeamService._temporary_match_hire_spend(
             team,
             match_id,

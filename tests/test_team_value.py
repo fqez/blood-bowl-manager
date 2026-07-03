@@ -190,6 +190,52 @@ async def test_temporary_match_treasury_settlement_allows_shortfall_when_request
 
 
 @pytest.mark.anyio
+async def test_temporary_match_treasury_settlement_returns_object_when_no_contribution(
+    monkeypatch,
+):
+    team = UserTeam.model_construct(
+        id="team-1",
+        user_id="coach",
+        base_roster_id="human",
+        name="Humans",
+        treasury=12345,
+        players=[],
+    )
+
+    async def fake_budget(*_args, **_kwargs):
+        return _MatchInducementBudgetSnapshot(
+            petty_cash=0,
+            treasury_allowance=0,
+            total_available=0,
+            spent=0,
+            treasury_contribution=0,
+            remaining=0,
+            is_favorite=False,
+            is_tied=True,
+        )
+
+    monkeypatch.setattr(
+        UserTeamService,
+        "_match_inducement_budget_for_team",
+        fake_budget,
+    )
+
+    settlement = await UserTeamService._temporary_match_treasury_settlement(
+        team,
+        league_id="league-1",
+        match_id="match-1",
+        allow_shortfall=True,
+    )
+
+    assert settlement == _TemporaryMatchTreasurySettlement(
+        expected_contribution=0,
+        charged_contribution=0,
+        shortfall=0,
+        legacy_live_charge=0,
+    )
+
+
+@pytest.mark.anyio
 async def test_temporary_match_treasury_contribution_still_raises_without_legacy_credit(
     monkeypatch,
 ):
