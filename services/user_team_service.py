@@ -119,6 +119,96 @@ class UserTeamService:
         return {str(roster.id): roster for roster in rosters}
 
     @staticmethod
+    def _summary_team_from_document(team_document: dict) -> UserTeam:
+        raw_players = team_document.get("players", []) or []
+        players = [
+            UserPlayer.model_validate(
+                {
+                    "id": raw_player.get("id", ""),
+                    "base_type": raw_player.get("base_type", ""),
+                    "name": raw_player.get("name", ""),
+                    "number": raw_player.get("number", 0),
+                    "current_value": raw_player.get("current_value", 0),
+                    "stats": raw_player.get("stats")
+                    or {"MA": 1, "ST": 1, "AG": 1, "PA": None, "AV": 3},
+                    "status": raw_player.get("status", PlayerStatus.HEALTHY.value),
+                    "temporary_for_match": raw_player.get(
+                        "temporary_for_match", False
+                    ),
+                    "temporary_match_id": raw_player.get("temporary_match_id"),
+                    "journeyman": raw_player.get("journeyman", False),
+                }
+            )
+            for raw_player in raw_players
+        ]
+
+        created_at = team_document.get("created_at") or datetime.utcnow()
+        updated_at = team_document.get("updated_at") or created_at
+
+        return UserTeam.model_construct(
+            id=str(team_document.get("_id")),
+            user_id=team_document.get("user_id", ""),
+            base_roster_id=team_document.get("base_roster_id", ""),
+            name=team_document.get("name", ""),
+            players=players,
+            treasury=team_document.get("treasury", 1_000_000),
+            team_value=team_document.get("team_value", 0),
+            rerolls=team_document.get("rerolls", 0),
+            fan_factor=team_document.get("fan_factor", 0),
+            cheerleaders=team_document.get("cheerleaders", 0),
+            assistant_coaches=team_document.get("assistant_coaches", 0),
+            apothecary=team_document.get("apothecary", False),
+            favoured_of=team_document.get("favoured_of"),
+            dedicated_fans=team_document.get("dedicated_fans", 1),
+            notes="",
+            share_code=team_document.get("share_code"),
+            icon=team_document.get("icon"),
+            wallpaper=None,
+            created_at=created_at,
+            updated_at=updated_at,
+        )
+
+    @staticmethod
+    async def _summary_teams_by_user(user_id: str) -> list[UserTeam]:
+        projection = {
+            "_id": 1,
+            "user_id": 1,
+            "base_roster_id": 1,
+            "name": 1,
+            "players.id": 1,
+            "players.base_type": 1,
+            "players.name": 1,
+            "players.number": 1,
+            "players.current_value": 1,
+            "players.stats": 1,
+            "players.status": 1,
+            "players.temporary_for_match": 1,
+            "players.temporary_match_id": 1,
+            "players.journeyman": 1,
+            "treasury": 1,
+            "team_value": 1,
+            "rerolls": 1,
+            "fan_factor": 1,
+            "cheerleaders": 1,
+            "assistant_coaches": 1,
+            "apothecary": 1,
+            "favoured_of": 1,
+            "dedicated_fans": 1,
+            "share_code": 1,
+            "icon": 1,
+            "created_at": 1,
+            "updated_at": 1,
+        }
+        team_documents = await UserTeam.get_motor_collection().find(
+            {"user_id": user_id},
+            projection,
+        ).to_list(length=None)
+        return [
+            UserTeamService._summary_team_from_document(team_document)
+            for team_document in team_documents
+        ]
+
+    @staticmethod
     def _is_league_commissioner(league: League, user_id: str) -> bool:
         return user_id == league.owner_id or user_id in (league.commissioner_ids or [])
 
@@ -888,7 +978,7 @@ class UserTeamService:
     @staticmethod
     async def get_teams_by_user(user_id: str) -> list[UserTeamSummary]:
         """Get all teams owned by a user."""
-        teams = await UserTeam.find(UserTeam.user_id == user_id).to_list()
+        teams = await UserTeamService._summary_teams_by_user(user_id)
         team_ids = [str(team.id) for team in teams]
         memberships = await UserTeamService._league_memberships_by_team_ids(team_ids)
         rosters = await UserTeamService._rosters_by_ids(

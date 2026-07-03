@@ -196,16 +196,13 @@ async def test_get_teams_by_user_does_not_query_active_league_per_team(monkeypat
         players=[],
     )
 
-    class _FindResult:
-        async def to_list(self):
-            return [team]
-
-    def fake_find(*_args, **_kwargs):
-        return _FindResult()
-
     async def fake_rosters_by_ids(roster_ids):
         assert roster_ids == ["human"]
         return {"human": roster}
+
+    async def fake_summary_teams_by_user(user_id):
+        assert user_id == "coach"
+        return [team]
 
     async def fake_memberships_by_team_ids(team_ids):
         assert team_ids == ["team-1"]
@@ -223,8 +220,11 @@ async def test_get_teams_by_user_does_not_query_active_league_per_team(monkeypat
     async def fail_is_in_active_league(*_args, **_kwargs):
         raise AssertionError("get_teams_by_user should reuse fetched memberships")
 
-    monkeypatch.setattr(UserTeam, "user_id", "user_id", raising=False)
-    monkeypatch.setattr(UserTeam, "find", fake_find)
+    monkeypatch.setattr(
+        UserTeamService,
+        "_summary_teams_by_user",
+        fake_summary_teams_by_user,
+    )
     monkeypatch.setattr(UserTeamService, "_rosters_by_ids", fake_rosters_by_ids)
     monkeypatch.setattr(
         UserTeamService,
