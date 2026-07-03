@@ -533,3 +533,166 @@ async def test_commissioner_coach_mode_charges_treasury_for_apothecary(monkeypat
     assert updated.apothecary is True
     assert updated.treasury == 70000
     assert updated.team_value == 123456
+
+
+@pytest.mark.anyio
+async def test_commissioner_cannot_spend_reserved_inducement_treasury_on_staff(
+    monkeypatch,
+):
+    team = UserTeam.model_construct(
+        id="team-1",
+        user_id="coach-1",
+        base_roster_id="human",
+        name="The Smashers",
+        treasury=50000,
+        rerolls=1,
+        cheerleaders=0,
+        assistant_coaches=0,
+        apothecary=False,
+        fan_factor=1,
+        dedicated_fans=1,
+        players=[],
+    )
+    league = League.model_construct(
+        id="league-1",
+        name="Liga",
+        owner_id="owner-1",
+        commissioner_ids=["commissioner"],
+        teams=[
+            LeagueTeam(
+                team_id="team-1",
+                team_name="The Smashers",
+                user_id="coach-1",
+                username="Coach",
+                base_roster_id="human",
+            )
+        ],
+    )
+    roster = BaseRoster.model_construct(
+        id="human",
+        name="Human",
+        reroll_cost=50000,
+        apothecary_allowed=True,
+        tier=1,
+        players=[],
+    )
+
+    async def fake_get_team(team_id):
+        assert team_id == "team-1"
+        return team
+
+    async def fake_get_league(league_id):
+        assert league_id == "league-1"
+        return league
+
+    async def fake_find_roster(*_args, **_kwargs):
+        return roster
+
+    async def fake_reserved(*_args, **_kwargs):
+        return 40_000
+
+    async def fake_is_in_league(*_args, **_kwargs):
+        return True
+
+    monkeypatch.setattr(UserTeam, "get", fake_get_team)
+    monkeypatch.setattr(League, "get", fake_get_league)
+    monkeypatch.setattr(BaseRoster, "id", "id", raising=False)
+    monkeypatch.setattr(BaseRoster, "find_one", fake_find_roster)
+    monkeypatch.setattr(UserTeamService, "_is_in_league", fake_is_in_league)
+    monkeypatch.setattr(
+        UserTeamService,
+        "_pending_match_treasury_reservation",
+        fake_reserved,
+    )
+
+    with pytest.raises(InvalidOperationException, match="Not enough treasury"):
+        await UserTeamService.update_team(
+            "team-1",
+            "commissioner",
+            UpdateTeamRequest(
+                league_id="league-1",
+                apothecary=True,
+            ),
+        )
+
+
+@pytest.mark.anyio
+async def test_commissioner_cannot_spend_reserved_inducement_treasury_on_hire(
+    monkeypatch,
+):
+    team = UserTeam.model_construct(
+        id="team-1",
+        user_id="coach-1",
+        base_roster_id="human",
+        name="The Smashers",
+        treasury=50000,
+        players=[],
+    )
+    league = League.model_construct(
+        id="league-1",
+        name="Liga",
+        owner_id="owner-1",
+        commissioner_ids=["commissioner"],
+        teams=[
+            LeagueTeam(
+                team_id="team-1",
+                team_name="The Smashers",
+                user_id="coach-1",
+                username="Coach",
+                base_roster_id="human",
+            )
+        ],
+    )
+    roster = BaseRoster.model_construct(
+        id="human",
+        name="Human",
+        reroll_cost=50000,
+        apothecary_allowed=True,
+        tier=1,
+        players=[
+            BasePlayer(
+                type="lineman",
+                name="Lineman",
+                position="Lineman",
+                max=12,
+                cost=40_000,
+                stats=BaseStats(MA=6, ST=3, AG=3, PA=4, AV=9),
+                primary_access=["G"],
+                secondary_access=["A"],
+            )
+        ],
+    )
+
+    async def fake_get_team(team_id):
+        assert team_id == "team-1"
+        return team
+
+    async def fake_get_league(league_id):
+        assert league_id == "league-1"
+        return league
+
+    async def fake_find_roster(*_args, **_kwargs):
+        return roster
+
+    async def fake_reserved(*_args, **_kwargs):
+        return 40_000
+
+    monkeypatch.setattr(UserTeam, "get", fake_get_team)
+    monkeypatch.setattr(League, "get", fake_get_league)
+    monkeypatch.setattr(BaseRoster, "id", "id", raising=False)
+    monkeypatch.setattr(BaseRoster, "find_one", fake_find_roster)
+    monkeypatch.setattr(
+        UserTeamService,
+        "_pending_match_treasury_reservation",
+        fake_reserved,
+    )
+
+    with pytest.raises(
+        InvalidOperationException,
+        match=r"Insufficient treasury \(10000 < 40000\)",
+    ):
+        await UserTeamService.hire_player(
+            "team-1",
+            "commissioner",
+            HirePlayerRequest(base_type="lineman", league_id="league-1"),
+        )

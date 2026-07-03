@@ -18,7 +18,7 @@ from models.base.inducement import InducementRules
 from models.base.injury import InjuryRules
 from models.base.roster import BasePlayer, BaseRoster
 from models.base.star_player import StarPlayer
-from models.league.league import League, LeagueStatus
+from models.league.league import League, LeagueStatus, MatchStatus
 from models.quick_match.quick_match import QuickMatch
 from models.team.perk import Perk
 from models.user.user import User
@@ -484,6 +484,56 @@ class UserTeamService:
                 f"Insufficient treasury ({team.treasury} < {contribution})"
             )
         return contribution
+
+    @staticmethod
+    async def _pending_match_treasury_reservation(
+        team: UserTeam,
+        *,
+        league_id: Optional[str],
+    ) -> int:
+        if not league_id:
+            return 0
+
+        league = await League.get(league_id)
+        if not league:
+            return 0
+
+        team_id = str(team.id)
+        reservation = 0
+        for match in league.matches:
+            if team_id not in {match.home.team_id, match.away.team_id}:
+                continue
+            if match.aftermatch_spp_applied_at is not None:
+                continue
+
+            match_status = match.status.value if hasattr(match.status, "value") else str(match.status)
+            if match_status not in {
+                MatchStatus.IN_PROGRESS.value,
+                MatchStatus.COMPLETED.value,
+            }:
+                continue
+
+            budget = await UserTeamService._match_inducement_budget_for_team(
+                team,
+                league_id=league_id,
+                match_id=match.id,
+            )
+            reservation += budget.treasury_contribution
+
+        return reservation
+
+    @staticmethod
+    async def _available_treasury_for_team_management(
+        team: UserTeam,
+        *,
+        league_id: Optional[str],
+    ) -> int:
+        reserved = await UserTeamService._pending_match_treasury_reservation(
+            team,
+            league_id=league_id,
+        )
+        available = team.treasury - reserved
+        return available if available > 0 else 0
 
     @staticmethod
     def _eligible_player_count(team: UserTeam) -> int:
@@ -1088,8 +1138,15 @@ class UserTeamService:
             raise InvalidOperationException("Apothecary is not allowed")
 
         # Validate treasury
-        if cost_delta > 0 and team.treasury < cost_delta:
-            raise InvalidOperationException("Not enough treasury")
+        if cost_delta > 0:
+            available_treasury = (
+                await UserTeamService._available_treasury_for_team_management(
+                    team,
+                    league_id=request.league_id,
+                )
+            )
+            if available_treasury < cost_delta:
+                raise InvalidOperationException("Not enough treasury")
 
         if request.name is not None:
             team.name = request.name
@@ -1221,6 +1278,16 @@ class UserTeamService:
             )
             if not can_hire:
                 raise InvalidOperationException(reason)
+            available_treasury = (
+                await UserTeamService._available_treasury_for_team_management(
+                    team,
+                    league_id=request.league_id,
+                )
+            )
+            if available_treasury < base_player.cost:
+                raise InvalidOperationException(
+                    f"Insufficient treasury ({available_treasury} < {base_player.cost})"
+                )
 
         new_player = UserTeamService._build_user_player(
             team=team,
@@ -1293,6 +1360,18 @@ class UserTeamService:
         # Check roster space
         if team.permanent_player_count() >= 16:
             raise InvalidOperationException("Roster is full (max 16 players)")
+
+        if not request.temporary_for_match:
+            available_treasury = (
+                await UserTeamService._available_treasury_for_team_management(
+                    team,
+                    league_id=request.league_id,
+                )
+            )
+            if available_treasury < star.cost:
+                raise InvalidOperationException(
+                    f"Insufficient treasury ({available_treasury} < {star.cost})"
+                )
 
         treasury_charge = await UserTeamService._temporary_match_treasury_charge(
             team,
