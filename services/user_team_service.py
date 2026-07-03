@@ -589,7 +589,11 @@ class UserTeamService:
             if match.aftermatch_spp_applied_at is not None:
                 continue
 
-            match_status = match.status.value if hasattr(match.status, "value") else str(match.status)
+            match_status = (
+                match.status.value
+                if hasattr(match.status, "value")
+                else str(match.status)
+            )
             if match_status not in {
                 MatchStatus.IN_PROGRESS.value,
                 MatchStatus.COMPLETED.value,

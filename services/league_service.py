@@ -2423,7 +2423,6 @@ class LeagueService:
 
         for m in league.matches:
             if m.id == match_id:
-                await LeagueService._recover_players_who_served_mng(league, m)
                 return MatchDetail(
                     id=m.id,
                     round=m.round,

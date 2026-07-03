@@ -234,7 +234,11 @@ class UserTeam(Document):
 
     @staticmethod
     def _is_dead_player(player: UserPlayer) -> bool:
-        status = player.status.value if isinstance(player.status, PlayerStatus) else player.status
+        status = (
+            player.status.value
+            if isinstance(player.status, PlayerStatus)
+            else player.status
+        )
         return status == PlayerStatus.DEAD.value
 
     def permanent_player_count(self) -> int:
