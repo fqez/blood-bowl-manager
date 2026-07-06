@@ -132,9 +132,7 @@ class UserTeamService:
                     "stats": raw_player.get("stats")
                     or {"MA": 1, "ST": 1, "AG": 1, "PA": None, "AV": 3},
                     "status": raw_player.get("status", PlayerStatus.HEALTHY.value),
-                    "temporary_for_match": raw_player.get(
-                        "temporary_for_match", False
-                    ),
+                    "temporary_for_match": raw_player.get("temporary_for_match", False),
                     "temporary_match_id": raw_player.get("temporary_match_id"),
                     "journeyman": raw_player.get("journeyman", False),
                 }
@@ -199,10 +197,14 @@ class UserTeamService:
             "created_at": 1,
             "updated_at": 1,
         }
-        team_documents = await UserTeam.get_motor_collection().find(
-            {"user_id": user_id},
-            projection,
-        ).to_list(length=None)
+        team_documents = (
+            await UserTeam.get_motor_collection()
+            .find(
+                {"user_id": user_id},
+                projection,
+            )
+            .to_list(length=None)
+        )
         return [
             UserTeamService._summary_team_from_document(team_document)
             for team_document in team_documents
@@ -352,7 +354,9 @@ class UserTeamService:
             )
             if status == PlayerStatus.DEAD.value:
                 continue
-            if player.temporary_for_match and player.temporary_match_id == match_id:
+            if player.temporary_for_match and not (
+                player.temporary_match_id == match_id and player.journeyman
+            ):
                 continue
             if player.base_type in ignored_player_types:
                 continue

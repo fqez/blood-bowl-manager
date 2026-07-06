@@ -2,7 +2,14 @@ from datetime import datetime
 
 import pytest
 
+from models.base.expensive_mistake import LocalizedText
+from models.base.inducement import (
+    InducementBudgetRules,
+    InducementRule,
+    InducementRules,
+)
 from models.base.roster import BasePlayer, BaseRoster, BaseStats
+from models.league.league import League, LeagueRules, Match, MatchTeamInfo
 from models.user_team.team import PlayerStats, PlayerStatus, UserPlayer, UserTeam
 from schemas.user_team import TeamLeagueMembership
 from services.user_team_service import (
@@ -18,6 +25,10 @@ def _player(
     value: int,
     status: str = "healthy",
     base_type: str = "lineman",
+    *,
+    temporary_for_match: bool = False,
+    temporary_match_id: str | None = None,
+    journeyman: bool = False,
 ) -> UserPlayer:
     return UserPlayer(
         id=player_id,
@@ -27,6 +38,124 @@ def _player(
         current_value=value,
         stats=PlayerStats(MA=6, ST=3, AG=3, PA=4, AV=9),
         status=status,
+        temporary_for_match=temporary_for_match,
+        temporary_match_id=temporary_match_id,
+        journeyman=journeyman,
+    )
+
+
+def _text(value: str) -> LocalizedText:
+    return LocalizedText(en=value, es=value)
+
+
+def _inducement_rules(*, top_up_limit: int = 50_000) -> InducementRules:
+    return InducementRules.model_construct(
+        id="inducements",
+        budget=InducementBudgetRules(
+            petty_cash_top_up_limit=top_up_limit,
+            description=_text("League play petty cash"),
+        ),
+        inducements=[
+            InducementRule(
+                id="bribe",
+                name=_text("Bribe"),
+                category="common",
+                max_per_team=3,
+                cost=100_000,
+                description=_text("A bribe"),
+            )
+        ],
+        prayers_to_nuffle=[],
+    )
+
+
+def _budget_roster(roster_id: str = "human") -> BaseRoster:
+    return BaseRoster.model_construct(
+        id=roster_id,
+        name=roster_id.title(),
+        reroll_cost=50_000,
+        apothecary_allowed=True,
+        tier=2,
+        special_rules=[],
+        players=[],
+    )
+
+
+def _budget_team(
+    team_id: str,
+    players: list[UserPlayer],
+    *,
+    treasury: int = 0,
+    base_roster_id: str = "human",
+) -> UserTeam:
+    return UserTeam.model_construct(
+        id=team_id,
+        user_id=f"{team_id}-coach",
+        base_roster_id=base_roster_id,
+        name=team_id.title(),
+        treasury=treasury,
+        players=players,
+        rerolls=0,
+        assistant_coaches=0,
+        cheerleaders=0,
+        apothecary=False,
+    )
+
+
+def _budget_match(
+    *,
+    home_purchases: dict[str, int] | None = None,
+    away_purchases: dict[str, int] | None = None,
+) -> Match:
+    return Match(
+        id="match-1",
+        round=1,
+        home=MatchTeamInfo(
+            team_id="home-team",
+            team_name="Home",
+            user_id="home-coach",
+            username="Home Coach",
+            base_roster_id="human",
+        ),
+        away=MatchTeamInfo(
+            team_id="away-team",
+            team_name="Away",
+            user_id="away-coach",
+            username="Away Coach",
+            base_roster_id="human",
+        ),
+        home_inducement_purchases=home_purchases or {},
+        away_inducement_purchases=away_purchases or {},
+    )
+
+
+def _inducement_budget(
+    team_id: str,
+    *,
+    home_team: UserTeam,
+    away_team: UserTeam,
+    match: Match | None = None,
+    rules: InducementRules | None = None,
+    inducements_enabled: bool = True,
+) -> _MatchInducementBudgetSnapshot:
+    match = match or _budget_match()
+    league = League.model_construct(
+        id="league-1",
+        name="League",
+        owner_id="owner",
+        rules=LeagueRules(inducements=inducements_enabled),
+        matches=[match],
+    )
+    roster = _budget_roster()
+    return UserTeamService._match_inducement_budget_for_state(
+        team_id=team_id,
+        league=league,
+        match=match,
+        home_team=home_team,
+        away_team=away_team,
+        home_roster=roster,
+        away_roster=roster,
+        rules=rules or _inducement_rules(),
     )
 
 
@@ -54,7 +183,60 @@ def test_team_value_excludes_dead_players_from_base_value():
     assert breakdown.current_team_value == 50000
 
 
-def test_match_inducement_team_value_excludes_current_match_temporary_players():
+def test_temporary_journeymen_do_not_change_team_detail_values():
+    team = UserTeam.model_construct(
+        user_id="coach",
+        base_roster_id="human",
+        name="Humans",
+        players=[
+            _player("healthy", 1, 100000, PlayerStatus.HEALTHY.value),
+            _player(
+                "journeyman",
+                2,
+                50000,
+                PlayerStatus.HEALTHY.value,
+                temporary_for_match=True,
+                temporary_match_id="match-1",
+                journeyman=True,
+            ),
+        ],
+        rerolls=0,
+        assistant_coaches=0,
+        cheerleaders=0,
+        apothecary=False,
+    )
+
+    breakdown = team.calculate_team_value_breakdown(reroll_cost=50000)
+
+    assert breakdown.player_value == 100000
+    assert breakdown.unavailable_player_value == 0
+    assert breakdown.team_value == 100000
+    assert breakdown.current_team_value == 100000
+
+
+def test_kept_journeymen_count_as_normal_roster_value():
+    team = UserTeam.model_construct(
+        user_id="coach",
+        base_roster_id="human",
+        name="Humans",
+        players=[
+            _player("healthy", 1, 100000, PlayerStatus.HEALTHY.value),
+            _player("kept-journeyman", 2, 50000, PlayerStatus.HEALTHY.value),
+        ],
+        rerolls=0,
+        assistant_coaches=0,
+        cheerleaders=0,
+        apothecary=False,
+    )
+
+    breakdown = team.calculate_team_value_breakdown(reroll_cost=50000)
+
+    assert breakdown.player_value == 150000
+    assert breakdown.team_value == 150000
+    assert breakdown.current_team_value == 150000
+
+
+def test_match_inducement_team_value_counts_current_match_journeymen_only():
     team = UserTeam.model_construct(
         user_id="coach",
         base_roster_id="human",
@@ -72,6 +254,15 @@ def test_match_inducement_team_value_excludes_current_match_temporary_players():
                 status=PlayerStatus.HEALTHY.value,
                 temporary_for_match=True,
                 temporary_match_id="match-1",
+            ),
+            _player(
+                "journeyman-1",
+                15,
+                50000,
+                PlayerStatus.HEALTHY.value,
+                temporary_for_match=True,
+                temporary_match_id="match-1",
+                journeyman=True,
             ),
         ],
         rerolls=1,
@@ -91,7 +282,227 @@ def test_match_inducement_team_value_excludes_current_match_temporary_players():
 
     ctv = UserTeamService._match_inducement_team_value(team, roster, "match-1")
 
-    assert ctv == 170000
+    assert ctv == 220000
+
+
+def test_inducement_budget_equal_ctv_disallows_treasury_spend():
+    home = _budget_team(
+        "home-team",
+        [_player("home-1", 1, 100_000)],
+        treasury=150_000,
+    )
+    away = _budget_team(
+        "away-team",
+        [_player("away-1", 1, 100_000)],
+        treasury=150_000,
+    )
+
+    snapshot = _inducement_budget("home-team", home_team=home, away_team=away)
+
+    assert snapshot == _MatchInducementBudgetSnapshot(
+        petty_cash=0,
+        treasury_allowance=0,
+        total_available=0,
+        spent=0,
+        treasury_contribution=0,
+        remaining=0,
+        is_favorite=False,
+        is_tied=True,
+    )
+
+
+def test_inducement_budget_favorite_can_spend_treasury():
+    home = _budget_team(
+        "home-team",
+        [_player("home-1", 1, 200_000)],
+        treasury=150_000,
+    )
+    away = _budget_team(
+        "away-team",
+        [_player("away-1", 1, 100_000)],
+        treasury=50_000,
+    )
+    match = _budget_match(home_purchases={"bribe": 1})
+
+    snapshot = _inducement_budget(
+        "home-team",
+        home_team=home,
+        away_team=away,
+        match=match,
+    )
+
+    assert snapshot == _MatchInducementBudgetSnapshot(
+        petty_cash=0,
+        treasury_allowance=150_000,
+        total_available=150_000,
+        spent=100_000,
+        treasury_contribution=100_000,
+        remaining=50_000,
+        is_favorite=True,
+        is_tied=False,
+    )
+
+
+def test_inducement_budget_underdog_receives_ctv_difference():
+    home = _budget_team(
+        "home-team",
+        [_player("home-1", 1, 200_000)],
+        treasury=150_000,
+    )
+    away = _budget_team(
+        "away-team",
+        [_player("away-1", 1, 100_000)],
+        treasury=70_000,
+    )
+
+    snapshot = _inducement_budget("away-team", home_team=home, away_team=away)
+
+    assert snapshot == _MatchInducementBudgetSnapshot(
+        petty_cash=100_000,
+        treasury_allowance=50_000,
+        total_available=150_000,
+        spent=0,
+        treasury_contribution=0,
+        remaining=150_000,
+        is_favorite=False,
+        is_tied=False,
+    )
+
+
+def test_inducement_budget_underdog_receives_favorite_spend_as_petty_cash():
+    home = _budget_team(
+        "home-team",
+        [_player("home-1", 1, 200_000)],
+        treasury=150_000,
+    )
+    away = _budget_team(
+        "away-team",
+        [_player("away-1", 1, 100_000)],
+        treasury=70_000,
+    )
+    match = _budget_match(home_purchases={"bribe": 1})
+
+    snapshot = _inducement_budget(
+        "away-team",
+        home_team=home,
+        away_team=away,
+        match=match,
+    )
+
+    assert snapshot == _MatchInducementBudgetSnapshot(
+        petty_cash=200_000,
+        treasury_allowance=50_000,
+        total_available=250_000,
+        spent=0,
+        treasury_contribution=0,
+        remaining=250_000,
+        is_favorite=False,
+        is_tied=False,
+    )
+
+
+def test_inducement_budget_underdog_top_up_uses_current_hardcoded_limit():
+    home = _budget_team(
+        "home-team",
+        [_player("home-1", 1, 200_000)],
+        treasury=0,
+    )
+    away = _budget_team(
+        "away-team",
+        [_player("away-1", 1, 100_000)],
+        treasury=200_000,
+    )
+    rules = _inducement_rules(top_up_limit=120_000)
+
+    snapshot = _inducement_budget(
+        "away-team",
+        home_team=home,
+        away_team=away,
+        rules=rules,
+    )
+
+    assert rules.budget.petty_cash_top_up_limit == 120_000
+    assert snapshot.treasury_allowance == 50_000
+    assert snapshot.total_available == 150_000
+
+
+def test_inducement_budget_current_match_temporaries_follow_current_contract():
+    home = _budget_team(
+        "home-team",
+        [
+            _player("home-1", 1, 100_000),
+            _player(
+                "home-star",
+                16,
+                280_000,
+                base_type="star_griff",
+                temporary_for_match=True,
+                temporary_match_id="match-1",
+            ),
+            _player(
+                "home-journeyman",
+                15,
+                50_000,
+                temporary_for_match=True,
+                temporary_match_id="match-1",
+                journeyman=True,
+            ),
+        ],
+        treasury=80_000,
+    )
+    away = _budget_team(
+        "away-team",
+        [_player("away-1", 1, 150_000)],
+        treasury=0,
+    )
+
+    snapshot = _inducement_budget("home-team", home_team=home, away_team=away)
+
+    assert snapshot == _MatchInducementBudgetSnapshot(
+        petty_cash=0,
+        treasury_allowance=0,
+        total_available=0,
+        spent=280_000,
+        treasury_contribution=0,
+        remaining=0,
+        is_favorite=False,
+        is_tied=True,
+    )
+
+
+def test_inducement_budget_other_match_temporaries_do_not_count_in_current_ctv():
+    home = _budget_team(
+        "home-team",
+        [
+            _player("home-1", 1, 100_000),
+            _player(
+                "home-other-temporary",
+                15,
+                80_000,
+                temporary_for_match=True,
+                temporary_match_id="other-match",
+            ),
+        ],
+        treasury=200_000,
+    )
+    away = _budget_team(
+        "away-team",
+        [_player("away-1", 1, 150_000)],
+        treasury=0,
+    )
+
+    snapshot = _inducement_budget("home-team", home_team=home, away_team=away)
+
+    assert snapshot == _MatchInducementBudgetSnapshot(
+        petty_cash=50_000,
+        treasury_allowance=50_000,
+        total_available=100_000,
+        spent=0,
+        treasury_contribution=0,
+        remaining=100_000,
+        is_favorite=False,
+        is_tied=False,
+    )
 
 
 @pytest.mark.anyio

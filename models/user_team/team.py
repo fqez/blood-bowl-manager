@@ -183,22 +183,26 @@ class UserTeam(Document):
     ) -> TeamValueBreakdown:
         """Calculate official TV and CTV from current roster state."""
         ignored_player_types = ignored_player_types or set()
-        player_value = sum(
-            p.current_value
-            for p in self.players
-            if (p.status.value if isinstance(p.status, PlayerStatus) else p.status)
-            != PlayerStatus.DEAD.value
-            and p.base_type not in ignored_player_types
-        )
-        unavailable_player_value = sum(
-            p.current_value
-            for p in self.players
-            if (p.status.value if isinstance(p.status, PlayerStatus) else p.status)
-            != PlayerStatus.DEAD.value
-            and (p.status.value if isinstance(p.status, PlayerStatus) else p.status)
-            != PlayerStatus.HEALTHY.value
-            and p.base_type not in ignored_player_types
-        )
+        player_value = 0
+        unavailable_player_value = 0
+
+        for player in self.players:
+            status = (
+                player.status.value
+                if isinstance(player.status, PlayerStatus)
+                else player.status
+            )
+            if status == PlayerStatus.DEAD.value:
+                continue
+            if player.base_type in ignored_player_types:
+                continue
+            if player.temporary_for_match:
+                continue
+
+            player_value += player.current_value
+            if status != PlayerStatus.HEALTHY.value:
+                unavailable_player_value += player.current_value
+
         reroll_value = self.rerolls * reroll_cost
         assistant_coach_value = self.assistant_coaches * 10000
         cheerleader_value = self.cheerleaders * 10000
